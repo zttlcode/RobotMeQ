@@ -81,7 +81,7 @@ def display_pic(color):
                     marker_color=color))
 
     # 只要return figure对象就行  这里可以写自己代码
-    # filePath = 'E:\\PycharmProjects\\QuantData\\backTest\\backtest_bar_601012_30.csv'
+    # filePath = 'E:\\PycharmProjects\\QuantData\\backtest\\backtest_bar_601012_30.csv'
     # data = pd.read_csv(filePath, encoding='gbk')
     # fig = plot_cand_volume(data)
     return fig

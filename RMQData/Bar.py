@@ -23,8 +23,8 @@ class Bar:
         self.assetsCode = assetsCode
         self.assetsName = assetsName
         self.timeLevel = timeLevel
-        self.backtest_bar = RMTTools.read_config("RMQData", "backTest_bar")+"backtest_bar_" + assetsCode + "_" + timeLevel + ".csv"  # 几年的bar数据做回测
-        self.backtest_tick = RMTTools.read_config("RMQData", "backTest_tick")+"backtest_tick_" + assetsCode + "_" + timeLevel + ".csv"  # bar数据转为tick
+        self.backtest_bar = RMTTools.read_config("RMQData", "backtest_bar")+"backtest_bar_" + assetsCode + "_" + timeLevel + ".csv"  # 几年的bar数据做回测
+        self.backtest_tick = RMTTools.read_config("RMQData", "backtest_tick")+"backtest_tick_" + assetsCode + "_" + timeLevel + ".csv"  # bar数据转为tick
         self.live_bar = RMTTools.read_config("RMQData", "live_bar")+"live_bar_" + assetsCode + "_" + timeLevel + ".csv"  # 实盘bar历史数据，截取250个
         self.bar_num = 250  # 够多少个bar才计算指标，也是计算指标的时间窗口大小  60时，耗时15毫秒，250时，耗时30毫秒
         self.assetsType = assetsType

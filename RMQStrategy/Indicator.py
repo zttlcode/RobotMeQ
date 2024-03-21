@@ -288,7 +288,7 @@ def cal_DonchianChannel(df, window=20):
 
 
 if __name__ =='__main__':
-    filePath = RMTTools.read_config("RMQData", "backTest_bar") + 'backtest_bar_000001_d.csv'
+    filePath = RMTTools.read_config("RMQData", "backtest_bar") + 'backtest_bar_000001_d.csv'
     DataFrame = pd.read_csv(filePath, encoding='gbk')
     df = cal_DonchianChannel(DataFrame)
     print(df)

@@ -339,7 +339,7 @@ def drawBollingerBands(stockDf):
 
 
 if __name__ == '__main__':
-    filePath = RMTTools.read_config("RMQData", "backTest_bar") + 'backtest_bar_601012_d.csv'
+    filePath = RMTTools.read_config("RMQData", "backtest_bar") + 'backtest_bar_601012_d.csv'
     DataFrame = pd.read_csv(filePath, encoding='gbk')
     drawBollingerBands(DataFrame)
 

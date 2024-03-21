@@ -145,7 +145,7 @@ def trans_bar_to_ticks(code, timeLevel, bar_path, ticks):
     return ticks
 
 
-def get_ticks_for_backTesting(assetsCode, backtest_tick, backtest_bar, timeLevel):
+def get_ticks_for_backtesting(assetsCode, backtest_tick, backtest_bar, timeLevel):
     if os.path.exists(backtest_tick):
         # 1、读取数据：回测数据已经生成过了
         ticks = pd.read_csv(backtest_tick,

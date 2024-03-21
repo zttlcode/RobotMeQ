@@ -361,11 +361,11 @@ if __name__ == "__main__":
     assetList = RMQAsset.asset_generator('BTCUSDT', 'BTC', ['15', '60', '240', 'd'], 'crypto')
 
     # 读取日线数据
-    filePath = RMTTools.read_config("RMQData", "trade_point_backTest") + 'all_' + assetList[0].assetsCode + '_d.csv'
+    filePath = RMTTools.read_config("RMQData", "trade_point_backtest") + 'all_' + assetList[0].assetsCode + '_d.csv'
     df = pd.read_csv(filePath, encoding='gbk')
 
     # 图表派策略买卖点
-    tpl_filepath = RMTTools.read_config("RMQData", "trade_point_backTest") + "trade_point_list_"
+    tpl_filepath = RMTTools.read_config("RMQData", "trade_point_backtest") + "trade_point_list_"
     df_tpl_5 = pd.read_csv(tpl_filepath + assetList[0].assetsCode + "_" + assetList[0].timeLevel + ".csv")
     df_tpl_15 = pd.read_csv(tpl_filepath + assetList[1].assetsCode + "_" + assetList[1].timeLevel + ".csv")
     df_tpl_30 = pd.read_csv(tpl_filepath + assetList[2].assetsCode + "_" + assetList[2].timeLevel + ".csv")

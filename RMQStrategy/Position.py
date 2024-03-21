@@ -168,7 +168,7 @@ class TurtleTrader:
 from RMQTool import Tools as RMTTools
 
 if __name__ == '__main__':
-    filePath = RMTTools.read_config("RMQData", "backTest_bar") + 'backtest_bar_000001_5.csv'
+    filePath = RMTTools.read_config("RMQData", "backtest_bar") + 'backtest_bar_000001_5.csv'
     df = pd.read_csv(filePath, encoding='gbk')
     # 1、创建海龟策略对象
     backtest_for_turtle = TurtleTrader(df)

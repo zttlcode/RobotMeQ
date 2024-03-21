@@ -106,9 +106,9 @@ if __name__ == '__main__':
     
     以后为了方便，不能手动复制，而是把 装python3.8.2 复制代码，安装pip库，每天定时运行代码，写成dockerfile
     FROM python:3.8.2
-    COPY ./RobotMeQuant /home/RobotMeQuant
+    COPY ./RobotMeQ /home/RobotMeQ
     RUN cp /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
-    RUN pip install -r /home/RobotMeQuant/Configs/requirements.txt --trusted-host mirrors.aliyun.com
+    RUN pip install -r /home/RobotMeQ/Configs/requirements.txt --trusted-host mirrors.aliyun.com
     
     做成镜像，再把镜像变成容器，容器运行起来，不再关机，然后代码就会每天自动执行
     
@@ -134,33 +134,25 @@ if __name__ == '__main__':
         aliyun 37个标的
         docker start 26dbf8178821
         docker exec -it 26dbf8178821 /bin/bash
-        nohup python -u /home/RobotMeQuant/Run_prd_103.py >> /home/log.out 2>&1 &
+        nohup python -u /home/RobotMeQ/Run_prd_ETF_A.py >> /home/log.out 2>&1 &
         
         以后改代码，只把指定的代码复制到服务器，然后docker cp复制到容器
-        docker cp /root/RobotMeQuant/Run_prd_103.py 26dbf8178821:/home/RobotMeQuant/Run_prd_103.py
-        docker cp /root/RobotMeQuant/requirements.txt 26dbf8178821:/home/RobotMeQuant/requirements.txt
+        docker cp /root/RobotMeQ/Run_prd_ETF_A.py 26dbf8178821:/home/RobotMeQ/Run_prd_ETF_A.py
+        docker cp /root/RobotMeQ/requirements.txt 26dbf8178821:/home/RobotMeQ/requirements.txt
 
-        docker cp /root/RobotMeQuant/QuantData/live 26dbf8178821:/home/RobotMeQuant/QuantData/live2
-        docker cp /root/RobotMeQuant/RMQTool/Message.py 26dbf8178821:/home/RobotMeQuant/RMQTool/Message.py
+        docker cp /root/RobotMeQ/QuantData/live 26dbf8178821:/home/RobotMeQ/QuantData/live2
+        docker cp /root/RobotMeQ/RMQTool/Message.py 26dbf8178821:/home/RobotMeQ/RMQTool/Message.py
     
-        103 30个标的
+        阿里云 37个标的
         docker start 06acc8ba6062
         docker exec -it 06acc8ba6062 /bin/bash
-        nohup python -u /home/RobotMeQuant/Run_prd_103.py >> /home/log.out 2>&1 &
+        nohup python -u /home/RobotMeQ/Run_prd_ETF_A.py >> /home/log.out 2>&1 &
         
         以后改代码，只把指定的代码复制到服务器，然后docker cp复制到容器
-        docker cp /root/RobotMeQuant/Run_prd_103.py 06acc8ba6062:/home/RobotMeQuant/Run_prd_103.py
+        docker cp /root/RobotMeQ/Run_prd_ETF_A.py 06acc8ba6062:/home/RobotMeQ/Run_prd_ETF_A.py
 
-        docker cp /root/RobotMeQuant/QuantData/live 06acc8ba6062:/home/RobotMeQuant/QuantData/live2
-        docker cp /root/RobotMeQuant/RMQTool/Message.py d63f10ba76df:/home/RobotMeQuant/RMQTool/Message.py
-    
-        102 5个标的
-        docker start d63f10ba76df
-        docker exec -it d63f10ba76df /bin/bash
-        nohup python -u /home/RobotMeQuant/Run_prd_102.py >> /home/log.out 2>&1 &
-        
-        以后改代码，只把指定的代码复制到服务器，然后docker cp复制到容器
-        docker cp /root/RobotMeQuant/Run_prd_102.py d63f10ba76df:/home/RobotMeQuant/Run_prd_102.py
+        docker cp /root/RobotMeQ/QuantData/live 06acc8ba6062:/home/RobotMeQ/QuantData/live2
+        docker cp /root/RobotMeQ/RMQTool/Message.py d63f10ba76df:/home/RobotMeQ/RMQTool/Message.py
 
     
     tail -f /home/log.out

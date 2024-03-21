@@ -12,8 +12,8 @@ def read_config(section, item):
     # 这里必须写绝对路径，如果写相对路径，会去找调用这个函数的python文件的相对路径，而不是当前文件的相对路径
     # 这里必须写绝对路径，如果写相对路径，会去找调用这个函数的python文件的相对路径，而不是当前文件的相对路径
     # 发布服务器时，只改这里，然后运行对应的run就可以，其他任何代码都不用动
-    path = "D:\\workspace\\github\\RobotMeQuant\\Configs\\config.ini"
-    #path = "/home/RobotMeQuant/Configs/config_prd.ini"
+    path = "D:\\workspace\\github\\RobotMeQ\\Configs\\config.ini"
+    # path = "/home/RobotMeQ/Configs/config_prd.ini"
     cp.read(path, encoding='utf-8')
     return cp.get(section, item)
 
@@ -22,8 +22,8 @@ def write_config(section, item, value):
     cp = ConfigParser()
     # 这里必须写绝对路径，如果写相对路径，会去找调用这个函数的python文件的相对路径，而不是当前文件的相对路径
     # 发布服务器时，只改这里，然后运行对应的run就可以，其他任何代码都不用动
-    path = "D:\\workspace\\github\\RobotMeQuant\\Configs\\config.ini"
-    # path = "/home/RobotMeQuant/Configs/config_prd.ini"
+    path = "D:\\workspace\\github\\RobotMeQ\\Configs\\config.ini"
+    # path = "/home/RobotMeQ/Configs/config_prd.ini"
     cp.read(path, encoding='utf-8')
     cp.set(section, item, value)
     with open(path, "w") as configfile:
@@ -46,7 +46,7 @@ def getWorkDay():
                 workday_list.append(dayDic['jyrq'])
         month = month + 1
     df = pd.DataFrame(workday_list, columns=['workday'])
-    df.to_csv("D:\\workspace\\github\\RobotMeQuant\\QuantData\\workday_list.csv", index=False)
+    df.to_csv("D:\\workspace\\github\\RobotMeQ\\QuantData\\workday_list.csv", index=False)
 
 
 def isWorkDay(filepath, today):
