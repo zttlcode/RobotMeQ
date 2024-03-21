@@ -1,0 +1,5 @@
+FROM python:3.8.2
+COPY ./RobotMeQuant/Configs/pip.conf root/.pip/pip.conf
+COPY ./RobotMeQuant /home/RobotMeQuant
+RUN cp /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
+RUN pip install -r /home/RobotMeQuant/Configs/requirements.txt --trusted-host mirrors.aliyun.com
