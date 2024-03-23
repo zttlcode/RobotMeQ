@@ -219,16 +219,6 @@ def build_msg_HTML(title, strategyResultEntity):
                     '<p>30分钟级别：' + strategyResultEntity.msg_level_30 +'</p>' \
                     '<p>15分钟级别：' + strategyResultEntity.msg_level_15 +'</p>' \
                     '<p>5分钟级别：' + strategyResultEntity.msg_level_5 +'</p>' \
-                    '<h1>仓位管理，3种情况</h1>' \
-                    '<h3>1 周线高位刚下来</h3>' \
-                    '<p>1.1 有卖出信号：建议忽略；1、可能在冲M顶；2、下跌中继反弹结束</p>' \
-                    '<p>1.2 有买入信号：建议忽略；博反弹50%概率能赚</p>' \
-                    '<h3>2 周线跌很久，接近前低</h3>' \
-                    '<p>2.1 有卖出信号：建议忽略；</p>' \
-                    '<p style="color:red;">2.2 有买入信号：已有日线底背离，建仓，只买不卖，信号级别越买越小，5次机会，马丁翻倍加，最后一次补仓是确认趋势反转后</p>' \
-                    '<h3>3 周线涨很久，接近前高</h3>' \
-                    '<p style="color:green;">3.1 有卖出信号：已有日线顶背离，减仓，只卖不买，信号级别越卖越小，5次机会，马丁翻倍减，最后一次卖出是确认趋势反转后</p>' \
-                    '<p>3.2 有买入信号：建议忽略；回到1.2，重新循环</p>' \
                     '</body></html>'
     msg = MIMEText(HTMLContent, 'html', 'utf-8')
     msg['Subject'] = title

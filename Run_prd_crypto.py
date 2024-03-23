@@ -50,12 +50,12 @@ proxy=http://127.0.0.1:33210
     strategy_result = RMQStrategy.StrategyResultEntity()  # 收集多级别行情信息，推送消息
     IEMultiLevel = RMQIndicator.InicatorEntityMultiLevel()  # 多级别的指标要互相交流，所以通过这个公共指标对象交流
 
-    # proxies = {
-    #     'http': 'http://127.0.0.1:33210',
-    #     'https': 'http://127.0.0.1:33210',
-    # }
-    # client = Spot(proxies=proxies,timeout=3)
-    client = Spot(timeout=3)
+    proxies = {
+        'http': 'http://127.0.0.1:33210',
+        'https': 'http://127.0.0.1:33210',
+    }
+    client = Spot(proxies=proxies,timeout=3)
+    #client = Spot(timeout=3)
     while True:
         try:
             # 每个级别都计算
@@ -77,6 +77,7 @@ proxy=http://127.0.0.1:33210
                 asset.inicatorEntity.bar_DataFrame = data
                 asset.inicatorEntity.tick_close = data.at[299, 'close']
                 asset.inicatorEntity.tick_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                print(asset.inicatorEntity.tick_close)
                 RMQStrategy.strategy(asset.positionEntity, asset.inicatorEntity, asset.bar_num, strategy_result,
                                      IEMultiLevel)
         except Exception as e:
