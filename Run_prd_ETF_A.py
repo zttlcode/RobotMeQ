@@ -6,7 +6,7 @@ from datetime import datetime, time
 from multiprocessing import Process
 import sys
 
-sys.path.append("/home/robotme")
+sys.path.append("/home/RobotMeQ")
 
 import RMQData.Tick as RMQTick
 import RMQStrategy.Strategy as RMQStrategy
@@ -103,8 +103,7 @@ def run_live(assetList):
 
 
 def start_process():
-    processes = [Process(target=RMTMessage.FlashfeishuToken(),
-                         args=()),
+    processes = [Process(target=RMTMessage.flashfeishutoken),
                  Process(target=run_live,
                          args=(RMQAsset.asset_generator('510050', '上证50', ['5', '15', '30', '60', 'd'], 'ETF'),)),
                  Process(target=run_live,
@@ -191,6 +190,61 @@ def start_process():
 
 
 if __name__ == '__main__':
+
+    """
+--部署代码
+    一个新服务器，安装docker : yum update更新一下库
+    然后执行 curl -fsSL https://get.docker.com | bash -s docker --mirror Aliyun
+    执行 service docker start 启动服务      systemctl enable docker 开机启动
+    把RobotMeQ放到服务器~目录下，运行 docker build -t python:3.8.2 .
+    我的笔记本build没问题，但台式机build的半个小时一直没好，我换了docker的镜像源才行（菜鸟教程有教），
+        下面是我的阿里云镜像原，其他国内镜像都访问不了了
+        在 /etc/docker/daemon.json 中写入如下内容（如果文件不存在请新建该文件）
+{
+"registry-mirrors":["https://0hc2yp52.mirror.aliyuncs.com"]
+}
+    # 如果dockerfile最后一行地pip.conf没用，就直接用下面这个运行
+    pip install -r requirements.txt --trusted-host mirrors.aliyun.com
+    # 就算pip 单独安装包，也要加--trusted-host mirrors.aliyun.com
+    之后重新启动服务：
+    $ sudo systemctl daemon-reload
+    $ sudo systemctl restart docker
+    再执行上面的docker build就可以了
+    
+    docker start 26dbf8178821
+    docker exec -it 26dbf8178821 /bin/bash
+    nohup python -u /home/RobotMeQ/Run_prd_ETF_A.py >> /home/log.out 2>&1 &
+    tail -f /home/log.out
+    docker cp /root/RobotMeQ 26dbf8178821:/home/RobotMeQ
+    docker cp /root/RobotMeQ/Run_prd_ETF_A.py 26dbf8178821:/home/RobotMeQ/Run_prd_ETF_A.py
+    docker cp /root/RobotMeQ/requirements.txt 26dbf8178821:/home/RobotMeQ/requirements.txt
+    docker cp /root/RobotMeQ/QuantData/live 26dbf8178821:/home/RobotMeQ/QuantData/live2
+    
+--创建新项目    
+    在conda的导航工具里新建环境，然后pycharm给项目选择需要的解释器，
+    安装包时，conda的包不全，进入conda环境，conda activate robotme
+        然后执行pip就行了，执行requirement也是进了conda的环境再执行
+        进conda环境导出所有包执行：conda list -e > requirements.txt
+        conda安装包：conda install --yes --file requirements.txt  
+    
+    由于没配conda的环境变量，要到anaconda安装目录的condabin下执行conda
+    退出是conda deactivate
+    
+    我现在是两个环境并存，先是python安装了3.8，在c盘，配了全局代理，C:\ProgramData\pip\pip.ini
+    给pycharm指定的解释器也是这个，用pycharm打开新的python项目时，会自动用virtual虚拟环境
+    2023，0820装了anaconda，就把项目环境改成了anaconda的自己新建的env环境的python解释器。
+    anaconda的多个python版本可以并存，我自己的python3.8也是和他们并存的
+    只是有一点，我的python开了pip的代理，anaconda没有，不过anaconda包少，用conda安装包和进入conda的自己的环境，再用pip安装是一样的
+    按理说pip.ini是通用的
+    通过 pip config list 可以看到anaconda和全局用的是一个pip.ini，vpn的代理生效了。
+    
+    ---------------环境配好了，下面创建新项目----------------------
+    用conda建环境后
+    再到github创建项目，添加gitignore,拿到clone链接（别人的得拿，自己的项目不拿）
+    本地用pycharm打开git点clone，放链接（自己地项目在github目录里直接选），选本地路径，导入后，改成conda的环境
+    导入后放入自己的代码，点add，再commit，最后push
+    """
+
     while True:
         # 只能交易日的0~9:30之间，或交易日15~0之间，手动启
         workday_list = RMTTools.read_config("RMT", "workday_list") + "workday_list.csv"

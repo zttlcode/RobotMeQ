@@ -5,7 +5,6 @@ import urllib.parse
 import requests
 import json
 import ast
-
 import time
 import smtplib
 from email.utils import formataddr
@@ -14,12 +13,6 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.image import MIMEImage
 
 from RMQTool import Tools as RMTTools
-
-'''
-    1、日历系统，提前推送可能的做空、做多消息
-    2、爬虫，获取推特等消息
-    3、广播，推送策略决策信息
-'''
 
 
 def PostDDMessage(message):
@@ -157,18 +150,18 @@ def Postfeishu(message):
 
     headers = {
         'Content-Type': 'application/json',
-        'Authorization': 'Bearer '+ token
+        'Authorization': 'Bearer ' + token
     }
     ResSuccess = True
     try:
-        response = requests.request("POST", url, headers=headers, data=payload)
+        requests.request("POST", url, headers=headers, data=payload)
     except Exception as e:
         ResSuccess = False
         print(e)
     return ResSuccess
 
 
-def FlashfeishuToken():
+def flashfeishutoken():
     url = "https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal"
     payload = json.dumps({
         "app_id": "cli_a572fd6a58b9100d",
@@ -178,6 +171,7 @@ def FlashfeishuToken():
     headers = {
         'Content-Type': 'application/json',
     }
+
     while True:
         try:
             response = requests.request("POST", url, headers=headers, data=payload)
@@ -300,10 +294,10 @@ if __name__ == '__main__':
     #     print('消息发送成功')
     # else:
     #     print('消息发送失败')
-    FlashfeishuToken()
-    res = Postfeishu(message)
-    # # 判断发送结果
-    if res:
-         print('消息发送成功')
-    else:
-         print('消息发送失败')
+    flashfeishutoken()
+    # res = Postfeishu(message)
+    # # # 判断发送结果
+    # if res:
+    #      print('消息发送成功')
+    # else:
+    #      print('消息发送失败')

@@ -162,11 +162,10 @@ if __name__ == '__main__':
             mainWork(sheet1, asset)
             # 数据按bar_num截断
             RMQBar_HistoryData.handle_TDX_data(asset)
+            path = RMTTools.read_config("RMQData_local", "tdx")
             # 删除export导出的表格，和另存为的表格
-            for ss in os.listdir(RMTTools.read_config("RMQData", "tdx")):
-                os.remove(RMTTools.read_config("RMQData", "tdx") + ss)
-            # os.remove(RMTTools.read_config("RMQData", "tdx") + asset.assetsCode + '_' + asset.timeLevel + '.xlsx')
-            # os.remove(RMTTools.read_config("RMQData", "tdx") + asset.assetsCode + '_' + asset.timeLevel + '.xls')
+            for filename in os.listdir(path):
+                os.remove(path + filename)
             # 点一下文件夹，让它最小化
             img = sheet1.row(12)[1].value
             reTry = 1

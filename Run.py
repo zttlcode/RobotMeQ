@@ -161,7 +161,12 @@ def run_live(assetList):
 
 
 def start_process():
-    processes = [Process(target=RMTMessage.FlashfeishuToken(),args=()),
+    """
+    只需要记住一点，要想实现多线程， target=方法名/函数名，后不能带括号（）。
+1、不带括号时，调用的是这个函数本身 ，是整个函数体，是一个函数对象，不需等该函数执行完成；
+2、带括号（此时必须传入需要的参数），调用的是函数的return结果，需要等待函数执行完成的结果。
+    """
+    processes = [Process(target=RMTMessage.flashfeishutoken(), args=()),
                   Process(target=run_live, args=(RMQAsset.asset_generator('510050', '上证50', ['5', '15', '30', '60', 'd'], 'ETF'),)),
                   Process(target=run_live, args=(RMQAsset.asset_generator('159915', '创业板', ['5', '15', '30', '60', 'd'], 'ETF'),)),
                   Process(target=run_live, args=(RMQAsset.asset_generator('510300', '沪深300指数', ['5', '15', '30', '60', 'd'], 'ETF'),)),
@@ -196,6 +201,8 @@ def start_process():
     for p in processes:
         p.join()
         """
+        
+        
         等待工作进程结束，只要有一个进程没运行完，所有进程都会卡join等
         第一个进程join，它执行完后，join结束，执行close，回收进程资源，然后第二个join,
         由于我每个进程结束时间差不多，所以第二个刚一join就马上close了，直到所有都完成

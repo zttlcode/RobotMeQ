@@ -2,6 +2,7 @@ import pandas as pd
 import math
 import datetime
 from binance.spot import Spot
+from RMQTool import Tools as RMTTools
 
 
 def binance_to_his_csv(client, quot, remainder, k_interval):
@@ -77,18 +78,19 @@ def binance_to_his_csv(client, quot, remainder, k_interval):
     # 把时间设为index
     result_df.set_index('time', inplace=True)
 
+    path = RMTTools.read_config("RMQData", "backtest_bar")
     # 把结果df写入csv
     if k_interval == '1d':
-        result_df.to_csv("D:\\workspace\\github\\RobotMeQ\\QuantData\\backtest\\backtest_bar_BTCUSDT_d.csv")
+        result_df.to_csv(path + "backtest_bar_BTCUSDT_d.csv")
         print("日线数据写入完成")
     elif k_interval == '4h':
-        result_df.to_csv("D:\\workspace\\github\\RobotMeQ\\QuantData\\backtest\\backtest_bar_BTCUSDT_240.csv")
+        result_df.to_csv(path + "backtest_bar_BTCUSDT_240.csv")
         print("4h数据写入完成")
     elif k_interval == '1h':
-        result_df.to_csv("D:\\workspace\\github\\RobotMeQ\\QuantData\\backtest\\backtest_bar_BTCUSDT_60.csv")
+        result_df.to_csv(path + "backtest_bar_BTCUSDT_60.csv")
         print("1h数据写入完成")
     elif k_interval == '15m':
-        result_df.to_csv("D:\\workspace\\github\\RobotMeQ\\QuantData\\backtest\\backtest_bar_BTCUSDT_15.csv")
+        result_df.to_csv(path + "backtest_bar_BTCUSDT_15.csv")
         print("15m数据写入完成")
 
 
