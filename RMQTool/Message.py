@@ -70,6 +70,52 @@ def PostWeiXinEnterprise(message):
     return res.ok
 
 
+def Postfeishu(message):
+    url = "https://open.feishu.cn/open-apis/bot/v2/hook/3a73551b-c083-4a8f-ba6b-c576a8cccf52"
+    payload = json.dumps({
+        "content": "{\"text\":\""+message+"\"}",
+        "msg_type": "text",
+        "receive_id": "oc_36c85fb808ff68cbbaeaf002b45b6fe9"
+    })
+
+    token = RMTTools.read_config("RMT", "token_feishu")
+    print("read feishu token:", token)
+    headers = {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + token
+    }
+    ResSuccess = True
+    try:
+        response = requests.request("POST", url, headers=headers, data=payload)
+        print("post feishu res:", response.text)
+    except Exception as e:
+        ResSuccess = False
+        print(e)
+    return ResSuccess
+
+
+def flashfeishutoken():
+    url = "https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal"
+    payload = json.dumps({
+        "app_id": "cli_a572fd6a58b9100d",
+        "app_secret": "xkr3vDFeO9tmiuVLF4zUSg5Cajw7Q4aK"
+    })
+
+    headers = {
+        'Content-Type': 'application/json',
+    }
+
+    while True:
+        try:
+            response = requests.request("POST", url, headers=headers, data=payload)
+            print("flash feishu res:",response.text)
+            tenant_access_token = json.loads(response.text).get("tenant_access_token")
+            RMTTools.write_config("RMT", "token_feishu", tenant_access_token)
+            time.sleep(600)
+        except Exception as e:
+            print(e)
+
+
 def PostTelegramBot(message):
     """
     我这个代码是2022年12月14号写的，当时不开代理能直接调通
@@ -136,50 +182,6 @@ def PostQQmail(msg):
         ResSuccess = False
         print(e)
     return ResSuccess
-
-
-def Postfeishu(message):
-    url = "https://open.feishu.cn/open-apis/bot/v2/hook/3a73551b-c083-4a8f-ba6b-c576a8cccf52"
-    payload = json.dumps({
-        "content": "{\"text\":\""+message+"\"}",
-        "msg_type": "text",
-        "receive_id": "oc_36c85fb808ff68cbbaeaf002b45b6fe9"
-    })
-
-    token = RMTTools.read_config("RMT", "token_feishu")
-
-    headers = {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer ' + token
-    }
-    ResSuccess = True
-    try:
-        requests.request("POST", url, headers=headers, data=payload)
-    except Exception as e:
-        ResSuccess = False
-        print(e)
-    return ResSuccess
-
-
-def flashfeishutoken():
-    url = "https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal"
-    payload = json.dumps({
-        "app_id": "cli_a572fd6a58b9100d",
-        "app_secret": "xkr3vDFeO9tmiuVLF4zUSg5Cajw7Q4aK"
-    })
-
-    headers = {
-        'Content-Type': 'application/json',
-    }
-
-    while True:
-        try:
-            response = requests.request("POST", url, headers=headers, data=payload)
-            tenant_access_token = json.loads(response.text).get("tenant_access_token")
-            RMTTools.write_config("RMT", "token_feishu", tenant_access_token)
-            time.sleep(3)
-        except Exception as e:
-            print(e)
 
 
 # 发件人、收件人、标题、邮件内容

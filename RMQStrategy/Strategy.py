@@ -31,14 +31,14 @@ class StrategyResultEntity:
                 self.msg_level_day = post_msg
             # 编辑标题
             # title_time = datetime.now().strftime('%Y-%m-%d') + '操作'
-            title = "图表派多级别策略"
+            title = "均值回归多级别策略"
             # 组织消息
-            # mail_msg = Message.build_msg_HTML(title, self)
-            mail_msg = Message.build_text(self)
+            mail_msg = Message.build_msg_HTML(title, self)
+            mail_msg2 = Message.build_text(self)
             # 需要异步发送，此函数还没写，暂时先同步发送
-            # res = Message.PostQQmail(mail_msg)
-            res = Message.Postfeishu(mail_msg)
-            if res:
+            res = Message.PostQQmail(mail_msg)
+            res2 = Message.Postfeishu(mail_msg2)
+            if res2:
                 print('发送成功')
             else:
                 print('发送失败')
@@ -110,36 +110,21 @@ def strategy_basic(positionEntity, inicatorEntity, windowDF, DFLastRow):
 """
 """
 """
+量化真的小众
+这地球上干啥的人都有，做了我想做的不想做的结果没什么粉丝和用处的大有人在，我可以啥也不干
+看见他们那么卷我都累了，人可能很少能做出创新，还是让自己活得轻松吧，虽然也没啥意思，但起码不痛苦，彻底明白了，看开了
+所以还是针对性一点，量化系统开不开源都无所谓，几年前的系统开源了比我做的好多了，也都没落了
+自己能赚钱就行了，不用做那么多无用功的事，幼稚
+
+量化：1、展示赚钱 2、实盘信号
+
 论文方向：
-没有一个算法总比其他算法好，
-没有一个策略能适用所有情况。
-解决办法就是，对现实情况进行概率分布假设，为不同分布采用不同算法。
-99:1球的例子中，为什么改自己的猜测，因为我们更倾向概率大的，量化市场中，永远要选大概率。
-对于策略，就是分析当前是哪种情况，采用不同策略。变化之后再分析，再变化策略。
-——混合模型
+混合模型、趋势预测 为主
+辅助以资产组合优化、风控（仓位管理），情绪值直接调用交易所数据比如恐慌指数
+再加异常检测
 数据准备
     按照各种策略先回测，把回测的数据，买入后还跌的剔除掉，买入后没涨的剔除掉，这样过滤一下，就拿到优质数据了。
     kaggle，证券宝等，用国内数据和数字币
-混合模型、趋势预测 为主
-辅助以资产组合优化、风控（仓位管理），情绪值直接调用交易所数据比如恐慌指数，
-再加异常检测
-这样目前的所有领域全占了
-
-多看23年、24年的论文
-
-清理github star
-3月，啃完策略书，开始啃AI策略，记录学习过程顺便攒粉
-    https://github.com/HanLi123/book/tree/master/%E4%BB%A3%E7%A0%81
-    多用gpt做策略代码
-    2.4节，最优控制，涉及第7章，基于最优控制进行回撤控制。gpt实现？
-    代码果然写错了，用李涵的github代码再改改
-精通pytorch，调通船舶
-开始微调模型，先弄说英语那个
-3月，开AI时，同时使用流行的模型工具，并包装成展品给亨，然后找商机
-
-量化：1、展示赚钱的策略（短，先抛结果，再讲原理，obs）；2、然后策略的实盘信号推送
-（短图文实盘）股吧，同花顺，雪球，币安：AI量化公众号，AI量化知识星球
-1个B站号,1个知识星球
 """
 
 
