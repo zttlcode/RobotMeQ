@@ -159,6 +159,8 @@ def start_process():
                  Process(target=run_live,
                          args=(RMQAsset.asset_generator('159980', '有色', ['5', '15', '30', '60', 'd'], 'ETF'),)),
                  Process(target=run_live,
+                         args=(RMQAsset.asset_generator('159981', '能源化工', ['5', '15', '30', '60', 'd'], 'ETF'),)),
+                 Process(target=run_live,
                          args=(RMQAsset.asset_generator('159996', '家电', ['5', '15', '30', '60', 'd'], 'ETF'),)),
                  Process(target=run_live,
                          args=(RMQAsset.asset_generator('159819', '人工智能', ['5', '15', '30', '60', 'd'], 'ETF'),)),
