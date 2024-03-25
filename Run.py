@@ -166,7 +166,7 @@ def start_process():
 1、不带括号时，调用的是这个函数本身 ，是整个函数体，是一个函数对象，不需等该函数执行完成；
 2、带括号（此时必须传入需要的参数），调用的是函数的return结果，需要等待函数执行完成的结果。
     """
-    processes = [Process(target=RMTMessage.flashfeishutoken(), args=()),
+    processes = [Process(target=RMTMessage.flush_feishu(), args=()),
                   Process(target=run_live, args=(RMQAsset.asset_generator('510050', '上证50', ['5', '15', '30', '60', 'd'], 'ETF'),)),
                   Process(target=run_live, args=(RMQAsset.asset_generator('159915', '创业板', ['5', '15', '30', '60', 'd'], 'ETF'),)),
                   Process(target=run_live, args=(RMQAsset.asset_generator('510300', '沪深300指数', ['5', '15', '30', '60', 'd'], 'ETF'),)),

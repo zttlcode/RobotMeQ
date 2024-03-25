@@ -14,7 +14,6 @@ import RMQStrategy.Indicator as RMQIndicator
 import RMQData.Asset as RMQAsset
 import RMQData.Bar_HistoryData as RMQBar_HistoryData
 from RMQTool import Tools as RMTTools
-from RMQTool import Message as RMTMessage
 
 
 def run_live(assetList):
@@ -103,8 +102,7 @@ def run_live(assetList):
 
 
 def start_process():
-    processes = [Process(target=RMTMessage.flashfeishutoken),
-                 Process(target=run_live,
+    processes = [Process(target=run_live,
                          args=(RMQAsset.asset_generator('510050', '上证50', ['5', '15', '30', '60', 'd'], 'ETF'),)),
                  Process(target=run_live,
                          args=(RMQAsset.asset_generator('159915', '创业板', ['5', '15', '30', '60', 'd'], 'ETF'),)),

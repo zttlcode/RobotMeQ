@@ -15,7 +15,7 @@ from email.mime.image import MIMEImage
 from RMQTool import Tools as RMTTools
 
 
-def PostDDMessage(message):
+def dd(message):
     """
     钉钉提供自定义群机器人功能
     官方文档：https://open.dingtalk.com/document/group/custom-robot-access
@@ -51,7 +51,7 @@ def PostDDMessage(message):
     return resDic
 
 
-def PostWeiXinEnterprise(message):
+def wechatE(message):
     """
     企业微信提供自定义群机器人功能
     官方文档：https://developer.work.weixin.qq.com/document/path/91770
@@ -70,7 +70,7 @@ def PostWeiXinEnterprise(message):
     return res.ok
 
 
-def Postfeishu(message):
+def feishu(message):
     url = "https://open.feishu.cn/open-apis/bot/v2/hook/3a73551b-c083-4a8f-ba6b-c576a8cccf52"
     payload = json.dumps({
         "content": "{\"text\":\""+message+"\"}",
@@ -79,22 +79,20 @@ def Postfeishu(message):
     })
 
     token = RMTTools.read_config("RMT", "token_feishu")
-    print("read feishu token:", token)
     headers = {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer ' + token
     }
     ResSuccess = True
     try:
-        response = requests.request("POST", url, headers=headers, data=payload)
-        print("post feishu res:", response.text)
+        requests.request("POST", url, headers=headers, data=payload)
     except Exception as e:
         ResSuccess = False
         print(e)
     return ResSuccess
 
 
-def flashfeishutoken():
+def flush_feishu():
     url = "https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal"
     payload = json.dumps({
         "app_id": "cli_a572fd6a58b9100d",
@@ -108,7 +106,6 @@ def flashfeishutoken():
     while True:
         try:
             response = requests.request("POST", url, headers=headers, data=payload)
-            print("flash feishu res:",response.text)
             tenant_access_token = json.loads(response.text).get("tenant_access_token")
             RMTTools.write_config("RMT", "token_feishu", tenant_access_token)
             time.sleep(600)
@@ -116,7 +113,7 @@ def flashfeishutoken():
             print(e)
 
 
-def PostTelegramBot(message):
+def telegram(message):
     """
     我这个代码是2022年12月14号写的，当时不开代理能直接调通
     2022年12月底发生白纸游行，导致telegram被墙了
@@ -149,7 +146,7 @@ def PostTelegramBot(message):
     return res.ok
 
 
-def PostQQmail(msg):
+def QQmail(msg):
     # 发送QQ邮件 python第三方包smtplib可以发送邮件，qq邮件能在微信里查收
     # 配置发件人邮箱
     from_addr = 'zhaot1993@qq.com'
@@ -184,14 +181,6 @@ def PostQQmail(msg):
     return ResSuccess
 
 
-# 发件人、收件人、标题、邮件内容
-# msg = build_msg_text(from_addr, to_addr, title, message)  # 发文字
-
-# filePath = 'E:\\QuantData\\20221013232128.jpg'
-# filename = "20221013232128.jpg"
-# msg = build_msg_file(from_addr, to_addr, title, message, filePath, filename)  # 发文件
-# msg = build_msg_img(from_addr, to_addr, title, message, filePath, filename)   # 发图片
-
 def build_text(strategyResultEntity):
     message = ('日线级别：' + strategyResultEntity.msg_level_day
                + '\n60分钟级别：' + strategyResultEntity.msg_level_60
@@ -202,6 +191,8 @@ def build_text(strategyResultEntity):
 
 
 def build_msg_text(title, strategyResultEntity):
+    # 发件人、收件人、标题、邮件内容
+    # msg = build_msg_text(from_addr, to_addr, title, message)  # 发文字
     message = ('日线级别：' + strategyResultEntity.msg_level_day
                + '\n60分钟级别：' + strategyResultEntity.msg_level_60
                + '\n30分钟级别：' + strategyResultEntity.msg_level_30
@@ -230,6 +221,9 @@ def build_msg_HTML(title, strategyResultEntity):
 
 
 def build_msg_file(from_addr, to_addr, title, message, filePath, filename):
+    # filePath = 'E:\\QuantData\\20221013232128.jpg'
+    # filename = "20221013232128.jpg"
+    # msg = build_msg_file(from_addr, to_addr, title, message, filePath, filename)  # 发文件
     HTMLContent = '<html><head></head><body>' \
                   '<h1>Hello</h1>买点日期'+message+'' \
                   '</body></html>'
@@ -248,6 +242,9 @@ def build_msg_file(from_addr, to_addr, title, message, filePath, filename):
 
 
 def build_msg_img(from_addr, to_addr, title, message, filePath, filename):
+    # filePath = 'E:\\QuantData\\20221013232128.jpg'
+    # filename = "20221013232128.jpg"
+    # msg = build_msg_img(from_addr, to_addr, title, message, filePath, filename)   # 发图片
     # 发图片
     HTMLContent='<html><head></head><body><h1>Hello</h1>买点日期'+message+'' \
                 '<img src="cid:' + filename + '"/></body></html>'
@@ -269,27 +266,3 @@ def build_msg_img(from_addr, to_addr, title, message, filePath, filename):
     msg.attach(imageFile)
     return msg
 
-
-if __name__ == '__main__':
-    message = "test"
-    # DingDingAPPres = PostDDMessage(message)
-    #
-    # if DingDingAPPres['errcode'] == 0:
-    #     print('消息发送成功')
-    # else:
-    #     print('消息发送失败')
-    #
-    # # res = PostTelegramBot(message)
-    # res = PostWeiXinEnterprise(message)
-    # # 判断发送结果
-    # if res == 0:
-    #     print('消息发送成功')
-    # else:
-    #     print('消息发送失败')
-    flashfeishutoken()
-    # res = Postfeishu(message)
-    # # # 判断发送结果
-    # if res:
-    #      print('消息发送成功')
-    # else:
-    #      print('消息发送失败')

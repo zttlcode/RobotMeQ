@@ -34,11 +34,9 @@ class StrategyResultEntity:
             title = "均值回归多级别策略"
             # 组织消息
             mail_msg = Message.build_msg_HTML(title, self)
-            mail_msg2 = Message.build_text(self)
             # 需要异步发送，此函数还没写，暂时先同步发送
-            res = Message.PostQQmail(mail_msg)
-            res2 = Message.Postfeishu(mail_msg2)
-            if res2:
+            res = Message.QQmail(mail_msg)
+            if res:
                 print('发送成功')
             else:
                 print('发送失败')
