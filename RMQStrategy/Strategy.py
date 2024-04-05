@@ -118,11 +118,16 @@ def strategy_basic(positionEntity, inicatorEntity, windowDF, DFLastRow):
 数据准备
     按照各种策略先回测，把回测的数据，买入后还跌的剔除掉，买入后没涨的剔除掉，这样过滤一下，就拿到优质数据了。
     kaggle，证券宝等，用国内数据和数字币
+
+Lstm 只能预测一小节，但我需要月线周线大小级别组合判断，所以混合模型用informer而非lstm 
+策略代码抄完，开启paperwithcode 
 """
 
 
 """
 5，均值回归策略
+
+融资余额加入特征
 
 多个级别买点同时出现
 每个标的5k或10k，等周线新低，且来信号，买入，2%止损（能避免目前所有亏损 16%，一年最大亏3次，才6%，只要有日线为前提的多级别信号嵌套，亏损概率很小）。
@@ -177,7 +182,7 @@ def strategy_t(positionEntity, inicatorEntity, windowDF, DFLastRow, strategy_res
                             # print("当前可能底背离+KDJ金叉，买：", divergeDF.iloc[2]['time'], "~", divergeDF.iloc[0]['time'],
                             #       inicatorEntity.tick_time)
                             post_msg = inicatorEntity.IE_assetsName + "-" + inicatorEntity.IE_assetsCode + "-" + \
-                                       inicatorEntity.IE_timeLevel + "：目前底背离+KDJ金叉，买。 价格：" + \
+                                       inicatorEntity.IE_timeLevel + "：目前底背离+KDJ金叉：" + \
                                        str(round(inicatorEntity.tick_close, 3)) + " 时间：" + \
                                        inicatorEntity.tick_time.strftime('%Y-%m-%d %H:%M:%S')
                             print(post_msg)
@@ -220,7 +225,7 @@ def strategy_t(positionEntity, inicatorEntity, windowDF, DFLastRow, strategy_res
                             # print("当前可能顶背离+KDJ死叉，卖：", divergeDF.iloc[2]['time'], "~", divergeDF.iloc[0]['time'],
                             #       inicatorEntity.tick_time)
                             post_msg = inicatorEntity.IE_assetsName + "-" + inicatorEntity.IE_assetsCode + "-" + \
-                                       inicatorEntity.IE_timeLevel + "：目前顶背离+KDJ死叉，卖。 价格：" + \
+                                       inicatorEntity.IE_timeLevel + "：目前顶背离+KDJ死叉：" + \
                                        str(round(inicatorEntity.tick_close, 3)) + " 时间：" + \
                                        inicatorEntity.tick_time.strftime('%Y-%m-%d %H:%M:%S')
                             print(post_msg)

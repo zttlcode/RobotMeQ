@@ -207,16 +207,16 @@ def build_msg_text(title, strategyResultEntity):
 
 def build_msg_HTML(title, strategyResultEntity):
     HTMLContent = '<html><head></head><body>' \
-                    '<p>日线级别：' + strategyResultEntity.msg_level_day +'</p>' \
-                    '<p>60分钟级别：' + strategyResultEntity.msg_level_60 +'</p>' \
-                    '<p>30分钟级别：' + strategyResultEntity.msg_level_30 +'</p>' \
-                    '<p>15分钟级别：' + strategyResultEntity.msg_level_15 +'</p>' \
-                    '<p>5分钟级别：' + strategyResultEntity.msg_level_5 +'</p>' \
+                    '<p>d：' + strategyResultEntity.msg_level_day +'</p>' \
+                    '<p>60min：' + strategyResultEntity.msg_level_60 +'</p>' \
+                    '<p>30min：' + strategyResultEntity.msg_level_30 +'</p>' \
+                    '<p>15min：' + strategyResultEntity.msg_level_15 +'</p>' \
+                    '<p>5min：' + strategyResultEntity.msg_level_5 +'</p>' \
                     '</body></html>'
     msg = MIMEText(HTMLContent, 'html', 'utf-8')
     msg['Subject'] = title
     msg['From'] = formataddr(('robot', 'zhaot1993@qq.com'))  # 邮件上显示的发件人
-    msg['To'] = formataddr(('VIP', 'anonymous'))  # 邮件上显示的收件人
+    msg['To'] = formataddr(('me', 'anonymous'))  # 邮件上显示的收件人
     return msg
 
 
@@ -225,7 +225,7 @@ def build_msg_file(from_addr, to_addr, title, message, filePath, filename):
     # filename = "20221013232128.jpg"
     # msg = build_msg_file(from_addr, to_addr, title, message, filePath, filename)  # 发文件
     HTMLContent = '<html><head></head><body>' \
-                  '<h1>Hello</h1>买点日期'+message+'' \
+                  '<h1>Hello</h1>日期'+message+'' \
                   '</body></html>'
     msg = MIMEMultipart()  # 传文件要用这个
     body = MIMEText(HTMLContent, 'html', 'utf-8')
