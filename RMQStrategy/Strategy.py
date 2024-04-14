@@ -1,6 +1,7 @@
 import RMQStrategy.Position as RMQPosition
 import RMQStrategy.Indicator as RMQIndicator
 import RMQStrategy.Indicator_analyse as RMQAnalyse
+import RMQStrategy.Strategy_fuzzy as RMQSFuzzy
 from RMQTool import Message
 
 
@@ -75,7 +76,8 @@ def strategy(positionEntity, inicatorEntity, bar_num, strategy_result, IEMultiLe
     # 每个策略需要什么指标，在这里复制一份到自己的策略里用
 
     # strategy_basic(positionEntity, inicatorEntity, windowDF, bar_num-1)  # 比如时间窗口60，最后一条数据下标永远是59
-    strategy_t(positionEntity, inicatorEntity, windowDF, bar_num - 1, strategy_result, IEMultiLevel)
+    # strategy_t(positionEntity, inicatorEntity, windowDF, bar_num - 1, strategy_result, IEMultiLevel)
+    strategy_f(positionEntity, inicatorEntity, windowDF, bar_num, strategy_result, IEMultiLevel)
 
 
 def strategy_basic(positionEntity, inicatorEntity, windowDF, DFLastRow):
@@ -121,6 +123,27 @@ def strategy_basic(positionEntity, inicatorEntity, windowDF, DFLastRow):
 
 Lstm 只能预测一小节，但我需要月线周线大小级别组合判断，所以混合模型用informer而非lstm 
 策略代码抄完，开启paperwithcode 
+
+应该是现有理论觉得可以，然后实验去验证。
+比如觉得这个模型在这个领域有合理性，能提升，就去验证。
+
+
+方向没问题：细分领域够细，市场隐藏规模大，小城市顶级技术人才显着我：减小AI技术与全国小城市小微企业信息差
+
+娱乐至死——想有流量，就要抓住好奇心，而不是好学心
+对应技术：大语言，文生图，换脸文生视频，语音转换音乐。
+（短视频）视频号：AI工具
+（短视频）抖音：AI工具
+1个视频号，1个抖音号
+想学？我教你
+我只管技术，运营给别人
+
+虚拟人主播，加3d投影人
+老电脑装rvc先用着，老服务器继续用吧，电脑先不买
+声音转文字，给chatgpt，响应文本通过RVC转语调输出，deepfake换脸和口型，
+
+
+
 """
 
 
@@ -274,3 +297,63 @@ def double_moving_average_strategy(df, short_window=5, long_window=10):
         pass
     # 返回每日收益率和累计收益率
     return ""
+
+
+def strategy_f(positionEntity, inicatorEntity, windowDF, bar_num, strategy_result, IEMultiLevel):
+    n1, n2, aa = RMQSFuzzy.strategy_fuzzy(positionEntity, inicatorEntity, windowDF, bar_num, strategy_result, IEMultiLevel)
+    mood_prv = aa[1, 0, bar_num-3] - aa[0, 0, bar_num-3]
+    mood = aa[1, 0, bar_num-2] - aa[0, 0, bar_num-2]
+    # 空仓，且大买家占有则下单
+    if 0 == len(positionEntity.currentOrders) and mood_prv < 0 and mood > 0:  # 空仓时买
+        # '%Y-%m-%d %H:%M'  每分钟都提示太频繁，改为分钟
+        tick_time = inicatorEntity.tick_time.strftime('%Y-%m-%d %H')
+        # 满足条件说明还没锁
+        if tick_time != inicatorEntity.last_msg_time_1:
+            # 编辑信息
+            post_msg = inicatorEntity.IE_assetsName + "-" + inicatorEntity.IE_assetsCode + "-" + \
+                       inicatorEntity.IE_timeLevel + "：目前空仓，可买：" + str(round(mood, 3)) + \
+                       str(round(inicatorEntity.tick_close, 3)) + " 时间：" + \
+                       inicatorEntity.tick_time.strftime('%Y-%m-%d %H:%M:%S')
+            print(post_msg)
+            # 记录策略所有买卖点  格式 [["2021-04-26", 47, "buy"], ["2021-06-15", 55.1, "sell"]]
+            trade_point = [tick_time, round(inicatorEntity.tick_close, 3), "buy"]
+            positionEntity.trade_point_list.append(trade_point)
+            # 设置推送消息
+            strategy_result.editMsg(inicatorEntity, post_msg)
+
+            # 更新锁
+            inicatorEntity.last_msg_time_1 = tick_time
+
+            price = inicatorEntity.tick_close
+            volume = int(positionEntity.money / inicatorEntity.tick_close / 100) * 100
+            # 全仓买,1万本金除以股价，算出能买多少股，# 再除以100算出能买多少手，再乘100算出要买多少股
+            RMQPosition.buy(positionEntity, inicatorEntity.tick_time, price, volume)
+
+    # 下单
+    if 0 != len(positionEntity.currentOrders) and mood_prv>0 and mood < 0:  # 如果不为0，说明买过，有仓位，那就可以卖，现在是全仓卖
+        key = list(positionEntity.currentOrders.keys())[0]  # 把当前仓位的第一个卖掉
+        # '%Y-%m-%d %H:%M'  每分钟都提示太频繁，改为分钟
+        tick_time = inicatorEntity.tick_time.strftime('%Y-%m-%d %H')
+        # 满足条件说明还没锁
+        if tick_time != inicatorEntity.last_msg_time_2:
+            # 编辑信息
+            # print("当前可能顶背离+KDJ死叉，卖：", divergeDF.iloc[2]['time'], "~", divergeDF.iloc[0]['time'],
+            #       inicatorEntity.tick_time)
+            post_msg = inicatorEntity.IE_assetsName + "-" + inicatorEntity.IE_assetsCode + "-" + \
+                       inicatorEntity.IE_timeLevel + "：只可能是分钟级别，目前有仓位，可卖：" + str(round(mood, 3)) + \
+                       str(round(inicatorEntity.tick_close, 3)) + " 时间：" + \
+                       inicatorEntity.tick_time.strftime('%Y-%m-%d %H:%M:%S')
+            print(post_msg)
+            # 记录策略所有买卖点  格式 [["2021-04-26", 47, "buy"], ["2021-06-15", 55.1, "sell"]]
+            trade_point = [tick_time, round(inicatorEntity.tick_close, 3), "sell"]
+            positionEntity.trade_point_list.append(trade_point)
+            # 设置推送消息
+            strategy_result.editMsg(inicatorEntity, post_msg)
+
+            # 更新锁
+            inicatorEntity.last_msg_time_2 = tick_time
+
+            price = inicatorEntity.tick_close
+            RMQPosition.sell(positionEntity, inicatorEntity.tick_time, key, price)
+
+
