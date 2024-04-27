@@ -5,7 +5,7 @@ from pyecharts.charts import Kline, Line, Bar, Grid, Tab
 import pandas as pd
 
 from RMQTool import Tools as RMTTools
-import RMQStrategy.Indicator as RMQIndicator
+import RMQData.Indicator as RMQIndicator
 import RMQData.Asset as RMQAsset
 
 

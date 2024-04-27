@@ -1,22 +1,55 @@
-from RMQData.Bar import Bar
+from RMQData.Bar import Bar as RMQBarEntity
+from RMQData.Position import PositionEntity as RMQPositionEntity
+from RMQData.Indicator import IndicatorEntity as RMQIndicatorEntity
 
 
-class Stock(Bar):
+class Asset:
+    def __init__(self, assetsCode, assetsName, timeLevel, isRunMultiLevel, assetsType):
+        # 配置文件
+        self.assetsCode = assetsCode
+        self.assetsName = assetsName
+        self.assetsType = assetsType
+
+        # bar数据实例
+        self.barEntity = RMQBarEntity(assetsCode, timeLevel, isRunMultiLevel)
+        # 指标数据实例
+        self.indicatorEntity = RMQIndicatorEntity(assetsCode, assetsName, self.barEntity.timeLevel)
+        # 订单数据实例
+        self.positionEntity = RMQPositionEntity(self.indicatorEntity)
+
+    def update_indicatorDF_by_tick(self):
+        # 每次tick都在策略中更新指标
+        self.indicatorEntity.tick_high = self.barEntity.HighPrice[0]
+        self.indicatorEntity.tick_low = self.barEntity.LowPrice[0]
+        self.indicatorEntity.tick_close = self.barEntity.ClosePrice[0]
+        self.indicatorEntity.tick_time = self.barEntity.DateTimeList[0]
+        self.indicatorEntity.tick_volume = self.barEntity.Volume[0]
+        # 同时更新bar_dataframe
+        rowNum = len(self.barEntity.bar_DataFrame) - 1
+        # 数据更新到df的最后一行
+        self.barEntity.bar_DataFrame.at[rowNum, 'high'] = self.indicatorEntity.tick_high
+        self.barEntity.bar_DataFrame.at[rowNum, 'low'] = self.indicatorEntity.tick_low
+        self.barEntity.bar_DataFrame.at[rowNum, 'close'] = self.indicatorEntity.tick_close
+        self.barEntity.bar_DataFrame.at[rowNum, 'time'] = self.indicatorEntity.tick_time
+        self.barEntity.bar_DataFrame.at[rowNum, 'volume'] = self.indicatorEntity.tick_volume
+
+
+class Stock(Asset):
     def __init__(self, assetsCode, assetsName, timeLevel, isRunMultiLevel, assetsType):
         super().__init__(assetsCode, assetsName, timeLevel, isRunMultiLevel, assetsType)
 
 
-class Index(Bar):
+class Index(Asset):
     def __init__(self, assetsCode, assetsName, timeLevel, isRunMultiLevel, assetsType):
         super().__init__(assetsCode, assetsName, timeLevel, isRunMultiLevel, assetsType)
 
 
-class ETF(Bar):
+class ETF(Asset):
     def __init__(self, assetsCode, assetsName, timeLevel, isRunMultiLevel, assetsType):
         super().__init__(assetsCode, assetsName, timeLevel, isRunMultiLevel, assetsType)
 
 
-class Crypto(Bar):
+class Crypto(Asset):
     def __init__(self, assetsCode, assetsName, timeLevel, isRunMultiLevel, assetsType):
         super().__init__(assetsCode, assetsName, timeLevel, isRunMultiLevel, assetsType)
         self.back_test_bar_data = None  # 读取所有的回测数据

@@ -7,7 +7,7 @@ import sys
 
 sys.path.append("/home/RobotMeQ")
 import RMQStrategy.Strategy as RMQStrategy
-import RMQStrategy.Indicator as RMQIndicator
+import RMQData.Indicator as RMQIndicator
 import RMQData.Asset as RMQAsset
 
 
@@ -48,7 +48,7 @@ proxy=http://127.0.0.1:33210
 
     """
     strategy_result = RMQStrategy.StrategyResultEntity()  # 收集多级别行情信息，推送消息
-    IEMultiLevel = RMQIndicator.InicatorEntityMultiLevel()  # 多级别的指标要互相交流，所以通过这个公共指标对象交流
+    IEMultiLevel = RMQIndicator.IndicatorEntityMultiLevel()  # 多级别的指标要互相交流，所以通过这个公共指标对象交流
 
     proxies = {
         'http': 'http://127.0.0.1:33210',
@@ -60,13 +60,13 @@ proxy=http://127.0.0.1:33210
         try:
             # 每个级别都计算
             for asset in assetList:
-                if asset.timeLevel == "15":
+                if asset.barEntity.timeLevel == "15":
                     k_interval = "15m"
-                elif asset.timeLevel == "60":
+                elif asset.barEntity.timeLevel == "60":
                     k_interval = "1h"
-                elif asset.timeLevel == "240":
+                elif asset.barEntity.timeLevel == "240":
                     k_interval = "4h"
-                elif asset.timeLevel == "d":
+                elif asset.barEntity.timeLevel == "d":
                     k_interval = "1d"
 
                 # 币安的k线是实时的，省去了tick转bar，直接走策略
@@ -74,22 +74,24 @@ proxy=http://127.0.0.1:33210
                 data = df.iloc[:, 0:6]  # 含头不含尾
                 data.columns = ['time', 'open', 'high', 'low', 'close', 'volume']
 
-                asset.inicatorEntity.bar_DataFrame = data
-                asset.inicatorEntity.tick_close = data.at[299, 'close']
-                asset.inicatorEntity.tick_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-                print(asset.inicatorEntity.tick_close)
-                RMQStrategy.strategy(asset.positionEntity, asset.inicatorEntity, asset.bar_num, strategy_result,
-                                     IEMultiLevel)
+                asset.barEntity.bar_DataFrame = data
+                asset.indicatorEntity.tick_close = data.at[299, 'close']
+                asset.indicatorEntity.tick_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                print(asset.indicatorEntity.tick_close)
+                RMQStrategy.strategy(asset, strategy_result, IEMultiLevel)
         except Exception as e:
             print("Error happens", datetime.now().strftime('%Y-%m-%d %H:%M:%S'), e)
             sleep(3)  # 因为continue之后不走下面，所以再调一次
             continue
-        sleep(3)
+        sleep(100)
 
 
 def start_process():
     processes = [Process(target=run_live_crypto,
-                         args=(RMQAsset.asset_generator('BTCUSDT', 'BTC', ['15', '60', '240', 'd'], 'crypto'),))
+                         args=(RMQAsset.asset_generator('BTCUSDT',
+                                                        'BTC',
+                                                        ['15', '60', '240', 'd'],
+                                                        'crypto'),))
                  ]
 
     for p in processes:

@@ -3,8 +3,6 @@ import time
 import matplotlib.pyplot as plt
 import numpy as np
 from decimal import Decimal
-import RMQStrategy.Position as RMQPosition
-import RMQStrategy.Indicator as RMQIndicator
 from RMQTool import Tools as RMTTools
 import pandas as pd
 
@@ -114,7 +112,7 @@ def simulatePrice():
     return p
 
 
-# positionEntity, inicatorEntity, windowDF, DFLastRow, strategy_result, IEMultiLeve
+# positionEntity, indicatorEntity, windowDF, DFLastRow, strategy_result, IEMultiLeve
 def strategy_fuzzy_raw(p):
     n = 600
     c = 0.01
@@ -171,7 +169,7 @@ def strategy_fuzzy_raw(p):
     return n1, n2, aa
 
 
-def strategy_fuzzy(positionEntity, inicatorEntity, windowDF, bar_num, strategy_result, IEMultiLevel):
+def strategy_fuzzy(windowDF, bar_num):
     # 1、计算自己需要的指标
     # windowDF = RMQIndicator.calMA(windowDF)
     p = windowDF['close'].tolist()
@@ -291,9 +289,9 @@ def detach_coefficient_figure(p, n, n1, n2, aa):
             avmdn[k - n1 - 4] = avmood[k - n1 - 4]
             avmdp[k - n1 - 4] = 0
         # 现在 avmood, avmdp, 和 avmdn 数组包含了转换后的结果
-    avmood[243:] = avmood[243]
-    avmdp[243:] = avmdp[243]
-    avmdn[243:] = avmdn[243]
+    avmood[n2-6:] = avmood[n2-6]
+    avmdp[n2-6:] = avmdp[n2-6]
+    avmdn[n2-6:] = avmdn[n2-6]
     # 初始化交易数组
     ho = 0
     nb = 0  # 买入次数
@@ -332,7 +330,7 @@ def detach_coefficient_figure(p, n, n1, n2, aa):
     bsp = 100 * (p_sel - p_buy) / p_buy
 
     # 打印交易详情长度  每次交易收益率
-    #print(len(bsp), bsp)
+    print(len(bsp), bsp)
 
     # 绘制价格和交易信号
     plt.figure(figsize=(12, 8))
@@ -361,7 +359,7 @@ def detach_coefficient_figure(p, n, n1, n2, aa):
     plt.title('5-day moving average of mood(t) = a7(t) - a6(t); positive=buy mood, negative=sell mood')
 
     # 显示图形
-    #plt.show()
+    plt.show()
 
 
 if __name__ == '__main__':
@@ -385,22 +383,31 @@ if __name__ == '__main__':
         # 使用函数查找含有字符'd'的文件，并将文件名列表打印出来
 
 
-    directory_path = RMTTools.read_config("RMQData", "live_bar")  # 替换为你的目录路径
-    char_to_find = 'live'
-    filtered_files = find_files_with_char(directory_path, char_to_find)
-    for filePath in filtered_files:
-        # filePath = RMTTools.read_config("RMQData", "live_bar") + 'live_bar_159611_d.csv'
-        windowDF = pd.read_csv(filePath, encoding='gbk')
-        bar_num = len(windowDF)
-        # 回测
-        n1, n2, aa = strategy_fuzzy(None, None, windowDF, bar_num, None, None)
-        # n1 和 n2 是循环的起始和结束索引
-        p = windowDF['close'].values
-        mood_prv = aa[1, 0, bar_num - 3] - aa[0, 0, bar_num - 3]
-        mood = aa[1, 0, bar_num - 2] - aa[0, 0, bar_num - 2]
-        if aa[1, 0, bar_num-3] - aa[0, 0, bar_num-3] <0 and aa[1, 0, bar_num-2] - aa[0, 0, bar_num-2]>0\
-                and aa[1, 0, bar_num-2] - aa[0, 0, bar_num-2] > aa[1, 0, bar_num-3] - aa[0, 0, bar_num-3]:
-            print(filePath,aa[1, 0, bar_num-3] - aa[0, 0, bar_num-3], aa[1, 0, bar_num-2] - aa[0, 0, bar_num-2])
-            detach_coefficient_figure(p, bar_num, n1, n2, aa)  # 图表展示回测结果
-            time.sleep(10)
+    # directory_path = RMTTools.read_config("RMQData", "live_bar")  # 替换为你的目录路径
+    # char_to_find = 'live'
+    # filtered_files = find_files_with_char(directory_path, char_to_find)
+    # for filePath in filtered_files:
+    #     # filePath = RMTTools.read_config("RMQData", "live_bar") + 'live_bar_159611_d.csv'
+    #     windowDF = pd.read_csv(filePath, encoding='gbk')
+    #     bar_num = len(windowDF)
+    #     # 回测
+    #     n1, n2, aa = strategy_fuzzy(None, None, windowDF, bar_num, None, None)
+    #     # n1 和 n2 是循环的起始和结束索引
+    #     p = windowDF['close'].values
+    #     mood_prv = aa[1, 0, bar_num - 3] - aa[0, 0, bar_num - 3]
+    #     mood = aa[1, 0, bar_num - 2] - aa[0, 0, bar_num - 2]
+    #     if aa[1, 0, bar_num-3] - aa[0, 0, bar_num-3] <0 and aa[1, 0, bar_num-2] - aa[0, 0, bar_num-2]>0\
+    #             and aa[1, 0, bar_num-2] - aa[0, 0, bar_num-2] > aa[1, 0, bar_num-3] - aa[0, 0, bar_num-3]:
+    #         print(filePath,aa[1, 0, bar_num-3] - aa[0, 0, bar_num-3], aa[1, 0, bar_num-2] - aa[0, 0, bar_num-2])
+    #         detach_coefficient_figure(p, bar_num, n1, n2, aa)  # 图表展示回测结果
+    #         time.sleep(10)
+    #
+    filePath = RMTTools.read_config("RMQData", "backtest_bar") + 'backtest_bar_000001_d.csv'
+    windowDF = pd.read_csv(filePath, encoding='gbk')
+    bar_num = len(windowDF)
+    # 回测
+    n1, n2, aa = strategy_fuzzy(windowDF, bar_num)
+    # n1 和 n2 是循环的起始和结束索引
+    p = windowDF['close'].values
+    detach_coefficient_figure(p, bar_num, n1, n2, aa)  # 图表展示回测结果
 

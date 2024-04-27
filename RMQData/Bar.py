@@ -1,8 +1,6 @@
 from datetime import timedelta
 import pandas as pd
 import numpy as np
-from RMQStrategy.Position import PositionEntity as RMQPositionEntity
-from RMQStrategy.Indicator import InicatorEntity as RMQInicatorEntity
 from RMQTool import Tools as RMTTools
 
 """
@@ -18,16 +16,28 @@ bar数据转为模拟的实时数据要改时间，模拟的实时数据又要�
 
 
 class Bar:
-    def __init__(self, assetsCode, assetsName, timeLevel, isRunMultiLevel, assetsType):
+    def __init__(self, assetsCode, timeLevel, isRunMultiLevel):
         # 配置文件
-        self.assetsCode = assetsCode
-        self.assetsName = assetsName
         self.timeLevel = timeLevel
-        self.backtest_bar = RMTTools.read_config("RMQData", "backtest_bar")+"backtest_bar_" + assetsCode + "_" + timeLevel + ".csv"  # 几年的bar数据做回测
-        self.backtest_tick = RMTTools.read_config("RMQData", "backtest_tick")+"backtest_tick_" + assetsCode + "_" + timeLevel + ".csv"  # bar数据转为tick
-        self.live_bar = RMTTools.read_config("RMQData", "live_bar")+"live_bar_" + assetsCode + "_" + timeLevel + ".csv"  # 实盘bar历史数据，截取250个
         self.bar_num = 250  # 够多少个bar才计算指标，也是计算指标的时间窗口大小  60时，耗时15毫秒，250时，耗时30毫秒
-        self.assetsType = assetsType
+        self.backtest_bar = (RMTTools.read_config("RMQData", "backtest_bar")
+                             + "backtest_bar_"
+                             + assetsCode
+                             + "_"
+                             + timeLevel
+                             + ".csv")  # 几年的bar数据做回测
+        self.backtest_tick = (RMTTools.read_config("RMQData", "backtest_tick")
+                              + "backtest_tick_"
+                              + assetsCode
+                              + "_"
+                              + timeLevel
+                              + ".csv")  # bar数据转为tick
+        self.live_bar = (RMTTools.read_config("RMQData", "live_bar")
+                         + "live_bar_"
+                         + assetsCode
+                         + "_"
+                         + timeLevel
+                         + ".csv")  # 实盘bar历史数据，截取250个
 
         # tick数据
         self.Tick = ()  # 时间+价格+成交量
@@ -39,14 +49,7 @@ class Bar:
         self.LowPrice = []  # 最低价
         self.ClosePrice = []  # 收bar价
         self.Volume = []  # 成交量
-
-        # 订单数据实例
-        self.positionEntity = RMQPositionEntity()
-        # 指标数据实例
-        self.inicatorEntity = RMQInicatorEntity()
-        self.inicatorEntity.IE_assetsCode = self.assetsCode  # 复制给指标，策略里用
-        self.inicatorEntity.IE_assetsName = self.assetsName  # 复制给指标，策略里用
-        self.inicatorEntity.IE_timeLevel = self.timeLevel  # 复制给指标，策略里用
+        self.bar_DataFrame = None  # 每个tick都会更新bar的dataframe
 
         # 控制变量
         self._init = False  # 用于控制要不要执行策略
@@ -67,7 +70,7 @@ class Bar:
             if self.isLiveRunning:
                 self.live_bar_manage()
             # 4、更新指标
-            self.update_indicatorDF_by_bar()
+            self.update_bar_DataFrame()
         else:
             # 2、tick不满足新增条件，继续维护当前bar
             self.bar_handle("old")
@@ -257,7 +260,7 @@ class Bar:
         # 3、进了此函数，说明第一个bar已经生成，今日新bar的计数器+1，以后可以存前一个bar了
         self.live_count += 1
 
-    def update_indicatorDF_by_bar(self):
+    def update_bar_DataFrame(self):
         # 创建新bar时，相应的指标都要更新
         if len(self.OpenPrice) >= self.bar_num:
             # 判断bar够了
@@ -267,32 +270,17 @@ class Bar:
                 comb_bar_list = {'time': self.DateTimeList[::-1], 'open': self.OpenPrice[::-1],
                                  'high': self.HighPrice[::-1], 'low': self.LowPrice[::-1],
                                  'close': self.ClosePrice[::-1], 'volume': self.Volume[::-1]}
-                self.inicatorEntity.bar_DataFrame = pd.DataFrame(comb_bar_list)
+                self.bar_DataFrame = pd.DataFrame(comb_bar_list)
 
             # 只拼接
             # 之前都是根据tick 更新 bar_DataFrame第一行，现在当前bar结束了，bar_DataFrame要新增一行
             if len(self.OpenPrice) > self.bar_num:
-                new_comb_row = {'time': [self.DateTimeList[0]], 'open': [self.OpenPrice[0]], 'high': [self.HighPrice[0]],
-                              'low': [self.LowPrice[0]], 'close': [self.ClosePrice[0]], 'volume': [self.Volume[0]]}
+                new_comb_row = {'time': [self.DateTimeList[0]], 'open': [self.OpenPrice[0]],
+                                'high': [self.HighPrice[0]],
+                                'low': [self.LowPrice[0]], 'close': [self.ClosePrice[0]], 'volume': [self.Volume[0]]}
                 temp_new_comb_row = pd.DataFrame(new_comb_row)
                 # 新增的行排在最后
-                self.inicatorEntity.bar_DataFrame = pd.concat([self.inicatorEntity.bar_DataFrame, temp_new_comb_row], ignore_index=True)
+                self.bar_DataFrame = pd.concat([self.bar_DataFrame, temp_new_comb_row],
+                                               ignore_index=True)
             # 指标数据就位，以后可以走策略了
             self._init = True
-
-    def update_indicatorDF_by_tick(self):
-        # 每次tick都在策略中更新指标
-        self.inicatorEntity.tick_high = self.HighPrice[0]
-        self.inicatorEntity.tick_low = self.LowPrice[0]
-        self.inicatorEntity.tick_close = self.ClosePrice[0]
-        self.inicatorEntity.tick_time = self.DateTimeList[0]
-        self.inicatorEntity.tick_volume = self.Volume[0]
-        # 同时更新bar_dataframe
-        rownum = len(self.inicatorEntity.bar_DataFrame) - 1
-        # 数据更新到df的最后一行
-        self.inicatorEntity.bar_DataFrame.at[rownum, 'high'] = self.inicatorEntity.tick_high
-        self.inicatorEntity.bar_DataFrame.at[rownum, 'low'] = self.inicatorEntity.tick_low
-        self.inicatorEntity.bar_DataFrame.at[rownum, 'close'] = self.inicatorEntity.tick_close
-        self.inicatorEntity.bar_DataFrame.at[rownum, 'time'] = self.inicatorEntity.tick_time
-        self.inicatorEntity.bar_DataFrame.at[rownum, 'volume'] = self.inicatorEntity.tick_volume
-

@@ -1,18 +1,17 @@
 import requests
 import pandas as pd
 import numpy as np
+import json
 from time import sleep
 from datetime import datetime, time
 import RMQData.Tick as RMQTick
 import RMQStrategy.Strategy as RMQStrategy
-import RMQStrategy.Indicator as RMQIndicator
+import RMQData.Indicator as RMQIndicator
 import RMQData.Asset as RMQAsset
 import RMQVisualized.Draw_Matplotlib as RMQDrawPlot
-import RMQData.Bar_HistoryData as RMQBar_HistoryData
+import RMQData.HistoryData as RMQBar_HistoryData
 from RMQTool import Tools as RMTTools
 from multiprocessing import Process
-
-from RMQTool import Message as RMTMessage
 
 
 # import sys
@@ -25,83 +24,97 @@ from RMQTool import Message as RMTMessage
 def run_back_test(assetList):
     strategy_result = RMQStrategy.StrategyResultEntity()  # 收集多级别行情信息，推送消息
     strategy_result.live = False
-    IEMultiLevel = RMQIndicator.InicatorEntityMultiLevel()  # 多级别的指标要互相交流，所以通过这个公共指标对象交流
+    IEMultiLevel = RMQIndicator.IndicatorEntityMultiLevel()  # 多级别的指标要互相交流，所以通过这个公共指标对象交流
 
     # 日线数据用5分钟的太慢，所以先加载回测开始日的，前250天日线数据，让日线指标更新上，方便其他级别使用日线指标
     # 2023 2 3 改进：除了5分钟级别，其他级别都先加载好250bar
     if len(assetList) > 1:
         # 如果是单级别，不走此函数；
         for asset in assetList:
-            if asset.timeLevel == '5':  # 5分钟的跳过，其他级别都要加载250个bar
+            if asset.barEntity.timeLevel == '5':  # 5分钟的跳过，其他级别都要加载250个bar
                 continue
             preTicks = []
             # 因为timeLevelList是从小到大放的，所以-1是最大级别
-            preTicks = RMQTick.trans_bar_to_ticks(asset.assetsCode, asset.timeLevel, asset.backtest_bar, preTicks)
+            preTicks = RMQTick.trans_bar_to_ticks(asset.assetsCode,
+                                                  asset.barEntity.timeLevel,
+                                                  asset.barEntity.backtest_bar,
+                                                  preTicks)
             for preTick in preTicks:
-                asset.Tick = preTick
-                asset.bar_generator()  # 此时不用更新live的csv文件
-                if asset._init:  # 指标数据已生成，可以执行策略了
+                asset.barEntity.Tick = preTick
+                asset.barEntity.bar_generator()  # 此时不用更新live的csv文件
+                if asset.barEntity._init:  # 指标数据已生成，可以执行策略了
                     asset.update_indicatorDF_by_tick()
 
     # 1、回测bar数据转为tick
     # 因为timeLevelList是从小到大放的，所以0是最小级别
-    ticks = RMQTick.get_ticks_for_backtesting(assetList[0].assetsCode, assetList[0].backtest_tick,
-                                              assetList[0].backtest_bar, assetList[0].timeLevel)
+    ticks = RMQTick.get_ticks_for_backtesting(assetList[0].assetsCode,
+                                              assetList[0].barEntity.backtest_tick,
+                                              assetList[0].barEntity.backtest_bar,
+                                              assetList[0].barEntity.timeLevel)
     # 2、回测数据在此函数内疯狂循环
     for tick in ticks:
         # 每个级别都用tick
         for asset in assetList:
-            asset.Tick = tick
-            asset.bar_generator()  # 创建并维护bar，生成指标数据
-            if asset._init:  # 指标数据已生成，可以执行策略了
+            asset.barEntity.Tick = tick
+            asset.barEntity.bar_generator()  # 创建并维护bar，生成指标数据
+            if asset.barEntity._init:  # 指标数据已生成，可以执行策略了
                 asset.update_indicatorDF_by_tick()  # 必须在此更新，不然就要把5个值作为参数传递，不好看
-                RMQStrategy.strategy(asset.positionEntity, asset.inicatorEntity, asset.bar_num, strategy_result,
+                RMQStrategy.strategy(asset,
+                                     strategy_result,
                                      IEMultiLevel)  # 整个系统最耗时的在这里，15毫秒
 
     # 返回结果
     for asset in assetList:
         backtest_result = asset.positionEntity.historyOrders
-        print(asset.inicatorEntity.IE_assetsCode + "_" + asset.inicatorEntity.IE_timeLevel, backtest_result)
+        print(asset.indicatorEntity.IE_assetsCode + "_" + asset.indicatorEntity.IE_timeLevel, backtest_result)
         # 计算每单收益
-        RMQDrawPlot.draw_candle_orders(asset.backtest_bar, backtest_result, False)
+        RMQDrawPlot.draw_candle_orders(asset.barEntity.backtest_bar, backtest_result, False)
 
         # 保存买卖点信息
         if asset.positionEntity.trade_point_list:  # 不为空，则保存
             df_tpl = pd.DataFrame(asset.positionEntity.trade_point_list)
-            df_tpl.to_csv(RMTTools.read_config("RMQData", "trade_point_backtest") + "trade_point_list_" +
-                          asset.inicatorEntity.IE_assetsCode + "_" +
-                          asset.inicatorEntity.IE_timeLevel + ".csv", index=False)
+            df_tpl.to_csv(RMTTools.read_config("RMQData", "trade_point_backtest")
+                          + "trade_point_list_"
+                          + asset.indicatorEntity.IE_assetsCode
+                          + "_"
+                          + asset.indicatorEntity.IE_timeLevel
+                          + ".csv", index=False)
 
 
 def run_live(assetList):
     strategy_result = RMQStrategy.StrategyResultEntity()  # 收集多级别行情信息，推送消息
-    IEMultiLevel = RMQIndicator.InicatorEntityMultiLevel()  # 多级别的指标要互相交流，所以通过这个公共指标对象交流
+    IEMultiLevel = RMQIndicator.IndicatorEntityMultiLevel()  # 多级别的指标要互相交流，所以通过这个公共指标对象交流
 
     for asset in assetList:
         # 1、加载实盘历史live_bar数据转为tick
         ticks = []
         # 因为timeLevelList是从小到大放的，所以0是最小级别
-        ticks = RMQTick.trans_bar_to_ticks(asset.assetsCode, asset.timeLevel, asset.live_bar, ticks)
+        ticks = RMQTick.trans_bar_to_ticks(asset.assetsCode,
+                                           asset.barEntity.timeLevel,
+                                           asset.barEntity.live_bar,
+                                           ticks)
         for tick in ticks:
-            asset.Tick = tick
-            asset.bar_generator()  # 此时不用更新live的csv文件
-            if asset._init:  # 指标数据已生成，可以执行策略了
+            asset.barEntity.Tick = tick
+            asset.barEntity.bar_generator()  # 此时不用更新live的csv文件
+            if asset.barEntity._init:  # 指标数据已生成，可以执行策略了
                 asset.update_indicatorDF_by_tick()  # 必须在此更新，不然就要把5个值作为参数传递，不好看
 
     # 2、准备工作完成，在这里等开盘
     # 闭市期间，程序关闭，所以下午是个新bar.(不关闭的话，中午的一小时里数据没用，但bar已生成，还得再清理，更麻烦)
-    while datetime.now().time() < time(9, 30) or time(11, 31) < datetime.now().time() < time(13) or time(15, 1) \
-            <= datetime.now().time():
+    while (datetime.now().time() < time(9, 30)
+           or time(11, 31) < datetime.now().time() < time(13)
+           or time(15, 1) <= datetime.now().time()):
         sleep(1)
 
     # 3、实盘开启，此参数只控制bar生成的部分操作
     for asset in assetList:
-        asset.isLiveRunning = True
+        asset.barEntity.isLiveRunning = True
 
     # 获取request连接池，用连接池去请求，省资源
     req = requests.sessions.Session()
 
-    while time(9, 30) < datetime.now().time() < time(11, 34) or time(13) < datetime.now().time() < time(15, 4):
+    while (time(9, 30) < datetime.now().time() < time(11, 34)
+           or time(13) < datetime.now().time() < time(15, 4)):
         # 11:29:57程序直接停了，估计是判断11:30:00直接结束，但我需要它进到11：30，才能保存最后一个bar，所以改成31分
         try:
             # 我本地不会出错，只有这个地方可能报请求超时，所以加个try
@@ -112,18 +125,23 @@ def run_live(assetList):
             continue
 
         for asset in assetList:
-            asset.Tick = resTick
-            asset.bar_generator()  # 更新live的文件
+            asset.barEntity.Tick = resTick
+            asset.barEntity.bar_generator()  # 更新live的文件
 
-        if time(11, 30) < resTick[0].time() < time(11, 34) or time(15) <= resTick[0].time() < time(15, 4):
+        if (time(11, 30) < resTick[0].time() < time(11, 34)
+                or time(15) <= resTick[0].time() < time(15, 4)):
             # 到收盘时间，最后一个bar已写入csv，此时new了新bar，已经没用了，就不影响后续，只等程序结束自动销毁
             print("收盘时间到，程序停止", datetime.now().time(), resTick[0].time())
             # 每天下午收盘后，整理当日bar数据
             if time(15) <= resTick[0].time():
                 # 1、更新日线bar数据
                 resTickForDay = RMQTick.getTickForDay(req, assetList[-1].assetsCode, assetList[-1].assetsType)
-                data_list = [resTickForDay[0].strftime('%Y-%m-%d'), resTickForDay[1], resTickForDay[2],
-                             resTickForDay[3], resTickForDay[4], resTickForDay[5]]
+                data_list = [resTickForDay[0].strftime('%Y-%m-%d'),
+                             resTickForDay[1],
+                             resTickForDay[2],
+                             resTickForDay[3],
+                             resTickForDay[4],
+                             resTickForDay[5]]
                 # print("日线bar已更新：", data_list)
                 # 输入的list为长度6的list（6行rows），而DataFrame需要的是6列(columns)的list。
                 # 因此，需要将test_list改为（1*6）的list就可以了。
@@ -131,19 +149,20 @@ def run_live(assetList):
                 result = pd.DataFrame(data_list, columns=['time', 'open', 'high', 'low', 'close', 'volume'])
                 result.loc[:, 'time'] = pd.to_datetime(result.loc[:, 'time'])
                 # 输出到csv文件
-                result.to_csv(assetList[-1].live_bar, index=False, mode='a', header=False)
+                result.to_csv(assetList[-1].barEntity.live_bar, index=False, mode='a', header=False)
 
                 # 2、把实盘数据截为250，这样大小永远固定
                 for asset in assetList:
-                    bar_data = pd.read_csv(asset.live_bar)
-                    windowDF = RMQBar_HistoryData.cut_by_bar_num(bar_data, asset.bar_num)
-                    windowDF.to_csv(asset.live_bar, index=0)
+                    bar_data = pd.read_csv(asset.barEntity.live_bar)
+                    windowDF = RMQBar_HistoryData.cut_by_bar_num(bar_data, asset.barEntity.bar_num)
+                    windowDF.to_csv(asset.barEntity.live_bar, index=0)
             break
         else:
             for asset in assetList:
-                if asset._init:  # 指标数据已生成，可以执行策略了
+                if asset.barEntity._init:  # 指标数据已生成，可以执行策略了
                     asset.update_indicatorDF_by_tick()  # 必须在此更新，不然就要把5个值作为参数传递，不好看
-                    RMQStrategy.strategy(asset.positionEntity, asset.inicatorEntity, asset.bar_num, strategy_result,
+                    RMQStrategy.strategy(asset,
+                                         strategy_result,
                                          IEMultiLevel)
         sleep(3)  # 3秒调一次
 
@@ -156,8 +175,8 @@ def run_live(assetList):
         if asset.positionEntity.trade_point_list:  # 不为空，则保存
             df_tpl = pd.DataFrame(asset.positionEntity.trade_point_list)
             df_tpl.to_csv(RMTTools.read_config("RMQData", "trade_point_live") + "trade_point_list_" +
-                          asset.inicatorEntity.IE_assetsCode + "_" +
-                          asset.inicatorEntity.IE_timeLevel + ".csv", index=False, mode='a', header=False)
+                          asset.indicatorEntity.IE_assetsCode + "_" +
+                          asset.indicatorEntity.IE_timeLevel + ".csv", index=False, mode='a', header=False)
 
 
 def start_process():
@@ -232,10 +251,13 @@ if __name__ == '__main__':
     # assetsType ： stock index ETF 甚至 crypto
 
     # run_back_test(RMQAsset.asset_generator('601012', '', ['5', '15', '30', '60', 'd'], 'stock'))
-    # run_back_test(RMQAsset.asset_generator('000001', '', ['5', '15', '30', '60', 'd'], 'index'))
+    run_back_test(RMQAsset.asset_generator('000001',
+                                           '',
+                                           ['5', '15', '30', '60', 'd'],
+                                           'index'))
 
     # run_live(RMQAsset.asset_generator('399006', '', ['5', 'd'], 'index'))
-    run_live(RMQAsset.asset_generator('000001', '', ['5', '15', '30', '60', 'd'], 'index'))
+    # run_live(RMQAsset.asset_generator('000001', '', ['5', '15', '30', '60', 'd'], 'index'))
 
 
     """

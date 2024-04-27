@@ -146,7 +146,7 @@ def telegram(message):
     return res.ok
 
 
-def QQmail(msg):
+def QQmail(msg, mail_list_qq):
     # 发送QQ邮件 python第三方包smtplib可以发送邮件，qq邮件能在微信里查收
     # 配置发件人邮箱
     from_addr = 'zhaot1993@qq.com'
@@ -154,7 +154,7 @@ def QQmail(msg):
     MyPass = 'iabukotxvteujcha'
     # 配置收件人邮箱列表  sendmail的to_addrs是地址列表，可添加多个地址
     # 在配置文件里 逗号分隔 zhaot1993@qq.com,287151402@qq.com  末尾不加逗号
-    to_addr = RMTTools.read_config("RMT", "mail_list_qq").split(",")
+    to_addr = RMTTools.read_config("RMT", mail_list_qq).split(",")
 
     ResSuccess = True
 

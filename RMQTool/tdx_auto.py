@@ -24,7 +24,7 @@ pip install pillow
 有些同学用于操作模拟器游戏，发现鼠标移动进去无法单击双击，尝试用管理员模式运行脚本
 """
 import RMQData.Asset as RMQAsset
-import RMQData.Bar_HistoryData as RMQBar_HistoryData
+import RMQData.HistoryData as RMQBar_HistoryData
 from RMQTool import Tools as RMTTools
 
 import os

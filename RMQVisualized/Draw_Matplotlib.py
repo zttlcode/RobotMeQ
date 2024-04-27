@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 import pandas as pd
-import RMQStrategy.Indicator as RMQIndicator
+import RMQData.Indicator as RMQIndicator
 from matplotlib.ticker import MultipleLocator
 from mplfinance.original_flavor import candlestick2_ochl
 from matplotlib.dates import date2num

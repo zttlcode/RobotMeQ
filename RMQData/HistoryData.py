@@ -25,7 +25,7 @@ def getData_BaoStock(asset, start_date, end_date, bar_type):
     # 详细指标参数，参见“历史行情指标参数”章节；“分钟线”参数与“日线”参数不同。“分钟线”不包含指数。
     # 分钟线指标：date,time,code,open,high,low,close,volume,amount,adjustflag
     # 日周月线指标：date,code,open,high,low,close,volume,amount,adjustflag,turn,pctChg
-    if asset.timeLevel == 'd':
+    if asset.barEntity.timeLevel == 'd':
         # 日线数据，股票和指数接口一样
         rs = bs.query_history_k_data_plus(code,
                                           "date,open,high,low,close,volume",
@@ -47,7 +47,7 @@ def getData_BaoStock(asset, start_date, end_date, bar_type):
         rs = bs.query_history_k_data_plus(code,
                                           "date,time,open,high,low,close,volume",
                                           start_date=start_date, end_date=end_date,
-                                          frequency=asset.timeLevel, adjustflag="2")
+                                          frequency=asset.barEntity.timeLevel, adjustflag="2")
 
     print('query_history_k_data_plus respond error_code:' + rs.error_code)
     print('query_history_k_data_plus respond  error_msg:' + rs.error_msg)
@@ -59,7 +59,7 @@ def getData_BaoStock(asset, start_date, end_date, bar_type):
     result = pd.DataFrame(data_list, columns=rs.fields)
 
     if 0 != len(data_list):
-        if 'd' == asset.timeLevel:
+        if 'd' == asset.barEntity.timeLevel:
             result.loc[:, 'date'] = pd.to_datetime(result.loc[:, 'date'])
             result.rename(columns={'date': 'time'}, inplace=True)  # 为了和分钟级bar保持一致，修改列名为time
         else:
@@ -69,11 +69,11 @@ def getData_BaoStock(asset, start_date, end_date, bar_type):
             result = result.loc[:, ['time', 'open', 'high', 'low', 'close', 'volume']]
     # 结果集输出到csv文件
     if 'backtest_bar' == bar_type:
-        result.to_csv(asset.backtest_bar, index=False)
+        result.to_csv(asset.barEntity.backtest_bar, index=False)
     elif 'live_bar' == bar_type:
         # 实盘不管什么级别，只要最近的250bar就行
-        windowDF = cut_by_bar_num(result, asset.bar_num)
-        windowDF.to_csv(asset.live_bar, index=False)
+        windowDF = cut_by_bar_num(result, asset.barEntity.bar_num)
+        windowDF.to_csv(asset.barEntity.live_bar, index=False)
     print(result)
     # 登出系统
     bs.logout()
@@ -88,7 +88,11 @@ def handle_TDX_data(asset):
     3、点选项，数据导出，导出为xls  （只能选这个格式）
     4、把xls另存为xlsx
     """
-    filePath = RMTTools.read_config("RMQData", "tdx") + asset.assetsCode + '_' + asset.timeLevel + '.xlsx'
+    filePath = (RMTTools.read_config("RMQData", "tdx")
+                + asset.assetsCode
+                + '_'
+                + asset.barEntity.timeLevel
+                + '.xlsx')
     DataFrame = pd.read_excel(filePath)
     data = DataFrame.iloc[3:-1, 0:6]  # 含头不含尾，截取第3行到倒数第二行，第0列到第5列
     data.columns = ['time', 'open', 'high', 'low', 'close', 'volume']
@@ -105,7 +109,7 @@ def handle_TDX_data(asset):
     # etf和指数分钟数据，够实盘用就行，回测用股票方便
     # 如果是回测数据：不用截断，写入到backtest_bar
     windowDF = cut_by_bar_num(data, 250)
-    windowDF.to_csv(asset.live_bar, columns=['open', 'high', 'low', 'close', 'volume'])
+    windowDF.to_csv(asset.barEntity.live_bar, columns=['open', 'high', 'low', 'close', 'volume'])
 
 
 def cut_by_bar_num(df, bar_num):
