@@ -332,7 +332,7 @@ def detach_coefficient_figure(p, n, n1, n2, aa):
     bsp = 100 * (p_sel - p_buy) / p_buy
 
     # 打印交易详情长度  每次交易收益率
-    # print(len(bsp), bsp)
+    #print(len(bsp), bsp)
 
     # 绘制价格和交易信号
     plt.figure(figsize=(12, 8))
@@ -361,7 +361,7 @@ def detach_coefficient_figure(p, n, n1, n2, aa):
     plt.title('5-day moving average of mood(t) = a7(t) - a6(t); positive=buy mood, negative=sell mood')
 
     # 显示图形
-    plt.show()
+    #plt.show()
 
 
 if __name__ == '__main__':
@@ -386,7 +386,7 @@ if __name__ == '__main__':
 
 
     directory_path = RMTTools.read_config("RMQData", "live_bar")  # 替换为你的目录路径
-    char_to_find = 'd'
+    char_to_find = 'live'
     filtered_files = find_files_with_char(directory_path, char_to_find)
     for filePath in filtered_files:
         # filePath = RMTTools.read_config("RMQData", "live_bar") + 'live_bar_159611_d.csv'
@@ -398,9 +398,9 @@ if __name__ == '__main__':
         p = windowDF['close'].values
         mood_prv = aa[1, 0, bar_num - 3] - aa[0, 0, bar_num - 3]
         mood = aa[1, 0, bar_num - 2] - aa[0, 0, bar_num - 2]
-
         if aa[1, 0, bar_num-3] - aa[0, 0, bar_num-3] <0 and aa[1, 0, bar_num-2] - aa[0, 0, bar_num-2]>0\
                 and aa[1, 0, bar_num-2] - aa[0, 0, bar_num-2] > aa[1, 0, bar_num-3] - aa[0, 0, bar_num-3]:
             print(filePath,aa[1, 0, bar_num-3] - aa[0, 0, bar_num-3], aa[1, 0, bar_num-2] - aa[0, 0, bar_num-2])
             detach_coefficient_figure(p, bar_num, n1, n2, aa)  # 图表展示回测结果
-            time.sleep(20)
+            time.sleep(10)
+

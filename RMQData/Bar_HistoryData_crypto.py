@@ -136,6 +136,6 @@ if __name__ == '__main__':
         每个级别都试，15m、1h、4h、day 再30m 2h、8h、  再5m、6h
         输入时间范围，级别；算出总共多少秒，算出有多少个对应的级别，换算成时间段，最后能自动拼接好数据
     """
-    start_date = datetime.datetime(2020, 4, 20)
-    end_date = datetime.datetime(2023, 6, 23)
+    start_date = datetime.datetime(2012, 4, 16)
+    end_date = datetime.datetime(2024, 4, 16)
     get_history_crypto(start_date, end_date)

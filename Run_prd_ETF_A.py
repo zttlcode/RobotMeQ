@@ -223,12 +223,15 @@ if __name__ == '__main__':
     docker cp /root/RobotMeQ/requirements.txt 26dbf8178821:/home/RobotMeQ/requirements.txt
     docker cp /root/RobotMeQ/QuantData/live 26dbf8178821:/home/RobotMeQ/QuantData/live2
     docker cp 26dbf8178821:/home/RobotMeQ/QuantData/live /root/RobotMeQ/QuantData/live
+    docker cp 26dbf8178821:/home/RobotMeQ/QuantData/trade_point_live /root/RobotMeQ/QuantData/trade_point_live
     
     2024 04 06 腾讯云  
     docker start 5c239d668666
     docker exec -it 5c239d668666 /bin/bash
     docker cp /root/RobotMeQ/RMQStrategy/Strategy.py 5c239d668666:/home/RobotMeQ/RMQStrategy/Strategy.py
     docker cp /root/RobotMeQ/QuantData/live 5c239d668666:/home/RobotMeQ/QuantData/live
+    docker cp /root/RobotMeQ/QuantData/live 5c239d668666:/home/RobotMeQ/QuantData/live
+    docker cp 5c239d668666:/home/RobotMeQ/QuantData/trade_point_live /root/RobotMeQ/QuantData/trade_point_live
 
     
 --创建新项目    

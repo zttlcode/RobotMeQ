@@ -75,100 +75,11 @@ def strategy(positionEntity, inicatorEntity, bar_num, strategy_result, IEMultiLe
     # 2、策略主方法，再此更换策略
     # 每个策略需要什么指标，在这里复制一份到自己的策略里用
 
-    # strategy_basic(positionEntity, inicatorEntity, windowDF, bar_num-1)  # 比如时间窗口60，最后一条数据下标永远是59
-    # strategy_t(positionEntity, inicatorEntity, windowDF, bar_num - 1, strategy_result, IEMultiLevel)
+    # strategy_t(positionEntity, inicatorEntity, windowDF, bar_num - 1, strategy_result, IEMultiLevel)  #
+    # 比如时间窗口60，最后一条数据下标永远是59
     strategy_f(positionEntity, inicatorEntity, windowDF, bar_num, strategy_result, IEMultiLevel)
 
 
-def strategy_basic(positionEntity, inicatorEntity, windowDF, DFLastRow):
-    # 1、计算自己需要的指标
-    windowDF = RMQIndicator.calMA(windowDF)
-
-    # 2、执行策略
-    if 0 == len(positionEntity.currentOrders):  # 空仓时买
-        if inicatorEntity.tick_close < 0.99 * windowDF.iloc[DFLastRow]['MA_10']:  # 最新价格跟平均价格比较
-            price = inicatorEntity.tick_close + 0.01  # 价格自己定，为防止买不进来，多挂点价格
-            '''
-            系数 = posiotionManage() # 写个仓位管理方法
-            volume = self.money * 系数（0.几或 百分之几）
-            '''
-            volume = int(positionEntity.money / inicatorEntity.tick_close / 100) * 100
-            # 全仓买,1万本金除以股价，算出能买多少股，# 再除以100算出能买多少手，再乘100算出要买多少股
-            RMQPosition.buy(positionEntity, inicatorEntity.tick_time, price, volume)  # 价格低于均价超过5%，买
-
-    elif 0 != len(positionEntity.currentOrders):  # 如果不为0，说明买过，有仓位，那就可以卖，现在是全仓卖
-        # 或者价格高于均价5%，可以卖——如果之前有仓位的话
-        if inicatorEntity.tick_close > windowDF.iloc[DFLastRow]['MA_10'] * 1.01:
-            # 把当前仓位的第一个卖掉
-            key = list(positionEntity.currentOrders.keys())[0]
-            # 加入T+1限制，判断当天买的，那就不能卖
-            if inicatorEntity.tick_time.date() != positionEntity.currentOrders[key]['openDateTime'].date():
-                price = inicatorEntity.tick_close + 0.01  # 价格自己定，为防止卖不出去，多挂点价格
-                RMQPosition.sell(positionEntity, inicatorEntity.tick_time, key, price)
-
-
-"""
-"""
-"""
-量化：1、东方财富币安展示赚钱 2、付费实盘信号。别做其他无用功白费力气
-
-论文方向：
-只看顶刊最新23，24
-混合模型、趋势预测 为主
-辅助以资产组合优化、风控（仓位管理），情绪值直接调用交易所数据比如恐慌指数
-再加异常检测
-数据准备
-    按照各种策略先回测，把回测的数据，买入后还跌的剔除掉，买入后没涨的剔除掉，这样过滤一下，就拿到优质数据了。
-    kaggle，证券宝等，用国内数据和数字币
-
-Lstm 只能预测一小节，但我需要月线周线大小级别组合判断，所以混合模型用informer而非lstm 
-策略代码抄完，开启paperwithcode 
-
-应该是现有理论觉得可以，然后实验去验证。
-比如觉得这个模型在这个领域有合理性，能提升，就去验证。
-
-
-方向没问题：细分领域够细，市场隐藏规模大，小城市顶级技术人才显着我：减小AI技术与全国小城市小微企业信息差
-
-娱乐至死——想有流量，就要抓住好奇心，而不是好学心
-对应技术：大语言，文生图，换脸文生视频，语音转换音乐。
-（短视频）视频号：AI工具
-（短视频）抖音：AI工具
-1个视频号，1个抖音号
-想学？我教你
-我只管技术，运营给别人
-
-虚拟人主播，加3d投影人
-老电脑装rvc先用着，老服务器继续用吧，电脑先不买
-声音转文字，给chatgpt，响应文本通过RVC转语调输出，deepfake换脸和口型，
-
-
-
-"""
-
-
-"""
-5，均值回归策略
-
-融资余额加入特征
-
-多个级别买点同时出现
-每个标的5k或10k，等周线新低，且来信号，买入，2%止损（能避免目前所有亏损 16%，一年最大亏3次，才6%，只要有日线为前提的多级别信号嵌套，亏损概率很小）。
-或不按数值，趋势没形成就止损，判断依据就是当前级别结束时，看叉到底形成没有，如果没有，就发止损信号。
-那其实就是判断，底背离买入后，是否真的红柱出现，出现那没问题
-如果没有出现，反而绿柱继续扩大，说明是假信号，要止损。 这个再看吧
-后面再出信号，再买，因为此时大级别信号还在失效期内
-后面没有信号，不买，这就避免了被套
-顶背离止盈（光伏这次） 或 最高位回撤2%止盈（农业那次）。
-不硬抗，亏的少
-占用资金周期短，资金量大。
-保守的信号出现后大资金买入，第二天再次确认信号，没涨就直接清仓。这样虽然可能错过，但风险绝对低，只要赚一次就够了。一年总会有几次机会。
-多等，少动，理智。
-长线可能踏空，但我活的久，没有被套风险
-盈利取决于反转或反弹高度
-
-如果开通融券，就加个反向做空，先把代码加上
-"""
 def strategy_t(positionEntity, inicatorEntity, windowDF, DFLastRow, strategy_result, IEMultiLevel):
     # 1、计算自己需要的指标
     divergeDF = RMQAnalyse.calMACD_area(windowDF)  # df第0条是当前区域，第1条是过去的区域
@@ -274,31 +185,6 @@ def strategy_t(positionEntity, inicatorEntity, windowDF, DFLastRow, strategy_res
         print("区域面积为0，小概率情况，忽略")
 
 
-# 狂人五日线也属于双均线策略
-"""
-4，趋势策略
-看看光伏，背离还是不如均线趋势，下跌趋势风险太大，抄底不如等反转确认，虽然会少赚几个点，但能少亏几十个点。
-要不要加入均线辅助判断趋势
-要不就只做趋势，不抄底，只找底部刚起来的。涨了很久趋势一旦反转就退出
-"""
-def double_moving_average_strategy(df, short_window=5, long_window=10):
-    # 计算收盘价的移动平均线
-    close_ma_short = df['close'].rolling(window=short_window).mean()
-    close_ma_long = df['close'].rolling(window=long_window).mean()
-
-    # 根据移动平均线交叉的情况进行买入和卖出
-    try:
-        for i in range(1, len(df)):
-            if close_ma_short[i] > close_ma_long[i] and close_ma_short[i-1] <= close_ma_long[i-1]:
-                print("买")
-            elif close_ma_short[i] < close_ma_long[i] and close_ma_short[i-1] >= close_ma_long[i-1]:
-                print("卖")
-    except Exception as e:  # 有几天是没有5日均线的，所以用except处理异常
-        pass
-    # 返回每日收益率和累计收益率
-    return ""
-
-
 def strategy_f(positionEntity, inicatorEntity, windowDF, bar_num, strategy_result, IEMultiLevel):
     n1, n2, aa = RMQSFuzzy.strategy_fuzzy(positionEntity, inicatorEntity, windowDF, bar_num, strategy_result, IEMultiLevel)
     mood_prv = aa[1, 0, bar_num-3] - aa[0, 0, bar_num-3]
@@ -311,7 +197,7 @@ def strategy_f(positionEntity, inicatorEntity, windowDF, bar_num, strategy_resul
         if tick_time != inicatorEntity.last_msg_time_1:
             # 编辑信息
             post_msg = inicatorEntity.IE_assetsName + "-" + inicatorEntity.IE_assetsCode + "-" + \
-                       inicatorEntity.IE_timeLevel + "：目前空仓，可买：" + str(round(mood, 3)) + \
+                       inicatorEntity.IE_timeLevel + "：买：" + str(round(mood, 3))+","+ \
                        str(round(inicatorEntity.tick_close, 3)) + " 时间：" + \
                        inicatorEntity.tick_time.strftime('%Y-%m-%d %H:%M:%S')
             print(post_msg)
@@ -319,7 +205,7 @@ def strategy_f(positionEntity, inicatorEntity, windowDF, bar_num, strategy_resul
             trade_point = [tick_time, round(inicatorEntity.tick_close, 3), "buy"]
             positionEntity.trade_point_list.append(trade_point)
             # 设置推送消息
-            strategy_result.editMsg(inicatorEntity, post_msg)
+            # strategy_result.editMsg(inicatorEntity, post_msg)
 
             # 更新锁
             inicatorEntity.last_msg_time_1 = tick_time
@@ -340,7 +226,7 @@ def strategy_f(positionEntity, inicatorEntity, windowDF, bar_num, strategy_resul
             # print("当前可能顶背离+KDJ死叉，卖：", divergeDF.iloc[2]['time'], "~", divergeDF.iloc[0]['time'],
             #       inicatorEntity.tick_time)
             post_msg = inicatorEntity.IE_assetsName + "-" + inicatorEntity.IE_assetsCode + "-" + \
-                       inicatorEntity.IE_timeLevel + "：只可能是分钟级别，目前有仓位，可卖：" + str(round(mood, 3)) + \
+                       inicatorEntity.IE_timeLevel + "：卖：" + str(round(mood, 3))+","+ \
                        str(round(inicatorEntity.tick_close, 3)) + " 时间：" + \
                        inicatorEntity.tick_time.strftime('%Y-%m-%d %H:%M:%S')
             print(post_msg)
@@ -348,12 +234,11 @@ def strategy_f(positionEntity, inicatorEntity, windowDF, bar_num, strategy_resul
             trade_point = [tick_time, round(inicatorEntity.tick_close, 3), "sell"]
             positionEntity.trade_point_list.append(trade_point)
             # 设置推送消息
-            strategy_result.editMsg(inicatorEntity, post_msg)
+            # strategy_result.editMsg(inicatorEntity, post_msg)
 
             # 更新锁
             inicatorEntity.last_msg_time_2 = tick_time
 
             price = inicatorEntity.tick_close
             RMQPosition.sell(positionEntity, inicatorEntity.tick_time, key, price)
-
 

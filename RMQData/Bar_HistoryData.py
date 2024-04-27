@@ -3,6 +3,7 @@ import pandas as pd
 from RMQTool import Tools as RMTTools
 import RMQData.Asset as RMQAsset
 
+
 def getData_BaoStock(asset, start_date, end_date, bar_type):
     # 股票所有数据都能拿到，指数只有日线
     code = None
@@ -125,10 +126,10 @@ if __name__ == '__main__':
     ['5', '15', '30', '60', 'd']
     backtest_bar  live_bar
     """
-    assetList = RMQAsset.asset_generator('002714', '', ['d'], 'stock')
+    assetList = RMQAsset.asset_generator('600438', '', ['5'], 'stock')
     for asset in assetList:
         # 接口取数据只能股票，回测方便
-        getData_BaoStock(asset, '2021-11-01', '2022-12-31', 'backtest_bar')
+        getData_BaoStock(asset, '2014-04-17', '2024-04-16', 'backtest_bar')
         # 日线要拿前250天的数据，单独加载，不然太慢
         # getData_BaoStock(asset, '2020-10-01', '2021-11-01', 'backtest_bar')
 
