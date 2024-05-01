@@ -208,11 +208,12 @@ def build_msg_text(title, strategyResultEntity):
 def build_msg_HTML(title, strategyResultEntity):
     HTMLContent = '<html><head></head><body>' \
                     '<p>d：' + strategyResultEntity.msg_level_day +'</p>' \
-                    '<p>60min：' + strategyResultEntity.msg_level_60 +'</p>' \
-                    '<p>30min：' + strategyResultEntity.msg_level_30 +'</p>' \
-                    '<p>15min：' + strategyResultEntity.msg_level_15 +'</p>' \
-                    '<p>5min：' + strategyResultEntity.msg_level_5 +'</p>' \
+                    '<p>60：' + strategyResultEntity.msg_level_60 +'</p>' \
+                    '<p>30：' + strategyResultEntity.msg_level_30 +'</p>' \
+                    '<p>15：' + strategyResultEntity.msg_level_15 +'</p>' \
+                    '<p>5：' + strategyResultEntity.msg_level_5 +'</p>' \
                     '</body></html>'
+    print(HTMLContent)
     msg = MIMEText(HTMLContent, 'html', 'utf-8')
     msg['Subject'] = title
     msg['From'] = formataddr(('robot', 'zhaot1993@qq.com'))  # 邮件上显示的发件人

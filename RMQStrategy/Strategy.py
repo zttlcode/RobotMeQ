@@ -15,30 +15,55 @@ class StrategyResultEntity:
         self.msg_level_day = "无"
 
     # 组合多级别策略结果，拼接发送交易建议
-    def send_msg(self, strategyName, indicatorEntity, post_msg):
-        if self.live:
-            # 编辑标题
-            title = strategyName + "策略"
-            # 组织消息
-            mail_msg = Message.build_msg_HTML(title, self)
+    def send_msg(self, strategyName, indicatorEntity, IEMultiLevel, msg):
+        # 编辑标题
+        title = strategyName
+        # 组织消息
+        mail_list_qq = "mail_list_qq_d"
+        # 设置邮箱地址
+        if indicatorEntity.IE_timeLevel == "5":
+            mail_list_qq = "mail_list_qq_5"
+        elif indicatorEntity.IE_timeLevel == "15":
+            mail_list_qq = "mail_list_qq_15"
+        elif indicatorEntity.IE_timeLevel == "30":
+            mail_list_qq = "mail_list_qq_30"
+        elif indicatorEntity.IE_timeLevel == "60":
+            mail_list_qq = "mail_list_qq_60"
+        elif indicatorEntity.IE_timeLevel == "d":
             mail_list_qq = "mail_list_qq_d"
-            # 设置消息
+
+        # 设置消息
+        if msg is not None:  # 是保守策略 或 ride mood策略
+            post_msg = (indicatorEntity.IE_assetsName
+                        + "-"
+                        + indicatorEntity.IE_assetsCode
+                        + "-"
+                        + indicatorEntity.IE_timeLevel
+                        + "：" + msg + "："
+                        + str(round(indicatorEntity.tick_close, 3))
+                        + " 时间："
+                        + indicatorEntity.tick_time.strftime('%Y-%m-%d %H:%M:%S'))
+
             if indicatorEntity.IE_timeLevel == "5":
                 self.msg_level_5 = post_msg
-                mail_list_qq = "mail_list_qq_5"
             elif indicatorEntity.IE_timeLevel == "15":
                 self.msg_level_15 = post_msg
-                mail_list_qq = "mail_list_qq_15"
             elif indicatorEntity.IE_timeLevel == "30":
                 self.msg_level_30 = post_msg
-                mail_list_qq = "mail_list_qq_30"
             elif indicatorEntity.IE_timeLevel == "60":
                 self.msg_level_60 = post_msg
-                mail_list_qq = "mail_list_qq_60"
             elif indicatorEntity.IE_timeLevel == "d":
                 self.msg_level_day = post_msg
-                mail_list_qq = "mail_list_qq_d"
 
+        else:  # 是多级别激进策略
+            self.msg_level_5 = "" if IEMultiLevel.level_5_diverge is None else IEMultiLevel.level_5_diverge
+            self.msg_level_15 = "" if IEMultiLevel.level_15_diverge is None else IEMultiLevel.level_15_diverge
+            self.msg_level_30 = "" if IEMultiLevel.level_30_diverge is None else IEMultiLevel.level_30_diverge
+            self.msg_level_60 = "" if IEMultiLevel.level_60_diverge is None else IEMultiLevel.level_60_diverge
+            self.msg_level_day = "" if IEMultiLevel.level_day_diverge is None else IEMultiLevel.level_day_diverge
+
+        mail_msg = Message.build_msg_HTML(title, self)
+        if self.live:
             # 需要异步发送，此函数还没写，暂时先同步发送
             res = Message.QQmail(mail_msg, mail_list_qq)
             if res:
@@ -87,226 +112,293 @@ def strategy(asset, strategy_result, IEMultiLevel):
     # 耗时样例：end 0:00:00.015624 1449  耗时不随规模增长，一直保持在15毫秒，时间复杂度为O（1）
     # print("end", datetime.now()-start, len(barEntity.bar_DataFrame), len(windowDF))
     # 每个tick都要重新算，特别耗时  时间窗口对性能提升很大 用windowDF，不要用上面的 indicatorEntity.bar_DataFrame
+    # -----------------------------------------------------------------------------------------------
 
-    # 2、策略主方法，再此更换策略
-    # 每个策略需要什么指标，在这里复制一份到自己的策略里用
+    # 保守派背离策略  每个级别各玩各的，互不打扰  2024-4月~2026-4月 运行在阿里云服务器
+    # strategy_tea_conservative(positionEntity,
+    #                           indicatorEntity,
+    #                           windowDF_calIndic,
+    #                           barEntity.bar_num - 2,  # 比如时间窗口60，最后一条数据下标永远是59
+    #                           strategy_result,
+    #                           IEMultiLevel)
 
-    # 比如时间窗口60，最后一条数据下标永远是59
-    # 策略1
-    strategy_tea(positionEntity,
-                 indicatorEntity,
-                 windowDF_calIndic,
-                 windowDF,
-                 barEntity.bar_num - 2,
-                 strategy_result,
-                 IEMultiLevel)
+    # 激进派背离策略，
+    strategy_tea_radical(positionEntity,
+                         indicatorEntity,
+                         windowDF_calIndic,
+                         barEntity.bar_num - 2,  # 比如时间窗口60，最后一条数据下标永远是59
+                         strategy_result,
+                         IEMultiLevel)
 
-    # 策略2
+    # ride-mood策略，增强版趋势跟随策略，反指率高达90%，经常小亏，偶尔大赚
     # strategy_fuzzy(positionEntity,
     #                indicatorEntity,
     #                windowDF_calIndic,
-    #                windowDF,
-    #                barEntity.bar_num - 1,
+    #                barEntity.bar_num - 1,  # 减了个实时价格，250变249，所以这里长度也跟着变成249
     #                strategy_result)
 
 
-def strategy_tea(positionEntity, indicatorEntity, windowDF_calIndic, windowDF, DFLastRow, strategy_result, IEMultiLevel):
-    # 1、计算自己需要的指标
-    divergeDF = RMQIndicator.calMACD_area(windowDF_calIndic)  # df第0条是当前区域，第1条是过去的区域
-    # 2、更新多级别指标对象
-    if indicatorEntity.IE_timeLevel == 'd':
-        # 目前只用到day级别，所以加这个判断和下面 kdj判断不等于d，都是为了减少计算量，提升系统速度
-        windowDF_calIndic = RMQIndicator.calKDJ(windowDF_calIndic)  # 计算KDJ
-        IEMultiLevel.updateIndicatorEntityMultiLevel(indicatorEntity, windowDF_calIndic, DFLastRow)  # 更新多级别指标对象
-    # 3、执行策略
+def strategy_tea_conservative(positionEntity,
+                              indicatorEntity,
+                              windowDF_calIndic,
+                              DFLastRow,
+                              strategy_result,
+                              IEMultiLevel):
+    if 0 != len(positionEntity.currentOrders):  # 满仓，判断止损
+        RMQPosition.stopLoss(positionEntity, indicatorEntity, strategy_result)
 
-    # print(divergeDF)
-    # 底背离判断
-    if divergeDF.iloc[2]['area'] < 0:
-        # macd绿柱面积过去 > 现在  因为是负数，所以要更小
-        if (divergeDF.iloc[2]['area'] < divergeDF.iloc[0]['area']
-                and divergeDF.iloc[2]['price'] > divergeDF.iloc[0]['price']):  # 过去最低价 > 现在最低价
-            # KDJ判断
-            if indicatorEntity.IE_timeLevel != 'd':
+    """
+    这个逻辑跟bar_generator那个类似，但这个粒度细，没有特殊注意点,
+    如果每个级别各按自己的时间级别来锁，那就又要写那个很长的if条件，因为a股有半点有整点，上午下午不一样，麻烦
+    """
+    current_min = int(indicatorEntity.tick_time.strftime('%M'))
+    if current_min % 5 == 0:  # 判断时间被5整除，如果是，说明bar刚更新，计算指标，否则不算指标；'%Y-%m-%d %H:%M'
+        if current_min != indicatorEntity.last_cal_time:  # 说明bar刚更新，计算一次指标
+            indicatorEntity.last_cal_time = current_min  # 更新锁
+
+            # 1、计算自己需要的指标
+            divergeDF = RMQIndicator.calMACD_area(windowDF_calIndic)  # df第0条是当前区域，第1条是过去的区域
+            # 2、更新多级别指标对象
+            if indicatorEntity.IE_timeLevel == 'd':
+                # 目前只用到day级别，所以加这个判断和下面 kdj判断不等于d，都是为了减少计算量，提升系统速度
                 windowDF_calIndic = RMQIndicator.calKDJ(windowDF_calIndic)  # 计算KDJ
-            # 当前K上穿D，金叉
-            # df最后一条数据就是最新的，又因为时间窗口固定，最后一条下标是DFLastRow
-            if (windowDF_calIndic.iloc[DFLastRow]['K'] > windowDF_calIndic.iloc[DFLastRow]['D']
-                    and windowDF_calIndic.iloc[DFLastRow - 1]['K'] < windowDF_calIndic.iloc[DFLastRow - 1]['D']):
-                # KDJ在超卖区
-                if windowDF_calIndic.iloc[DFLastRow]['K'] < 20 and windowDF_calIndic.iloc[DFLastRow]['D'] < 20:
-                    # 日线指标已更新，对比后再决定买卖
-                    if IEMultiLevel.level_day_K is not None and IEMultiLevel.level_day_K < 20:  # 日线KDJ的K小于20再买
-                        # 下单
-                        if 0 == len(positionEntity.currentOrders):  # 空仓时买
-                            # 把tick时间转为字符串，下面要用
-                            # '%Y-%m-%d %H:%M'  每分钟都提示太频繁，改为小时，现在有仓位控制了，这个锁无所谓了
-                            tick_time = indicatorEntity.tick_time.strftime('%Y-%m-%d %H')
-                            # 满足条件说明还没锁
-                            if tick_time != indicatorEntity.last_msg_time_1:
-                                # 编辑信息
-                                post_msg = (indicatorEntity.IE_assetsName
-                                            + "-"
-                                            + indicatorEntity.IE_assetsCode
-                                            + "-"
-                                            + indicatorEntity.IE_timeLevel
-                                            + "：目前底背离+KDJ金叉："
-                                            + str(round(indicatorEntity.tick_close, 3))
-                                            + " 时间："
-                                            + indicatorEntity.tick_time.strftime('%Y-%m-%d %H:%M:%S'))
-                                print(post_msg)
-                                # 记录策略所有买卖点  格式 [["2021-04-26", 47, "buy"], ["2021-06-15", 55.1, "sell"]]
-                                trade_point = [tick_time, round(indicatorEntity.tick_close, 3), "buy"]
-                                positionEntity.trade_point_list.append(trade_point)
-                                # 设置推送消息
-                                strategy_result.send_msg("tea", indicatorEntity, post_msg)
-                                # 更新锁
-                                indicatorEntity.last_msg_time_1 = tick_time
+                IEMultiLevel.updateDayK(windowDF_calIndic, DFLastRow)  # 更新多级别指标对象
+            # 3、执行策略
 
-                                # price = indicatorEntity.tick_close + 0.01  # 价格自己定，为防止买不进来，多挂点价格
-                                price = indicatorEntity.tick_close
-                                volume = int(positionEntity.money / price / 100) * 100
-                                # 全仓买,1万本金除以股价，算出能买多少股，# 再除以100算出能买多少手，再乘100算出要买多少股
-                                RMQPosition.buy(positionEntity,
-                                                indicatorEntity,
-                                                price,
-                                                volume)  # 价格低于均价超过5%，买
-    # 顶背离判断
-    elif divergeDF.iloc[2]['area'] > 0:
-        if (divergeDF.iloc[2]['area'] > divergeDF.iloc[0]['area']
-                and divergeDF.iloc[2]['price'] < divergeDF.iloc[0]['price']):
-            # KDJ判断
-            if indicatorEntity.IE_timeLevel != 'd':
+            # 空仓
+            if 0 == len(positionEntity.currentOrders):
+                # 底背离判断
+                if divergeDF.iloc[2]['area'] < 0:
+                    # macd绿柱面积过去 > 现在  因为是负数，所以要更小
+                    if (divergeDF.iloc[2]['area'] < divergeDF.iloc[0]['area']
+                            and divergeDF.iloc[2]['price'] > divergeDF.iloc[0]['price']):  # 过去最低价 > 现在最低价
+                        # KDJ判断
+                        if indicatorEntity.IE_timeLevel != 'd':
+                            windowDF_calIndic = RMQIndicator.calKDJ(windowDF_calIndic)  # 计算KDJ
+                        # 当前K上穿D，金叉
+                        # df最后一条数据就是最新的，又因为时间窗口固定，最后一条下标是DFLastRow
+                        if (windowDF_calIndic.iloc[DFLastRow]['K']
+                                > windowDF_calIndic.iloc[DFLastRow]['D']
+                                and
+                                windowDF_calIndic.iloc[DFLastRow - 1]['K']
+                                < windowDF_calIndic.iloc[DFLastRow - 1]['D']):
+                            # KDJ在超卖区
+                            if (windowDF_calIndic.iloc[DFLastRow]['K'] < 20
+                                    and
+                                    windowDF_calIndic.iloc[DFLastRow]['D'] < 20):
+                                # 日线指标已更新，对比后再决定买卖
+                                if (IEMultiLevel.level_day_K is not None
+                                        and
+                                        IEMultiLevel.level_day_K < 20):  # 日线KDJ的K小于20再买
+                                    # 记录策略所有买卖点  格式 [["2021-04-26", 47, "buy"], ["2021-06-15", 55.1, "sell"]]
+                                    trade_point = [indicatorEntity.tick_time.strftime('%Y-%m-%d %H'),
+                                                   round(indicatorEntity.tick_close, 3),
+                                                   "buy"]
+                                    positionEntity.trade_point_list.append(trade_point)
+                                    # 推送消息
+                                    strategy_result.send_msg("tea_conservative", indicatorEntity, None,
+                                                             "目前底背离+KDJ金叉")
+
+                                    # price = indicatorEntity.tick_close + 0.01  # 价格自己定，为防止买不进来，多挂点价格
+                                    price = indicatorEntity.tick_close
+                                    volume = int(positionEntity.money / price / 100) * 100
+                                    # 全仓买,1万本金除以股价，算出能买多少股，# 再除以100算出能买多少手，再乘100算出要买多少股
+                                    RMQPosition.buy(positionEntity,
+                                                    indicatorEntity,
+                                                    price,
+                                                    volume)  # 价格低于均价超过5%，买
+            # 满仓
+            if 0 != len(positionEntity.currentOrders):
+                # 顶背离判断
+                if divergeDF.iloc[2]['area'] > 0:
+                    if (divergeDF.iloc[2]['area'] > divergeDF.iloc[0]['area']
+                            and
+                            divergeDF.iloc[2]['price'] < divergeDF.iloc[0]['price']):
+                        # KDJ判断
+                        if indicatorEntity.IE_timeLevel != 'd':
+                            windowDF_calIndic = RMQIndicator.calKDJ(windowDF_calIndic)  # 计算KDJ
+                        # 当前K下穿D，死叉
+                        if (windowDF_calIndic.iloc[DFLastRow]['K']
+                                < windowDF_calIndic.iloc[DFLastRow]['D']
+                                and
+                                windowDF_calIndic.iloc[DFLastRow - 1]['K']
+                                > windowDF_calIndic.iloc[DFLastRow - 1]['D']):
+                            # KDJ在超买区
+                            if (windowDF_calIndic.iloc[DFLastRow]['K'] > 80
+                                    and
+                                    windowDF_calIndic.iloc[DFLastRow]['D'] > 80):
+                                # 日线指标已更新，对比后再决定买卖
+                                if (IEMultiLevel.level_day_K is not None
+                                        and IEMultiLevel.level_day_K > 50):  # 日线KDJ的K大于50再卖
+                                    # 记录策略所有买卖点  格式 [["2021-04-26", 47, "buy"], ["2021-06-15", 55.1, "sell"]]
+                                    trade_point = [indicatorEntity.tick_time.strftime('%Y-%m-%d %H'),
+                                                   round(indicatorEntity.tick_close, 3),
+                                                   "sell"]
+                                    positionEntity.trade_point_list.append(trade_point)
+                                    # 设置推送消息
+                                    strategy_result.send_msg("tea_conservative", indicatorEntity, None,
+                                                             "目前顶背离+KDJ死叉")
+
+                                    # # 加入T+1限制，判断当天买的，那就不能卖   2024 04 27 A股几乎不可能日内指标反转
+                                    # if (indicatorEntity.tick_time.date()
+                                    #         != positionEntity.currentOrders[key]['openDateTime'].date()):
+                                    #     price = indicatorEntity.tick_close + 0.01  # 价格自己定，为防止卖不出去，多挂点价格
+                                    #     RMQPosition.sell(positionEntity,
+                                    #                      indicatorEntity.tick_time.strftime('%Y-%m-%d'),
+                                    #                      key,
+                                    #                      price)
+                                    RMQPosition.sell(positionEntity, indicatorEntity)
+
+
+def strategy_tea_radical(positionEntity,
+                         indicatorEntity,
+                         windowDF_calIndic,
+                         DFLastRow,
+                         strategy_result,
+                         IEMultiLevel):
+    current_min = int(indicatorEntity.tick_time.strftime('%M'))
+    if current_min % 5 == 0:  # 判断时间被5整除，如果是，说明bar刚更新，计算指标，否则不算指标；'%Y-%m-%d %H:%M'
+        if current_min != indicatorEntity.last_cal_time:  # 说明bar刚更新，计算一次指标
+            indicatorEntity.last_cal_time = current_min  # 更新锁
+
+            # 1、计算自己需要的指标
+            divergeDF = RMQIndicator.calMACD_area(windowDF_calIndic)  # df第0条是当前区域，第1条是过去的区域
+            # 2、更新多级别指标对象
+            if indicatorEntity.IE_timeLevel == 'd':
+                # 目前只用到day级别，所以加这个判断和下面 kdj判断不等于d，都是为了减少计算量，提升系统速度
                 windowDF_calIndic = RMQIndicator.calKDJ(windowDF_calIndic)  # 计算KDJ
-            # 当前K下穿D，死叉
-            if (windowDF_calIndic.iloc[DFLastRow]['K'] < windowDF_calIndic.iloc[DFLastRow]['D']
-                    and windowDF_calIndic.iloc[DFLastRow - 1]['K'] > windowDF_calIndic.iloc[DFLastRow - 1]['D']):
-                # KDJ在超买区
-                if windowDF_calIndic.iloc[DFLastRow]['K'] > 80 and windowDF_calIndic.iloc[DFLastRow]['D'] > 80:
-                    # 日线指标已更新，对比后再决定买卖
-                    if IEMultiLevel.level_day_K is not None and IEMultiLevel.level_day_K > 50:  # 日线KDJ的K大于50再卖
-                        # 下单
-                        if 0 != len(positionEntity.currentOrders):  # 如果不为0，说明买过，有仓位，那就可以卖，现在是全仓卖
-                            # 把tick时间转为字符串，下面要用
-                            # '%Y-%m-%d %H:%M'  每分钟都提示太频繁，改为小时，现在有仓位控制了，这个锁无所谓了
-                            tick_time = indicatorEntity.tick_time.strftime('%Y-%m-%d %H')
-                            # 满足条件说明还没锁
-                            if tick_time != indicatorEntity.last_msg_time_2:
-                                # 编辑信息
-                                post_msg = (indicatorEntity.IE_assetsName
-                                            + "-"
-                                            + indicatorEntity.IE_assetsCode
-                                            + "-"
-                                            + indicatorEntity.IE_timeLevel
-                                            + "：目前顶背离+KDJ死叉："
-                                            + str(round(indicatorEntity.tick_close, 3))
-                                            + " 时间："
-                                            + indicatorEntity.tick_time.strftime('%Y-%m-%d %H:%M:%S'))
-                                print(post_msg)
-                                # 记录策略所有买卖点  格式 [["2021-04-26", 47, "buy"], ["2021-06-15", 55.1, "sell"]]
-                                trade_point = [tick_time, round(indicatorEntity.tick_close, 3), "sell"]
-                                positionEntity.trade_point_list.append(trade_point)
-                                # 设置推送消息
-                                strategy_result.send_msg("tea", indicatorEntity, post_msg)
-                                # 更新锁
-                                indicatorEntity.last_msg_time_2 = tick_time
+                IEMultiLevel.updateDayK(windowDF_calIndic, DFLastRow)  # 更新多级别指标对象
+            # 3、执行策略
+            if divergeDF.iloc[2]['area'] < 0:  # 底背离判断
+                # macd绿柱面积过去 > 现在  因为是负数，所以要更小
+                if (divergeDF.iloc[2]['area']
+                        < divergeDF.iloc[0]['area']
+                        and
+                        divergeDF.iloc[2]['price']
+                        > divergeDF.iloc[0]['price']):  # 过去最低价 > 现在最低价
+                    # KDJ判断
+                    if indicatorEntity.IE_timeLevel != 'd':
+                        windowDF_calIndic = RMQIndicator.calKDJ(windowDF_calIndic)  # 计算KDJ
+                    # 当前K上穿D，金叉
+                    # df最后一条数据就是最新的，又因为时间窗口固定，最后一条下标是DFLastRow
+                    if (windowDF_calIndic.iloc[DFLastRow]['K']
+                            > windowDF_calIndic.iloc[DFLastRow]['D']
+                            and
+                            windowDF_calIndic.iloc[DFLastRow - 1]['K']
+                            < windowDF_calIndic.iloc[DFLastRow - 1]['D']):
+                        # KDJ在超卖区
+                        if (windowDF_calIndic.iloc[DFLastRow]['K'] < 35  # 20
+                                and windowDF_calIndic.iloc[DFLastRow]['D'] < 35):  # 20
+                            tempK = 35  # 20
+                            if indicatorEntity.IE_assetsCode == '510300':
+                                tempK = 50
+                            # 日线指标已更新，对比后再决定买卖
+                            if (IEMultiLevel.level_day_K is not None
+                                    and IEMultiLevel.level_day_K < tempK):  # 日线KDJ的K小于20再买
+                                # 更新指标信号：底背离 第一个区域面积
+                                isUpdated = indicatorEntity.updateSignal(0,
+                                                                         round(divergeDF.iloc[2]['area'], 3),
+                                                                         round(indicatorEntity.tick_close, 3))
+                                if isUpdated:
+                                    # 将信号信息更新到多级别对象
+                                    IEMultiLevel.updateDiverge(indicatorEntity)
 
-                                key = list(positionEntity.currentOrders.keys())[0]  # 把当前仓位的第一个卖掉
-                                # # 加入T+1限制，判断当天买的，那就不能卖   2024 04 27 A股几乎不可能日内指标反转
-                                # if (indicatorEntity.tick_time.date()
-                                #         != positionEntity.currentOrders[key]['openDateTime'].date()):
-                                #     price = indicatorEntity.tick_close + 0.01  # 价格自己定，为防止卖不出去，多挂点价格
-                                #     RMQPosition.sell(positionEntity,
-                                #                      indicatorEntity.tick_time.strftime('%Y-%m-%d'),
-                                #                      key,
-                                #                      price)
-                                price = indicatorEntity.tick_close
-                                RMQPosition.sell(positionEntity,
-                                                 indicatorEntity,
-                                                 key,
-                                                 price)
-    else:
-        print("区域面积为0，小概率情况，忽略")
+                                    # 记录策略所有买卖点  格式 [["2021-04-26", 47, "buy"], ["2021-06-15", 55.1, "sell"]]
+                                    trade_point = [indicatorEntity.tick_time.strftime('%Y-%m-%d %H'),
+                                                   round(indicatorEntity.tick_close, 3),
+                                                   "buy"]
+                                    positionEntity.trade_point_list.append(trade_point)
+                                    # 推送消息
+                                    strategy_result.send_msg("tea_radical",
+                                                             indicatorEntity,
+                                                             IEMultiLevel,
+                                                             None)
+                                    # 买 RMQPosition.buy(positionEntity, indicatorEntity, indicatorEntity.tick_close,
+                                    # int(positionEntity.money / indicatorEntity.tick_close / 100) * 100)
+
+            if divergeDF.iloc[2]['area'] > 0:  # 顶背离判断
+                if (divergeDF.iloc[2]['area']
+                        > divergeDF.iloc[0]['area']
+                        and
+                        divergeDF.iloc[2]['price']
+                        < divergeDF.iloc[0]['price']):
+                    # KDJ判断
+                    if indicatorEntity.IE_timeLevel != 'd':
+                        windowDF_calIndic = RMQIndicator.calKDJ(windowDF_calIndic)  # 计算KDJ
+                    # 当前K下穿D，死叉
+                    if (windowDF_calIndic.iloc[DFLastRow]['K']
+                            < windowDF_calIndic.iloc[DFLastRow]['D']
+                            and
+                            windowDF_calIndic.iloc[DFLastRow - 1]['K']
+                            > windowDF_calIndic.iloc[DFLastRow - 1]['D']):
+                        # KDJ在超买区
+                        if (windowDF_calIndic.iloc[DFLastRow]['K'] > 80
+                                and windowDF_calIndic.iloc[DFLastRow]['D'] > 80):
+                            # 日线指标已更新，对比后再决定买卖
+                            if (IEMultiLevel.level_day_K is not None
+                                    and IEMultiLevel.level_day_K > 50):  # 日线KDJ的K大于50再卖
+
+                                # 更新指标信号：顶背离 第一个区域面积
+                                isUpdated = indicatorEntity.updateSignal(1,
+                                                                         round(divergeDF.iloc[2]['area'], 3),
+                                                                         round(indicatorEntity.tick_close, 3))
+                                if isUpdated:
+                                    # 将信号信息更新到多级别对象
+                                    IEMultiLevel.updateDiverge(indicatorEntity)
+
+                                    # 记录策略所有买卖点  格式 [["2021-04-26", 47, "buy"], ["2021-06-15", 55.1, "sell"]]
+                                    trade_point = [indicatorEntity.tick_time.strftime('%Y-%m-%d %H'),
+                                                   round(indicatorEntity.tick_close, 3),
+                                                   "sell"]
+                                    positionEntity.trade_point_list.append(trade_point)
+                                    # 设置推送消息
+                                    strategy_result.send_msg("tea_radical",
+                                                             indicatorEntity,
+                                                             IEMultiLevel,
+                                                             None)
+                                    # 卖
+                                    # RMQPosition.sell(positionEntity, indicatorEntity)
 
 
-def strategy_fuzzy(positionEntity, indicatorEntity, windowDF_calIndic, windowDF, bar_num, strategy_result):
-    n1, n2, aa = RMQSFuzzy.strategy_fuzzy(windowDF_calIndic, bar_num)
+def strategy_fuzzy(positionEntity,
+                   indicatorEntity,
+                   windowDF_calIndic,
+                   bar_num,
+                   strategy_result):
+    if 0 != len(positionEntity.currentOrders):  # 满仓，判断止损
+        RMQPosition.stopLoss(positionEntity, indicatorEntity, strategy_result)
 
-    aaup = np.zeros(bar_num)
-    aadn = np.zeros(bar_num)
-    mood = np.zeros(n2)
-    avmood = np.zeros(n2)
-    for k in range(n1, n2 - 1):
-        # 注意在策略里系数是早一位的,所以截至到n2-1
-        aaup[k] = aa[0, 0, k]  # 2*1矩阵，上面那行是a6，下面是a7，策略是看a7-a6的值，正：可以买，变负，就卖
-        aadn[k] = aa[1, 0, k]
-        mood[k - n1 + 1] = aadn[k - n1 + 1] - aaup[k - n1 + 1]
-    for k in range(n1 + 4, n2 - 1):  # Python中的索引从0开始，并且范围不包括结束值，所以加4来对应MATLAB的n1+5
-        sum_mood = 0
-        for i in range(1, 6):  # 计算前5个值的和
-            sum_mood += mood[k - i]  # Python中的索引从0开始，所以不需要加1
-        avmood[k - n1 - 4] = sum_mood / 5  # 将平均值存储在avmood中，并调整索引
+    current_min = int(indicatorEntity.tick_time.strftime('%M'))
+    if current_min % 5 == 0:  # 判断时间被5整除，如果是，说明bar刚更新，计算指标，否则不算指标；'%Y-%m-%d %H:%M'
+        if current_min != indicatorEntity.last_cal_time:  # 说明bar刚更新，计算一次指标
+            indicatorEntity.last_cal_time = current_min  # 更新锁
 
-    # 空仓，且大买家占优则买
-    if (0 == len(positionEntity.currentOrders)
-            and avmood[-7] > 0):  # 空仓时买
-        # '%Y-%m-%d %H:%M'  每分钟都提示太频繁，改为小时，现在有仓位控制了，这个锁无所谓了
-        tick_time = indicatorEntity.tick_time.strftime('%Y-%m-%d %H')
-        # 满足条件说明还没锁
-        if tick_time != indicatorEntity.last_msg_time_1:
-            # 编辑信息
-            post_msg = (indicatorEntity.IE_assetsName
-                        + "-"
-                        + indicatorEntity.IE_assetsCode
-                        + "-"
-                        + indicatorEntity.IE_timeLevel
-                        + "：买：" + str(round(avmood[-7], 3))
-                        + ","
-                        + str(round(indicatorEntity.tick_close, 3))
-                        + " 时间："
-                        + indicatorEntity.tick_time.strftime('%Y-%m-%d %H:%M:%S'))
-            print(post_msg)
-            # 记录策略所有买卖点  格式 [["2021-04-26", 47, "buy"], ["2021-06-15", 55.1, "sell"]]
-            trade_point = [tick_time, round(indicatorEntity.tick_close, 3), "buy"]
-            positionEntity.trade_point_list.append(trade_point)
-            # 设置推送消息
-            strategy_result.send_msg("fuzzy", indicatorEntity, post_msg)
-            # 更新锁
-            indicatorEntity.last_msg_time_1 = tick_time
+            n1, n2, aa = RMQSFuzzy.strategy_fuzzy(windowDF_calIndic, bar_num)
+            # bar_num为了算过去的指标，250-1，所以n2是249,最后一位下标248，没值，243~247有值，
+            mood = aa[1, 0, n2 - 6:n2 - 1] - aa[0, 0, n2 - 6:n2 - 1]  # a7-a6的值，正：可以买
+            avmood = np.mean(mood)
 
-            price = indicatorEntity.tick_close
-            volume = int(positionEntity.money / indicatorEntity.tick_close / 100) * 100
-            # 全仓买,1万本金除以股价，算出能买多少股，# 再除以100算出能买多少手，再乘100算出要买多少股
-            RMQPosition.buy(positionEntity, indicatorEntity, price, volume)
+            # 空仓，且大买家占优则买
+            if 0 == len(positionEntity.currentOrders) and avmood > 0:  # 空仓时买
+                # 记录策略所有买卖点  格式 [["2021-04-26", 47, "buy"], ["2021-06-15", 55.1, "sell"]]
+                trade_point = [indicatorEntity.tick_time.strftime('%Y-%m-%d %H'),
+                               round(indicatorEntity.tick_close, 3),
+                               "buy"]
+                positionEntity.trade_point_list.append(trade_point)
+                # 推送消息
+                strategy_result.send_msg("fuzzy", indicatorEntity, None, "buy" + str(round(avmood, 3)))
 
-    # 下单
-    if (0 != len(positionEntity.currentOrders)
-            and avmood[-7] < 0):  # 如果不为0，说明买过，有仓位，那就可以卖，现在是全仓卖
-        key = list(positionEntity.currentOrders.keys())[0]  # 把当前仓位的第一个卖掉
-        # '%Y-%m-%d %H:%M'  每分钟都提示太频繁，改为小时，现在有仓位控制了，这个锁无所谓了
-        tick_time = indicatorEntity.tick_time.strftime('%Y-%m-%d %H')
-        # 满足条件说明还没锁
-        if tick_time != indicatorEntity.last_msg_time_2:
-            # 编辑信息
-            post_msg = (indicatorEntity.IE_assetsName
-                        + "-"
-                        + indicatorEntity.IE_assetsCode
-                        + "-"
-                        + indicatorEntity.IE_timeLevel
-                        + "：卖："
-                        + str(round(avmood[-7], 3))
-                        + ","
-                        + str(round(indicatorEntity.tick_close, 3))
-                        + " 时间："
-                        + indicatorEntity.tick_time.strftime('%Y-%m-%d %H:%M:%S'))
-            print(post_msg)
-            # 记录策略所有买卖点  格式 [["2021-04-26", 47, "buy"], ["2021-06-15", 55.1, "sell"]]
-            trade_point = [tick_time, round(indicatorEntity.tick_close, 3), "sell"]
-            positionEntity.trade_point_list.append(trade_point)
-            # 设置推送消息
-            strategy_result.send_msg("fuzzy", indicatorEntity, post_msg)
-            # 更新锁
-            indicatorEntity.last_msg_time_2 = tick_time
-
-            price = indicatorEntity.tick_close
-            RMQPosition.sell(positionEntity, indicatorEntity, key, price)
+                volume = int(positionEntity.money / indicatorEntity.tick_close / 100) * 100
+                # 全仓买,1万本金除以股价，算出能买多少股，# 再除以100算出能买多少手，再乘100算出要买多少股
+                RMQPosition.buy(positionEntity, indicatorEntity, indicatorEntity.tick_close, volume)
+            # 满仓
+            if 0 != len(positionEntity.currentOrders) and avmood < 0:
+                # 记录策略所有买卖点  格式 [["2021-04-26", 47, "buy"], ["2021-06-15", 55.1, "sell"]]
+                trade_point = [indicatorEntity.tick_time.strftime('%Y-%m-%d %H'),
+                               round(indicatorEntity.tick_close, 3),
+                               "sell"]
+                positionEntity.trade_point_list.append(trade_point)
+                # 设置推送消息
+                strategy_result.send_msg("fuzzy", indicatorEntity, None, "sell" + str(round(avmood, 3)))
+                # 卖
+                RMQPosition.sell(positionEntity, indicatorEntity)

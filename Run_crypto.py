@@ -21,7 +21,7 @@ def run_back_test_crypto(assetList):
     """
     strategy_result = RMQStrategy.StrategyResultEntity()  # 收集多级别行情信息，推送消息
     strategy_result.live = False
-    IEMultiLevel = RMQIndicator.IndicatorEntityMultiLevel()  # 多级别的指标要互相交流，所以通过这个公共指标对象交流
+    IEMultiLevel = RMQIndicator.IndicatorEntityMultiLevel(assetList)  # 多级别的指标要互相交流，所以通过这个公共指标对象交流
 
     # 初始化，读取回测数据
     for asset in assetList:
@@ -104,4 +104,4 @@ if __name__ == '__main__':
     1、dockerfile的COPY pip.conf、aliyun删除；
     2、requirements.txt加 binance-connector==2.0.0，删baostock==0.8.8
     """
-    run_back_test_crypto(RMQAsset.asset_generator('BTCUSDT', 'BTC', ['15', '60', '240', 'd'], 'crypto'))
+    run_back_test_crypto(RMQAsset.asset_generator('BTCUSDT', 'BTC', ['15', '60', '240', 'd'], 'crypto', 0))

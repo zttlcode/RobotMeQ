@@ -48,7 +48,7 @@ proxy=http://127.0.0.1:33210
 
     """
     strategy_result = RMQStrategy.StrategyResultEntity()  # 收集多级别行情信息，推送消息
-    IEMultiLevel = RMQIndicator.IndicatorEntityMultiLevel()  # 多级别的指标要互相交流，所以通过这个公共指标对象交流
+    IEMultiLevel = RMQIndicator.IndicatorEntityMultiLevel(assetList)  # 多级别的指标要互相交流，所以通过这个公共指标对象交流
 
     proxies = {
         'http': 'http://127.0.0.1:33210',
@@ -91,7 +91,8 @@ def start_process():
                          args=(RMQAsset.asset_generator('BTCUSDT',
                                                         'BTC',
                                                         ['15', '60', '240', 'd'],
-                                                        'crypto'),))
+                                                        'crypto',
+                                                        0),))
                  ]
 
     for p in processes:

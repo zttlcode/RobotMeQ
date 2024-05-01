@@ -1,5 +1,7 @@
 import pandas as pd
 import statsmodels.formula.api as smf
+import json
+from RMQTool import Tools as RMTTools
 
 
 # 每个Asset对象 的父类Bar，都有一个指标对象，记录当前Asset对象的各种指标
@@ -10,100 +12,143 @@ class IndicatorEntity:
         self.tick_close = 0
         self.tick_time = None
         self.tick_volume = 0
-        self.last_msg_time_1 = None  # 上次发消息时间，避免一个bar内，每个tick来都发信息，只发一次
-        self.last_msg_time_2 = None  # 上次发消息时间，避免一个bar内，每个tick来都发信息，只发一次
+        self.last_cal_time = None  # 上次锁时间，避免一个bar内，每个tick来都执行一遍代码
         self.IE_assetsCode = assetsCode  # 复制资产代码
         self.IE_assetsName = assetsName  # 复制资产名称
         self.IE_timeLevel = timeLeve  # 复制时间级别
+        self.signal = {}  # 记录每一次信号
+
+        # 尝试读取signal JSON文件
+        try:
+            with open(RMTTools.read_config("RMQData", "indicator_signal")
+                      + "signal_"
+                      + self.IE_assetsCode
+                      + "_"
+                      + self.IE_timeLevel
+                      + ".json", 'r') as file:
+                self.signal = json.load(file)
+        except FileNotFoundError:
+            pass
+        except json.JSONDecodeError:
+            pass
+
+    def updateSignal(self, signalDirection, signalDivergeArea, signalPrice):  # signalDirection 0是底背离  1是顶背离
+        isUpdated = False
+        if 0 != len(self.signal):  # 说明存过信号
+            # 拿当前最新的key
+            latest_time_key = None
+            for key in self.signal:
+                if latest_time_key is None or key > latest_time_key:
+                    latest_time_key = key
+
+            if signalDirection == self.signal[latest_time_key]['signalDirection']:  # 方向一致，则比面积
+                if signalDivergeArea != self.signal[latest_time_key]['signalDivergeArea']:  # 面积一致，还在一个信号里，不更新，否则
+                    self.updateSignalFile(signalDirection, signalDivergeArea, signalPrice)
+                    isUpdated = True
+            else:  # 方向不一致，清空之前的信号，写入新信号
+                self.signal = {}
+                self.updateSignalFile(signalDirection, signalDivergeArea, signalPrice)
+                isUpdated = True
+        else:  # 没存过信号，直接存
+            self.updateSignalFile(signalDirection, signalDivergeArea, signalPrice)
+            isUpdated = True
+        return isUpdated
+
+    def updateSignalFile(self, signalDirection, signalDivergeArea, signalPrice):
+        key = str(self.tick_time.strftime('%Y%m%d%H%M'))  # 准备key
+        self.signal[key] = {'signalTime': self.tick_time.strftime('%Y-%m-%d %H:%M'),
+                            'signalDirection': signalDirection,
+                            'signalDivergeArea': signalDivergeArea,
+                            'signalPrice': signalPrice
+                            }
+        # 将信号信息保存到文件
+        with open(RMTTools.read_config("RMQData", "indicator_signal")
+                  + "signal_"
+                  + self.IE_assetsCode
+                  + "_"
+                  + self.IE_timeLevel
+                  + ".json", 'w') as file:
+            json.dump(self.signal, file)
 
 
 # 一个Asset有多个时间级别，多个级别共用一个多级别指标，来交流指标信息
 class IndicatorEntityMultiLevel:
-    def __init__(self):
-        # EMA DIF DEA MACD MA_5 MA_10 MA_60 K D J RSI6 RSI12 RSI24
-        self.level_5_EMA = None
-        self.level_5_DIF = None
-        self.level_5_DEA = None
-        self.level_5_MACD = None
-        self.level_5_MA_5 = None
-        self.level_5_MA_10 = None
-        self.level_5_MA_60 = None
-        self.level_5_K = None
-        self.level_5_D = None
-        self.level_5_J = None
-        self.level_5_RSI6 = None
-        self.level_5_RSI12 = None
-        self.level_5_RSI24 = None
-
-        self.level_15_EMA = None
-        self.level_15_DIF = None
-        self.level_15_DEA = None
-        self.level_15_MACD = None
-        self.level_15_MA_5 = None
-        self.level_15_MA_10 = None
-        self.level_15_MA_60 = None
-        self.level_15_K = None
-        self.level_15_D = None
-        self.level_15_J = None
-        self.level_15_RSI6 = None
-        self.level_15_RSI12 = None
-        self.level_15_RSI24 = None
-
-        self.level_30_EMA = None
-        self.level_30_DIF = None
-        self.level_30_DEA = None
-        self.level_30_MACD = None
-        self.level_30_MA_5 = None
-        self.level_30_MA_10 = None
-        self.level_30_MA_60 = None
-        self.level_30_K = None
-        self.level_30_D = None
-        self.level_30_J = None
-        self.level_30_RSI6 = None
-        self.level_30_RSI12 = None
-        self.level_30_RSI24 = None
-
-        self.level_60_EMA = None
-        self.level_60_DIF = None
-        self.level_60_DEA = None
-        self.level_60_MACD = None
-        self.level_60_MA_5 = None
-        self.level_60_MA_10 = None
-        self.level_60_MA_60 = None
-        self.level_60_K = None
-        self.level_60_D = None
-        self.level_60_J = None
-        self.level_60_RSI6 = None
-        self.level_60_RSI12 = None
-        self.level_60_RSI24 = None
-
-        self.level_day_EMA = None
-        self.level_day_DIF = None
-        self.level_day_DEA = None
-        self.level_day_MACD = None
-        self.level_day_MA_5 = None
-        self.level_day_MA_10 = None
-        self.level_day_MA_60 = None
+    def __init__(self, assetList):
+        self.level_5_diverge = None
+        self.level_15_diverge = None
+        self.level_30_diverge = None
+        self.level_60_diverge = None
+        self.level_day_diverge = None
         self.level_day_K = None
-        self.level_day_D = None
-        self.level_day_J = None
-        self.level_day_RSI6 = None
-        self.level_day_RSI12 = None
-        self.level_day_RSI24 = None
+
+        for asset in assetList:
+            if asset.barEntity.timeLevel == "5":
+                self.level_5_diverge = initDiverge(asset)
+            elif asset.barEntity.timeLevel == "15":
+                self.level_15_diverge = initDiverge(asset)
+            elif asset.barEntity.timeLevel == "30":
+                self.level_30_diverge = initDiverge(asset)
+            elif asset.barEntity.timeLevel == "60":
+                self.level_60_diverge = initDiverge(asset)
+            elif asset.barEntity.timeLevel == "d":
+                self.level_day_diverge = initDiverge(asset)
 
     # 每个级别的Asset对象，每次进策略都会更新 多级别指标 的属性值
-    def updateIndicatorEntityMultiLevel(self, indicatorEntity, windowDF, DFLastRow):
+    def updateDiverge(self, indicatorEntity):
+        # EMA DIF DEA MACD MA_5 MA_10 MA_60 K D J RSI6 RSI12 RSI24
         # 暂时只用到这一个指标，以后用到哪个，再加
         if indicatorEntity.IE_timeLevel == "5":
-            self.level_5_K = windowDF.iloc[DFLastRow]['K']
+            self.level_5_diverge = getDivergeMsg(indicatorEntity.signal)
         elif indicatorEntity.IE_timeLevel == "15":
-            self.level_15_K = windowDF.iloc[DFLastRow]['K']
+            self.level_15_diverge = getDivergeMsg(indicatorEntity.signal)
         elif indicatorEntity.IE_timeLevel == "30":
-            self.level_30_K = windowDF.iloc[DFLastRow]['K']
+            self.level_30_diverge = getDivergeMsg(indicatorEntity.signal)
         elif indicatorEntity.IE_timeLevel == "60":
-            self.level_60_K = windowDF.iloc[DFLastRow]['K']
+            self.level_60_diverge = getDivergeMsg(indicatorEntity.signal)
         elif indicatorEntity.IE_timeLevel == "d":
-            self.level_day_K = windowDF.iloc[DFLastRow]['K']
+            self.level_day_diverge = getDivergeMsg(indicatorEntity.signal)
+
+    def updateDayK(self, windowDF, DFLastRow):
+        self.level_day_K = windowDF.iloc[DFLastRow]['K']
+
+
+def getDivergeMsg(signal):
+    divergeSignal = None
+    # 拿当前最新的key
+    latest_time_key = None
+    for key in signal:
+        if latest_time_key is None or key > latest_time_key:
+            latest_time_key = key
+    signalDirection = signal[latest_time_key]['signalDirection']  # 信号方向
+    signalTime = signal[latest_time_key]['signalTime']
+    signalPrice = signal[latest_time_key]['signalPrice']
+    signalCount = len(signal)  # 信号次数
+
+    if 0 == signalDirection:
+        divergeSignal = signalTime + " 第" + str(signalCount) + "次底背离" + str(signalPrice)
+    if 1 == signalDirection:
+        divergeSignal = signalTime + " 第" + str(signalCount) + "次顶背离" + str(signalPrice)
+    return divergeSignal
+
+
+def initDiverge(asset):
+    divergeSignal = None
+    # 尝试读取signal JSON文件
+    try:
+        with open(RMTTools.read_config("RMQData", "indicator_signal")
+                  + "signal_"
+                  + asset.assetsCode
+                  + "_"
+                  + asset.barEntity.timeLevel
+                  + ".json", 'r') as file:
+            tempSignal = json.load(file)  # 读取各级别当前信号
+            if 0 != len(tempSignal):
+                divergeSignal = getDivergeMsg(tempSignal)
+    except FileNotFoundError:
+        pass
+    except json.JSONDecodeError:
+        pass
+    return divergeSignal
 
 
 def calEMA(dataFrame, term):
