@@ -412,6 +412,7 @@ if __name__ == '__main__':
     2024 04 06 腾讯云  
     docker start 5c239d668666
     docker exec -it 5c239d668666 /bin/bash
+    docker cp /root/RobotMeQ 5c239d668666:/home/RobotMeQ
     docker cp /root/RobotMeQ/RMQStrategy/Strategy.py 5c239d668666:/home/RobotMeQ/RMQStrategy/Strategy.py
     docker cp /root/RobotMeQ/QuantData/live 5c239d668666:/home/RobotMeQ/QuantData/live
     docker cp /root/RobotMeQ/QuantData/live 5c239d668666:/home/RobotMeQ/QuantData/live
