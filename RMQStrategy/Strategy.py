@@ -123,19 +123,19 @@ def strategy(asset, strategy_result, IEMultiLevel):
     #                           IEMultiLevel)
 
     # 激进派背离策略，
-    strategy_tea_radical(positionEntity,
-                         indicatorEntity,
-                         windowDF_calIndic,
-                         barEntity.bar_num - 2,  # 比如时间窗口60，最后一条数据下标永远是59
-                         strategy_result,
-                         IEMultiLevel)
+    # strategy_tea_radical(positionEntity,
+    #                      indicatorEntity,
+    #                      windowDF_calIndic,
+    #                      barEntity.bar_num - 2,  # 比如时间窗口60，最后一条数据下标永远是59
+    #                      strategy_result,
+    #                      IEMultiLevel)
 
     # ride-mood策略，增强版趋势跟随策略，反指率高达90%，经常小亏，偶尔大赚
-    # strategy_fuzzy(positionEntity,
-    #                indicatorEntity,
-    #                windowDF_calIndic,
-    #                barEntity.bar_num - 1,  # 减了个实时价格，250变249，所以这里长度也跟着变成249
-    #                strategy_result)
+    strategy_fuzzy(positionEntity,
+                   indicatorEntity,
+                   windowDF_calIndic,
+                   barEntity.bar_num - 1,  # 减了个实时价格，250变249，所以这里长度也跟着变成249
+                   strategy_result)
 
 
 def strategy_tea_conservative(positionEntity,

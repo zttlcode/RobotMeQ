@@ -72,7 +72,7 @@ def run_back_test_crypto(assetList):
             asset.indicatorEntity.tick_close = assetList[0].barEntity.bar_DataFrame.tail(1).iloc[0, 4]
             asset.indicatorEntity.tick_time = assetList[0].barEntity.bar_DataFrame.tail(1).iloc[0, 0]
 
-            if asset.timeLevel != "15":
+            if asset.barEntity.timeLevel != "15":
                 # 非最小级别的，还要更新high、close
                 asset.barEntity.bar_DataFrame.tail(1).iloc[0, 2] = max(assetList[0].barEntity.bar_DataFrame.tail(1).iloc[0, 2], asset.barEntity.bar_DataFrame.tail(1).iloc[0, 2])
                 asset.barEntity.bar_DataFrame.tail(1).iloc[0, 3] = min(assetList[0].barEntity.bar_DataFrame.tail(1).iloc[0, 3], asset.barEntity.bar_DataFrame.tail(1).iloc[0, 3])
