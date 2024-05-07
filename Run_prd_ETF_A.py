@@ -398,7 +398,7 @@ if __name__ == '__main__':
     docker run -it 2023c3642f33 /bin/bash
     以后就可以通过exec进入了
     
-    docker start 26dbf8178821
+    docker start 26dbf8178821  阿里云  保守策略  zhaot1993@qq.com
     docker exec -it 26dbf8178821 /bin/bash
         nohup python -u /home/RobotMeQ/Run_prd_ETF_A.py >> /home/log.out 2>&1 &
     tail -f /home/log.out
@@ -409,15 +409,20 @@ if __name__ == '__main__':
     docker cp 26dbf8178821:/home/RobotMeQ/QuantData/live /root/RobotMeQ/QuantData/live
     docker cp 26dbf8178821:/home/RobotMeQ/QuantData/trade_point_live /root/RobotMeQ/QuantData/trade_point_live
     
-    2024 04 06 腾讯云  
+    2024 04 06 腾讯云    激进策略  287151402@qq.com
     docker start 5c239d668666
     docker exec -it 5c239d668666 /bin/bash
     docker cp /root/RobotMeQ 5c239d668666:/home/RobotMeQ
     docker cp /root/RobotMeQ/RMQStrategy/Strategy.py 5c239d668666:/home/RobotMeQ/RMQStrategy/Strategy.py
     docker cp /root/RobotMeQ/QuantData/live 5c239d668666:/home/RobotMeQ/QuantData/live
+    docker cp /root/RobotMeQ/Configs/config_prd.ini 5c239d668666:/home/RobotMeQ/Configs/config_prd.ini
     docker cp /root/RobotMeQ/QuantData/live 5c239d668666:/home/RobotMeQ/QuantData/live
     docker cp 5c239d668666:/home/RobotMeQ/QuantData/trade_point_live /root/RobotMeQ/QuantData/trade_point_live
 
+    2024 05 06 老笔记本  模糊策略  1031017763@qq.com
+    docker start d63f10ba76df
+    docker exec -it d63f10ba76df /bin/bash
+    docker cp /root/RobotMeQ d63f10ba76df:/home/RobotMeQ
     
 --创建新项目    
     在conda的导航工具里新建环境，然后pycharm给项目选择需要的解释器，

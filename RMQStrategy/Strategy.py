@@ -115,12 +115,12 @@ def strategy(asset, strategy_result, IEMultiLevel):
     # -----------------------------------------------------------------------------------------------
 
     # 保守派背离策略  每个级别各玩各的，互不打扰  2024-4月~2026-4月 运行在阿里云服务器
-    # strategy_tea_conservative(positionEntity,
-    #                           indicatorEntity,
-    #                           windowDF_calIndic,
-    #                           barEntity.bar_num - 2,  # 比如时间窗口60，最后一条数据下标永远是59
-    #                           strategy_result,
-    #                           IEMultiLevel)
+    strategy_tea_conservative(positionEntity,
+                              indicatorEntity,
+                              windowDF_calIndic,
+                              barEntity.bar_num - 2,  # 比如时间窗口60，最后一条数据下标永远是59
+                              strategy_result,
+                              IEMultiLevel)
 
     # 激进派背离策略，
     # strategy_tea_radical(positionEntity,
@@ -131,11 +131,11 @@ def strategy(asset, strategy_result, IEMultiLevel):
     #                      IEMultiLevel)
 
     # ride-mood策略，增强版趋势跟随策略，反指率高达90%，经常小亏，偶尔大赚
-    strategy_fuzzy(positionEntity,
-                   indicatorEntity,
-                   windowDF_calIndic,
-                   barEntity.bar_num - 1,  # 减了个实时价格，250变249，所以这里长度也跟着变成249
-                   strategy_result)
+    # strategy_fuzzy(positionEntity,
+    #                indicatorEntity,
+    #                windowDF_calIndic,
+    #                barEntity.bar_num - 1,  # 减了个实时价格，250变249，所以这里长度也跟着变成249
+    #                strategy_result)
 
 
 def strategy_tea_conservative(positionEntity,
@@ -196,7 +196,11 @@ def strategy_tea_conservative(positionEntity,
                                                    "buy"]
                                     positionEntity.trade_point_list.append(trade_point)
                                     # 推送消息
-                                    strategy_result.send_msg("tea_conservative", indicatorEntity, None,
+                                    strategy_result.send_msg(indicatorEntity.IE_assetsName
+                                                             + "-"
+                                                             + indicatorEntity.IE_assetsCode,
+                                                             indicatorEntity,
+                                                             None,
                                                              "目前底背离+KDJ金叉")
 
                                     # price = indicatorEntity.tick_close + 0.01  # 价格自己定，为防止买不进来，多挂点价格
@@ -236,7 +240,11 @@ def strategy_tea_conservative(positionEntity,
                                                    "sell"]
                                     positionEntity.trade_point_list.append(trade_point)
                                     # 设置推送消息
-                                    strategy_result.send_msg("tea_conservative", indicatorEntity, None,
+                                    strategy_result.send_msg(indicatorEntity.IE_assetsName
+                                                             + "-"
+                                                             + indicatorEntity.IE_assetsCode,
+                                                             indicatorEntity,
+                                                             None,
                                                              "目前顶背离+KDJ死叉")
 
                                     # # 加入T+1限制，判断当天买的，那就不能卖   2024 04 27 A股几乎不可能日内指标反转
@@ -309,7 +317,9 @@ def strategy_tea_radical(positionEntity,
                                                    "buy"]
                                     positionEntity.trade_point_list.append(trade_point)
                                     # 推送消息
-                                    strategy_result.send_msg("tea_radical",
+                                    strategy_result.send_msg(indicatorEntity.IE_assetsName
+                                                             + "-"
+                                                             + indicatorEntity.IE_assetsCode,
                                                              indicatorEntity,
                                                              IEMultiLevel,
                                                              None)
@@ -352,7 +362,9 @@ def strategy_tea_radical(positionEntity,
                                                    "sell"]
                                     positionEntity.trade_point_list.append(trade_point)
                                     # 设置推送消息
-                                    strategy_result.send_msg("tea_radical",
+                                    strategy_result.send_msg(indicatorEntity.IE_assetsName
+                                                             + "-"
+                                                             + indicatorEntity.IE_assetsCode,
                                                              indicatorEntity,
                                                              IEMultiLevel,
                                                              None)
@@ -386,7 +398,12 @@ def strategy_fuzzy(positionEntity,
                                "buy"]
                 positionEntity.trade_point_list.append(trade_point)
                 # 推送消息
-                strategy_result.send_msg("fuzzy", indicatorEntity, None, "buy" + str(round(avmood, 3)))
+                strategy_result.send_msg(indicatorEntity.IE_assetsName
+                                         + "-"
+                                         + indicatorEntity.IE_assetsCode,
+                                         indicatorEntity,
+                                         None,
+                                         "buy" + str(round(avmood, 3)))
 
                 volume = int(positionEntity.money / indicatorEntity.tick_close / 100) * 100
                 # 全仓买,1万本金除以股价，算出能买多少股，# 再除以100算出能买多少手，再乘100算出要买多少股
@@ -399,6 +416,11 @@ def strategy_fuzzy(positionEntity,
                                "sell"]
                 positionEntity.trade_point_list.append(trade_point)
                 # 设置推送消息
-                strategy_result.send_msg("fuzzy", indicatorEntity, None, "sell" + str(round(avmood, 3)))
+                strategy_result.send_msg(indicatorEntity.IE_assetsName
+                                         + "-"
+                                         + indicatorEntity.IE_assetsCode,
+                                         indicatorEntity,
+                                         None,
+                                         "sell" + str(round(avmood, 3)))
                 # 卖
                 RMQPosition.sell(positionEntity, indicatorEntity)
