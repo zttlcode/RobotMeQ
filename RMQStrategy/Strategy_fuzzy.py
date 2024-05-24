@@ -236,7 +236,7 @@ if __name__ == '__main__':
     """
     # 使用函数查找含有字符'd'的文件，并将文件名列表打印出来
     directory_path = RMTTools.read_config("RMQData", "live_bar")  # 替换为你的目录路径
-    char_to_find = '_5'
+    char_to_find = '_d'
     filtered_files = find_files_with_char(directory_path, char_to_find)
     for filePath in filtered_files:
         windowDF = pd.read_csv(filePath, encoding='gbk')
