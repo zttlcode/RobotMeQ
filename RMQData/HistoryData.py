@@ -88,7 +88,7 @@ def handle_TDX_data(asset):
     3、点选项，数据导出，导出为xls  （只能选这个格式）
     4、把xls另存为xlsx
     """
-    filePath = (RMTTools.read_config("RMQData", "tdx")
+    filePath = (RMTTools.read_config("RMQData_local", "tdx")
                 + asset.assetsCode
                 + '_'
                 + asset.barEntity.timeLevel
@@ -108,8 +108,8 @@ def handle_TDX_data(asset):
     data.set_index('time', inplace=True)
     # etf和指数分钟数据，够实盘用就行，回测用股票方便
     # 如果是回测数据：不用截断，写入到backtest_bar
-    windowDF = cut_by_bar_num(data, 250)
-    windowDF.to_csv(asset.barEntity.live_bar, columns=['open', 'high', 'low', 'close', 'volume'])
+    # windowDF = cut_by_bar_num(data, 250)
+    data.to_csv(asset.barEntity.backtest_bar, columns=['open', 'high', 'low', 'close', 'volume'])
 
 
 def cut_by_bar_num(df, bar_num):
@@ -130,16 +130,16 @@ if __name__ == '__main__':
     ['5', '15', '30', '60', 'd']
     backtest_bar  live_bar
     """
-    assetList = RMQAsset.asset_generator('600438', '', ['5'], 'stock')
+    assetList = RMQAsset.asset_generator('000001', '', ['d'], 'index', 1)
     for asset in assetList:
         # 接口取数据只能股票，回测方便
-        getData_BaoStock(asset, '2014-04-17', '2024-04-16', 'backtest_bar')
+        # getData_BaoStock(asset, '2000-01-01', '2024-06-11', 'backtest_bar')
         # 日线要拿前250天的数据，单独加载，不然太慢
         # getData_BaoStock(asset, '2020-10-01', '2021-11-01', 'backtest_bar')
 
         # 通达信拿到的数据，xlsx转为csv；主要实盘用，偶尔回测拿指数、ETF数据用
         # 如果是回测数据，handle_TDX_data末尾要改
-        # handle_TDX_data(asset)
+        handle_TDX_data(asset)
 
 
 

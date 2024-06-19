@@ -1,0 +1,57 @@
+comfyui使用模型两种方式：
+
+1、huggingface
+1.1 原始用法是模型clone到本地，直接运行
+	下面记录了git克隆大文件报错的问题
+	https://github.com/git-lfs/git-lfs/issues/5749
+	打开git bash，直接执行 GIT_CLONE_PROTECTION_ACTIVE=false 就行
+	这种方式应该也可以 GIT_CLONE_PROTECTION_ACTIVE=false  git clone https://huggingface.co/yisol/IDM-VTON
+	因为我看hugging face 有类似写法 GIT_LFS_SKIP_SMUDGE=1 git clone https://huggingface.co/yisol/IDM-VTON
+
+	下面是克隆后，通过命令行管理项目
+	python -m pip install huggingface_hub
+	下面这两步，是在python交互窗口里运行的，不是cmd
+	huggingface-cli login
+	huggingface-cli lfs-enable-largefiles .
+
+	但是注意，huggingface 直接git下载项目太费流量（比显示的文件大小要多出很多流量），可以只克隆项目，以后用到哪个ck下哪个
+	以后换无线流量那个vpn套餐
+
+1.2 除了clone项目到本地，还可以通过代码直接调用模型
+	先在本地建个项目，项目里调用huggingface封装好的库
+	自己新建了个项目，使用pycharm clone项目后，push需要登陆，但是huggingface不让用账号密码登陆了，
+	https://huggingface.co/blog/password-git-deprecation
+	于是我申请了token，在clone的项目路径下执行下面语句，然后就可以在pycharm里正常操作了
+	git remote set-url origin https://rangerzz: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@huggingface.co/rangerzz/rangerzz
+
+	现在可以在项目里跟着transformer的文档实践了 https://huggingface.co/docs/transformers/pipeline_tutorial
+	以后huggingface有了新项目，可以通过transformer直接使用模型，但最好提前下载文件离线使用 https://huggingface.co/docs/transformers/installation 最下面讲离线
+
+在comfyui中，只需要从huggingface下载ck文件
+
+2、civitai 不讲工作流，都是直接用comfyui基础工作流，然后到官网挑下载右下方对应的ck，lora，复制提示词，完事儿
+
+如何保证面部一致性：
+	midjurney setting可以设置v6模式
+	生成模特图，保存，再上传到midjurney
+	输入新的描述词，末尾添加  --cref 跟刚才上传的图片地址 --cw 0    强度为0只会参考脸部，强度默认是100，会参考脸和衣服
+
+-----------------------------
+
+b站，抖音，小红书，视频号，先发个变声视频
+数字人
+
+秘诀就是只追新，什么新干什么。我不管你用这技术干嘛，我只提供技术
+开源软件及使用流程搭建，客户本地部署  四五线小微企业，技术服务商业
+
+大众对人工智能的期待还是机器人，绘图是娱乐小功能，变声，直播换脸有用，数字人是重点
+
+当个数字游民吧，换个活法，打开自己，周游世界
+工作就这么挂着，面上了是自己最后一次打工，面不上就干我的数字游民
+
+把ai ，量化，的东西都分享出去，用一个账号，怀庆府游侠
+画图代码
+一个能自动挖掘指标的模型
+当初写错的模糊策略，也能当作标注数据集的工具
+新电脑的量化删掉，只在笔记本上运行
+找最新的新闻演讲视频啥的，翻译成中文

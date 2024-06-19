@@ -10,7 +10,7 @@ def read_config(section, item):
     # 这里必须写绝对路径，如果写相对路径，会去找调用这个函数的python文件的相对路径，而不是当前文件的相对路径
     sys_platform = platform.platform().lower()
     if 'windows' in sys_platform:
-        path = "D:\\workspace\\github\\RobotMeQ\\Configs\\config.ini"
+        path = "D:\\github\\RobotMeQ\\Configs\\config.ini"
     else:
         path = "/home/RobotMeQ/Configs/config_prd.ini"
     cp.read(path, encoding='utf-8')
@@ -22,7 +22,7 @@ def write_config(section, item, value):
     # 这里必须写绝对路径，如果写相对路径，会去找调用这个函数的python文件的相对路径，而不是当前文件的相对路径
     sys_platform = platform.platform().lower()
     if 'windows' in sys_platform:
-        path = "D:\\workspace\\github\\RobotMeQ\\Configs\\config.ini"
+        path = "D:\\github\\RobotMeQ\\Configs\\config.ini"
     else:
         path = "/home/RobotMeQ/Configs/config_prd.ini"
     cp.read(path, encoding='utf-8')

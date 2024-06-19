@@ -52,7 +52,7 @@ proxy=http://127.0.0.1:33210
 
     proxies = {
         'http': 'http://127.0.0.1:33210',
-        'https': 'http://127.0.0.1:33210',
+        'https': 'http://127.0.0.1:33211',
     }
     client = Spot(proxies=proxies,timeout=3)
     #client = Spot(timeout=3)
