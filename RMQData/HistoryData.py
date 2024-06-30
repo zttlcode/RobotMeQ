@@ -140,6 +140,3 @@ if __name__ == '__main__':
         # 通达信拿到的数据，xlsx转为csv；主要实盘用，偶尔回测拿指数、ETF数据用
         # 如果是回测数据，handle_TDX_data末尾要改
         handle_TDX_data(asset)
-
-
-
