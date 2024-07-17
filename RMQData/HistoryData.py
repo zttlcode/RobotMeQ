@@ -130,13 +130,13 @@ if __name__ == '__main__':
     ['5', '15', '30', '60', 'd']
     backtest_bar  live_bar
     """
-    assetList = RMQAsset.asset_generator('000001', '', ['d'], 'index', 1)
+    assetList = RMQAsset.asset_generator('600332', '', ['30'], 'stock', 1)
     for asset in assetList:
         # 接口取数据只能股票，回测方便
         # getData_BaoStock(asset, '2000-01-01', '2024-06-11', 'backtest_bar')
         # 日线要拿前250天的数据，单独加载，不然太慢
-        # getData_BaoStock(asset, '2020-10-01', '2021-11-01', 'backtest_bar')
+        getData_BaoStock(asset, '2002-01-01', '2024-06-30', 'backtest_bar')
 
         # 通达信拿到的数据，xlsx转为csv；主要实盘用，偶尔回测拿指数、ETF数据用
         # 如果是回测数据，handle_TDX_data末尾要改
-        handle_TDX_data(asset)
+        # handle_TDX_data(asset)

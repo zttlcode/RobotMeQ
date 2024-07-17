@@ -163,11 +163,11 @@ def detach_coefficient_figure(p, n, n1, n2, aa):
         # 同上, 循环遍历索引范围,操作的是系数,所以还是截至到n2-1,但买卖点是定位在最新价格,是n,所以加2
         if avmood[k] > 0 and ho == 0:
             nb += 1
-            buy.append(k - n1 + 2)  # 第k天看过去5天的系数差均值，大于0，则k+1天买入
+            buy.append(k - n1 + 2)  # 第k天看过去5天的系数差均值，大于0，则k+1天买入  20240708加了-5
             ho = 1
         if avmood[k] < 0 and ho == 1:
             ns += 1
-            sel.append(k - n1 + 2)
+            sel.append(k - n1 + 2)  # 20240708加了-5
             ho = 0
 
     # 处理未卖出的情况
