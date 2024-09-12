@@ -1,0 +1,396 @@
+1、标注数据
+一  Introduction
+本文解决的问题：  训练数据的质量决定了模型的性能，本文提出的数据标注方法 与 传统标注方法相比，使模型性能提升xx%
+用了个新数据集+老模型 解决了个老问题
+数据标注
+	分类
+		多步分类：
+			使用传统策略，回测出传统策略买卖点，硬过滤
+			寻找极值点
+		单布分类：
+			不需要任何策略，只判断价格与前一个的关系
+	回归
+		不需要标注
+
+把明显不能买的买入信号过滤掉，特征提取解决过滤问题
+二  related work
+
+三  method
+数据标注，基本的，别人论文的 代码实现
+
+待试验：
+    一旦用到模型，就需要标注好的数据
+    在标注时，遇到每个信号，都去进行级别判断  输出正确，错误
+    在预测时，（基础策略与深度学习策略组合）出现信号，模型再去判断当前形态是否赞同这个信号  输出正确，错误     
+             （纯深度学习模型）模型会根据当前形态判断出是否有买点  输出买，卖，不动？
+    0、创新的重点应该研究问题本质，而不是研究工具。备选模型，模型用于抽取固定时间窗口内的特征：CNN,RNN  最新的时序模型（强学习器）
+    1、15分钟出信号，一个模型去判断多个上级的组合数据，弱模型，强模型
+    2、15分钟出信号，多个相同个模型取判断多个上级各自的数据，然后投票 弱模型
+    3、在1、2中加入大盘日线，再试验加入大盘多级别     只要不是跌势就行，上行与震荡都能买
+    4、用强化学习不用标注，只要设置惩罚条件就行，看起来更简单
+
+1、按照各种策略先回测，把回测的数据，买入后还跌的剔除掉，买入后没涨的剔除掉，这样过滤一下，就拿到优质数据了。
+要么每次2%也行，2%代表当年活期年利率  5天内最高价超过买入价2%就算有效买点？
+
+2、当初写错的模糊策略，也能当作标注数据集的工具
+
+个股1小时 时间序列，  700，   point   buy sell  30   
+个股5小时 时间序列，  700，   point   buy sell  30  
+个股指数   没有point    趋势  
+
+目标：过滤当前信号点是不是真的有用
+硬编码，加个参数，比大小
+				权重系数
+	日线背离      0.5    很重要，当然有博反弹的可能，但风险很大  要么上升趋势，可以忽略这个
+	大盘指数      0.3
+	个股1小时     0.1
+	个股15min     0.1
+AI抽取上级特征替换多级别过滤
+
+基础模型投票一个
+别人的label也拿出来用用
+
+每种数据单独用模型训练，决策树 分类 ：有用，没用
+强化学习
+
+固定窗口，比如各级别都是250个bar，   每个级别从开始出信号累积权重值，一旦反转，权重清零
+为了有更多的训练数据，每个股票都可以训练，而不是只能在一个里训练，我应该加个窗口，捕捉这个窗口内，多个级别特征，
+说明这几个窗口这样组合，是可以交易的
+但我是label，过滤点的，  这应该是以后label完了，作为数据集训练时考虑的，用固定窗口
+
+基础模型用CNN？
+（2022）A comprehensive review on multiple hybrid deep learning approaches for stock prediction
+3、CNN。这个主要讲 CNN-LSTM。 输入信号（买卖信号），用卷积层提取特征，池化层降低kernel数，
+flatten layer把所有特征转为单维向量，把单位向量作为输入传给LSTM层，
+Fig6是流程图,Fig7是模型图，Fig8是算法示意图。
+
+作者在结论总结了一下：LSTM and Hybrid LSTM 预测价格更好， CNN and Hybrid CNN预测趋势更好，
+CNN-LSTM Hybrid适合资产组合，hybrid CNN and LSTM适合做日内高频
+
+异常推断涉及的大波动，可以通过拉长时间平滑处理抹掉，比如中免的底部拉升，往往都是小反弹
+
+---------------
+按照王立新第一篇论文，每种策略都有自己的买卖点，有效说明当时信众力量强，无效说明力量弱
+那这样每个策略都有自己的交易信号点了，也加入投票或权重？
+均线上穿下穿
+突破支撑线阻力线
+趋势线
+大单，跌一直买，涨一直卖
+布林带，突破上轨买，突破下轨卖
+macd背离
+
+---------------
+买卖点位对于模型来说太严苛，容易导致错误率高，我用来预测范围，不是说这个5.67才能买5.68就错了，而是5.6～5.8之间都可以，这样对模型来说温柔点
+时间有限，抓紧每时每刻放大自己的优势
+
+四  experiment
+论文放弃a股，只用美股与数字币，港股？  挑适合的市场吧
+标注数据为不同策略挑选合适的市场，跟为策略挑合适的市场一样的
+
+五  result
+收益率做评价指标，用王立新那种回测作为结果
+
+六  conclusion
+做金融基线数据集，看能不能放到kaggle 和hugging face
+学术界数据固定，调试太多，容易过拟合，工业界不需要挑太多，不断有新数据，只是要提升数据质量。我专门用来提供高质量标注数据挺好
+数据标注中刊后发视频讲解
+
+
+参考文献
+# 数据标注23、24年
+
+1  日内预测，先把5分钟级别的临近价格转为对数形式，然后用线性、机器学习模型训练模型，预测准确率1%以下
+2 把图神经网络和CNN结合起来，并加入多级别数据 和 情绪分析，最终策略胜率比 买入持有策略高50%  真复杂
+3 LSTM和GRU做个集成学习，准确率56%，再用PSO粒子群算法调参，准确率最终57%  印度的
+4 梯度加权类激活图(gradient-weighted class activation map, Grad-CAM) 把价格变成图，效果一般，Expert Systems With Applications 
+真的是1区么？ 韩国的
+5 本研究采用深度学习和数据聚类方法
+提出一个可解释的自动化金融市场交易模型。在提出的方法中，特征向量
+首先从市场价格指数和有用的指标(如RSI和MA)的值中提取。数据
+然后通过聚类执行标记。然后，创建一个数据集来训练深度学习模型
+为了确定并采取最佳行动(买入、卖出或不采取行动)。在金融市场上，价格可能会变化
+极大地破坏了学习模型的性能。为此，设计了一种自编码器网络
+识别市场中的剧烈波动(异常值)并避免在这种情况下进行交易。这可以防止
+陡峭的下降。  感觉靠谱  但结果提升不多
+6 强化学习，收益率高个20%
+7  A tensor robust principal
+ component analysis (TRPCA) model  ，多模态融合，年华26%
+ 8 只做走势研究，看看有啥特点   没啥用
+ 9 模糊  准确率提升60%
+ 10 本文提出了一种新型的混合模型SA-DLSTM
+结合情绪增强卷积神经网络进行股票市场预测和模拟交易
+网络(ECNN)、去噪自编码器(DAE)模型和长短期记忆模型(LSTM)。
+首先，利用互联网用户生成的评论作为股票市场数据的补充，并利用网络用户生成的评论作为股票市场数据的补充
+采用ECNN提取情感表示。其次，我们提取的关键特征
+利用DAE对股票市场数据进行预测，可以提高预测精度。第三，我们重视时效性
+考虑股票市场情绪，构建更可靠、更现实的情绪
+索引。最后，将股票数据和情绪指数的关键特征输入到LSTM中，生成股票
+市场预测。实验结果表明，SA-DLSTM的预测精度优于SA-DLSTM
+其他比较模型。同时，SA-DLSTM在收益和风险两方面都有较好的表现。
+
+11 多级别  图识别 ，只讲准确率，没讲收益率
+12 识别图像，没讲收益率，但有代码
+13 资产组合优化  选股策略 
+14 深度强化学习，收益率 8%~52%
+15  This paper proposes a novel Recurrent ensemble deep Random Vector Functional Link (RedRVFL)
+ network 递归集成深度随机向量函数链路  只提了价格预测准确率  mae 3
+ 16 本研究为股票开发了一个称为MVL-SVM的混合模型
+通过集成多视图学习和支持向量进行价格趋势预测
+机(SVM)。它的工作原理是简单地输入异构的多视图数据模拟
+neous，这可能会减少信息损失。与阿丽玛的经典相比
+基于单视图和多视图数据，我们的混合模型显示了统计量
+优势显著。在稳健性检验中，我们的模型表现优于其他模型
+设置新闻和市场数据的滑动窗口时，准确率至少为10%
+17 群惩罚三项式logit动态模型 预测三种趋势的
+18 遗传算法
+19 新闻中提取关键词  准确率提升5%
+20 强化学习
+21 数据预处理  去噪  沪深300
+22 模型预测数字币，没有万能模型，各自有自己使用的情况        曾经我想过，既然每种策略各有场景，我如何识别当前是什么场景？
+或者用集成方法？ 给当前场景属于啥投票，  或者根据当前走势与某种场景的相似度，决定用哪个策略？
+23 多代理  强化学习，融合了timesnet  先看
+24 仓位管理
+25 情绪分析
+26 数据预处理  数字币  先看   3
+27 预测美元化率的方向
+28 模型可解释性
+29 NPMM标记是一种有效的股票价格趋势预测标记方法
+与其他标记方法相比，产生交易优于其他标记方法  先看  数据标注   1
+
+传统方式通过上、下标注所有时间点，小波动多导致模型性能差。提出 N-Period Min-Max 标注法
+介绍里讲股票预测发展历史，引出数据标注重要性
+上下标注法抓不到趋势，2020wu那篇用深度学习方法抓特征用来标注出趋势
+受启发与2018年找V型的文章，做了小改动，就是挑出两个极值点，再拿当前价格和两个极值比，越来越小说明跌，反之涨，V型过滤了小波动。  创新小
+ XGBoost 能做分类和回归，用作模型，预测每个bar时有阈值0.5，用来分类
+ 买卖策略：出现连续几个相同的就交易
+ 图6是实验效果，不如我传统指标准，我再加多级别，模糊策略退5天，多指标做投票
+
+总结：传统标注每个bar都标上下，但价格波动影响大，比如一串下里常出现几个上，作者也是每个bar都标，但由于V型做铺垫，
+忽略了各种意外变动，一串下里多个上变成只有真正拐点的一个上。
+
+30 基于图像训练   把多特征放到多通道
+31 数字币  趋势标注  先看     2
+ a new attention-based CNN–LSTM model for multiple cryptocurrencies (ACLMC) 
+ 受启发与2018年的文章，用局部最小值组成的序列代替原始价格，以抹除小波动。
+ 趋势分三类，上，下，平稳，平稳状态不交易   （数字币能做空）
+ 对同级别数据，通过weight-sharing进行encoder，以标识基本信息，
+ 把不同级别、不同币的信息通过两个注意力层组合起来，以挖掘些特征
+ 多个预测器同时做预测，能够促进模型训练，并且能同时交易多个币
+ 相关论文：  均线还是有噪音影响，2022年ozer 用k临近算法移除了远离中心的价格，降低了噪音，但缺点在于抓不到行情反转
+ 标注方法类似布林通道，每个价格都去和上个极值点比，再乘当前趋势值d，与阈值超参做对比，如果打破了，就开启新的趋势和区间
+没有打破则维持趋势。   这种是会有误判的
+
+32 利用VIX-Lasso-GRU模型对股指期货进行定价  5分钟  A股
+
+--------------------------------------------
+# 数据标注  旧的
+2006Mining of Stock Data Intra and Inter-Stock Pattern  51
+挖掘两股票间关系，值得看
+
+2015Classification and Prediction of Stock Market Index Based on Fuzzy  99
+模糊的，不看
+
+2016 A novel forecasting method based on multi-order fuzzy time series and technical analysis  1区 120
+multi-order fuzzy time series, 核心
+technical analysis 构成fuzzy
+and a genetic algorithm  找最佳划分点
+模糊理论是另一个领域了，学习成本太高
+
+2016Stock prediction using deep learning  4区 335
+一般
+
+2016Fuzzy transfer learning in time series forecasting for stock market prices 3区 11
+模糊的
+
+2017A Comparative Study on Trend Forecasting Approach 会议 39
+综述，MLP准确率最高
+
+2017 Convolutional neural networks for time series classification  3区 906
+方法里说，之前有人把多变量变为单变量做输入进行训练，这样忽略了多变量之间的内在联系，于是作者直接用多变量训练卷积网络
+仔细看看
+
+2018The UEA multivariate time series classification
+没金融
+
+2019 Genetic algorithm-optimized multi-channel convolutional neural network for stock market prediction  3区 ref190
+focus on the optimization of feature extraction part of CNN,
+proposes a method to systematically optimize the parameters for the CNN model by using genetic algorithm (GA).
+26 27 44 29 46
+if the problem is too computationally complicated to be solved, GA can be used as a method to obtain a solution close 
+to the optimal
+one
+用的方法是use a deep multi-channel CNN framework for amultivariate time-series classification
+用CNN因为它善于捕捉局部相关，
+原始数据5个特征，用指标预处理，变为7个指标特征，分为7个channel，进入CNN，通过计算分数分类，输出2类 up/down trend
+训练数据的label怎么来的，没说
+
+
+2019 Deep learning-based feature engineering for stock price movement prediction  1区 445
+提出多过滤器神经网络，能抓取特征并预测价格方向，比LSTM、CNN等强2%，准确率也只有48%
+数据标注还是用每天收盘价波动幅度，分为涨，震荡，跌
+
+
+2019Stock Price Movements Classification Using Machine and Deep Learning Techniques-The Case Study of Indian Stock Market
+会议 53
+使用 Boruta feature selection technique选择特征 （基于高均值用随机森林找重要指标）
+深度学习比机器学习准确率高5%
+数据标注用当前价格和之前价格比，二分类，实验准确率83%
+
+2019 Stock market forecasting with super-high dimensional time-series data using ConvLSTM, trend sampling, and specialized data augmentation
+1区 102
+提出个新预测框架NuNet，能做超高维度的市场信息特征提取。
+把各指数数据都补全为4000个时间步
+1个数据和他之前t个时间步的数据一起进网络，预测明天价格
+
+2019Deep learning for time series classification a review 3区 3224
+在时序分类领域，深度学习还没有很多应用。
+数据定义有3种，单变量、多变量、一对张量X,Y，Y是label
+然后讲了几种模型处理数据的过程，都是一般步骤
+
+
+2019Financial Trading Model with Stock Bar Chart Image Time Series with  4区 67
+直接用蜡烛图做CNN，用了30个股票，30天的日线bar  （启发，把每个股票的价格都标准化，那就可以用很多股票训练了）
+相关工作里只有一篇跟他类似
+在30个bar的蜡烛图中，计算价格斜率，决定label为买、卖或不动。
+
+
+2019Multi-Scale RCNN Model for Financial Time-series                 arxiv 7
+多级别属性影响，临时依赖
+我想过不同时间级别彼此综合判断，个股和大盘的依赖关系
+引用11，多级别已经被广泛探索了
+多级别相关论文就2篇
+临时依赖有3篇，但都是单级别
+
+预训练迁移到其他股票，迁移误差千分之5
+标注：选取重要的指标做特征，不同模型选出的重要特征不一样
+大部分都是用当前价格和前一天比较，来分类涨跌做标注，或是回归
+有个从蜡烛图提取K先，然后分形态的
+有nlp的
+有个蜡烛图做CNN的
+
+2019Stock Market Analysis A Review and Taxonomy of   2区 引用 492  
+叙事的方式不错，可读性强，可以当作这个领域的历史了解
+
+2019Anensemble of LSTM neural networks for high-frequency 3区 226
+在每一个bar上做分类，虽然频繁，也和变长步预测一次涨跌不是一个方向，但这种方式确实适合做高频，比如5分钟bar的BTC。
+
+2019Stock Market Trend Prediction Using High-Order  3区 189
+准确率一般
+
+2020 A Labeling Method for Financial Time Series Prediction Based on Trends  3区 ref61
+哈工大QS256
+传统标注数据方法，是比较数据当前值和未来短期内的值，但短期的随机性太强，捕捉不了连续趋势的特征。
+所以作者提出方法“连续趋势标注”
+How to label financial time series data to
+determine the prediction accuracy of machine learning models and subsequently determine final
+investment returns is a hot topic
+How to evaluate the prediction performance of a machine learning
+model in the financial market is also a hot topic    23说交叉验证是最好的方法
+然后讲怎么选特征
+41说大量研究者用技术分析做时间序列预测
+回归不需要标注数据，分类需要。
+51就是通过价格对数分类下一刻涨跌，这样每一刻都能做分类，65说对数的变动更难预测
+这句说的很多，股票价格受宏观和公司基本面影响，商品价格受宏观和需求影响，外汇价格受汇率和国际环境影响
+所以，是本质因素导致了趋势，而短期的随机因素影响不大。
+
+自动标注比传统标注方法好
+
+作者先拿出收盘价，做了个单变量矩阵，时间步是11。他叫矩阵扩展
+通过窗口解决了look-ahead bias
+想识别趋势，要先定义趋势，作者用的方法是先拿出所有极值点，极大值们、极小值们各放一个向量，然后计算临近两对极值点的涨跌幅，
+达到某个阈值（实验表明15%效果最好），则说明趋势反转，否则视为噪音波动。图2label1是传统标注方法，就是笔记开头提到的。
+作者按照趋势的算法，给每个价格一个标签（-1,1），以说明这个价格当前在什么趋势里
+实验评估用准确率召回率那类
+
+策略是分类为1就买，变-1就卖。模型训练出了判断此刻跌是趋势改变的能力。模型KNN，逻辑回归，随机森林，SVM，LSTM，GRU
+
+
+2020 A pattern representation of stock time series based on DTW  3区26
+Dynamic Time Warping (DTW) 是个抓取时间序列形态特征的工具，从原始序列里抓出个子序列
+作者用Particle Swarm Optimization algorithm解决全局最优问题，提出PR-DTW方法，用于捕捉短期特征
+这个方法用10天数据预测3天，用决策树、多层感知机做了分类预测实验，成功率70%
+引用5,2007年技术指标，6、2011年波浪理论，7、2018滑动窗口深度学习回归，8、2018模式分类
+已有的时间序列表示方法有三类：
+	基于表示的生成模型：马尔科夫、贝叶斯网络、深度学习等
+	基于表示的转换模型：把原始数据转为时间序列的特征空间，包括傅里叶变化、波浪转换、余弦转换等
+	基于表示的时间域：从原始数据获取有代表性的点，包括分段线性近似、分段集合近似等
+
+2020 Stock market movement forecast: A Systematic review  1区287
+普通，先讲预测分为 基本面、指标、消息，然后论文都是数据+模型
+输入的数据分为价格、指标、消息等
+模型分为ANN，SVM，深度学习等
+
+2020 An improved deep learning model for predicting stock market price time series  3区139
+在金融预测领域，这个时期（2020年之前那几年）深度学习用的还不多，主流做法是数学统计、模糊理论做股指预测，其次是机器学习的
+随机森林、决策树、ANN，效果一般。后来的深度学习LSTM比之前那些强
+作者用LSTM 做股票收盘价预测，属于回归
+
+
+2020Financial time series forecasting with deep learning A systematic  1区1071
+这两年深度学习火了，其在金融预测领域综述不多，因此有了这篇
+介绍了Deep Multi Layer Perceptron (DMLP)、RNN、LSTM、CNN、Restricted Boltzmann Machines (RBMs)、
+ Deep Belief Networks (DBNs)、Autoencoders (AEs)、 Deep reinforcement learning (DRL)
+又介绍金融时序预测，4.1股票价格预测、4.2股指预测，就说数据是5个特征，用了什么模型做预测，也不提分类还是回归，不提具体数据标注
+table10列举了趋势预测的几篇论文
+
+2020Optimizing LSTM for time series prediction in Indian stock market  会议 316
+跟最新的时序预测比太老了，还是价格回归。
+
+
+2020Stock Price Prediction Using Convolutional Neural     印度的会议 引用164 
+输入类型分为三种：
+    多时间步单变量
+    多时间步多变量，每个输入序列一个通道
+    多实践步多变量，每个输入序列用不同子模型，最后在预测前合并结果
+结论，深度学习模型比机器学习模型强，多变量比单变量准
+
+2020EVALUATINGDATAAUGMENTATIONFORFINANCIALTIMESERIESCLASSIFICATION   arxiv 16
+data augmentation 数据增大，cv领域用的多，作者也想在时序领域用
+股票时间序列训练数据少，作者对比了八种增大数据的方法，发现有三种对模型泛化能力有提升
+
+2020Multiple Stock Time Series Jointly Forecasting with  三流会议，11
+把多个相关股票一起训练做预测，比如银行业，航运业等，这么做的确实不多
+
+2021 Forecasting daily stock trend using multi-filter feature selection and deep learning  1区 110
+用多个特征选择技术生成一个特征子集。
+用88个股票的44个指标，通过独立训练逻辑回归模型计算指标重要性，剔除得分低的特征，把剩余的特征分类，
+再从每类中选出最重要的特征，生成特征子集
+二分类，每天价格变化 <-0.5为0，>0.5为1
+Xu, Y., & Cohen, S. B. (2018). Stock movement prediction from tweets and historical
+prices. In Proceedings of the 56th annual meeting of the association for computational
+linguistics (volume 1: long papers) (pp. 1970–1979).
+
+2021The great multivariate time series classification bake off a  3区 406
+多变量时许预测的综述
+
+2022 A stock time series forecasting approach incorporating candlestick patterns and sequence similarity  1区27
+现在的模型可解释性差，不能迁移到不同数据
+首先通过序列模式挖掘，挖出蜡烛模式，再用序列相似性去匹配不同的蜡烛序列。
+此方法准确率56%，SVM 50%，LSTM50%
+蜡烛模式就是蜡烛图里的序列，
+Chen, J.-H., & Tsai, Y.-C. (2020). Encoding candlesticks as images for pattern 
+classification using convolutional neural networks. Financial Innovation, 6. https:// 
+doi.org/10.1186/s40854-020-00187-0 用蜡烛图做趋势分类
+作者通过12篇论文总结了一下股票预测：
+	分为价格回归、趋势分类
+	很难比较，因为大家用的数据不同，趋势都不一样
+	数据规模小
+	大家论文的模型无法为每个股票做单独调优
+Fig.7 作者从蜡烛图提取K线，总结出12种拐点形态及其对应趋势（上或下），再从中挖掘规律。有创意，太复杂了，准确率才56%
+
+2023 A Bayesian‑based classifcation framework for fnancial time series trend prediction  3区 ref9
+作者来自谢里夫理工大学，伊朗最好的理工大学，QS406
+这也是做价格趋势预测的数据标注，用贝叶斯优化技术找到最好的超参。
+跟上面比，作者把一定范围内波动作为第三个类别——不操作。本质还是判断阈值，系数叫涛。
+两篇论文太像了，也是几个模型，也是召回率准确率做评估。
+
+
+2023 Augmented bilinear network for incremental multi-stock time-series classification 1区 6
+预训练模型如何快速用到别的数据集上。他这种方法能使迁移后准确率误差在0.5%之间
+
+2023Multi-source aggregated classification for stock price movement prediction  1区71
+核心是Fig.1，通过NLP分析新闻，历史价格等，集成个结果给BiLSTM，输出结果
+
+
+2023 Improving stock trend prediction through financial time series  3区6
+作者筛选股价极值点的想法不错
