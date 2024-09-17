@@ -408,7 +408,10 @@ if __name__ == '__main__':
     docker cp /root/RobotMeQ/QuantData/live 26dbf8178821:/home/RobotMeQ/QuantData/live2
     docker cp 26dbf8178821:/home/RobotMeQ/QuantData/live /root/RobotMeQ/QuantData/live
     docker cp 26dbf8178821:/home/RobotMeQ/QuantData/trade_point_live /root/RobotMeQ/QuantData/trade_point_live
-    
+    docker cp 26dbf8178821:/home/RobotMeQ/QuantData/position_historyOrders /root/RobotMeQ/QuantData/position_historyOrders
+    docker cp 26dbf8178821:/home/RobotMeQ/QuantData/position_currentOrders /root/RobotMeQ/QuantData/position_currentOrders
+    docker cp 26dbf8178821:/home/log.out /root/RobotMeQ/QuantData/log.out
+
     2024 04 06 腾讯云    激进策略  287151402@qq.com
     docker start 5c239d668666
     docker exec -it 5c239d668666 /bin/bash
@@ -423,6 +426,7 @@ if __name__ == '__main__':
     docker start d63f10ba76df
     docker exec -it d63f10ba76df /bin/bash
     docker cp /root/RobotMeQ d63f10ba76df:/home/RobotMeQ
+    docker cp d63f10ba76df:/home/log.out /root/RobotMeQ/QuantData/log.out
     
 --创建新项目    
     在conda的导航工具里新建环境，然后pycharm给项目选择需要的解释器，
