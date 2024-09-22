@@ -79,6 +79,32 @@ def getData_BaoStock(asset, start_date, end_date, bar_type):
     bs.logout()
 
 
+def query_hs300_stocks():
+    # 登陆系统
+    lg = bs.login()
+    # 显示登陆返回信息
+    print('login respond error_code:' + lg.error_code)
+    print('login respond  error_msg:' + lg.error_msg)
+
+    # 获取沪深300成分股
+    rs = bs.query_hs300_stocks()
+    print('query_hs300 error_code:' + rs.error_code)
+    print('query_hs300  error_msg:' + rs.error_msg)
+
+    # 打印结果集
+    hs300_stocks = []
+    while (rs.error_code == '0') & rs.next():
+        # 获取一条记录，将记录合并在一起
+        hs300_stocks.append(rs.get_row_data())
+    result = pd.DataFrame(hs300_stocks, columns=rs.fields)
+    # 结果集输出到csv文件
+    result.to_csv("../QuantData/hs300_stocks.csv", encoding="utf-8", index=False)
+    print(result)
+
+    # 登出系统
+    bs.logout()
+
+
 def handle_TDX_data(asset):
     """
     把通达信导出的xls数据，另存为xlsx后，此函数将其处理为csv文件
@@ -130,6 +156,9 @@ if __name__ == '__main__':
     ['5', '15', '30', '60', 'd']
     backtest_bar  live_bar
     """
+    # 获取沪深300股票代码
+    query_hs300_stocks()
+    # 遍历300股票，代码、名字、级别，输入进去，起始日期不填  最早拿到15年，或者上市日开始的
     assetList = RMQAsset.asset_generator('600332', '', ['30'], 'stock', 1)
     for asset in assetList:
         # 接口取数据只能股票，回测方便
@@ -140,3 +169,5 @@ if __name__ == '__main__':
         # 通达信拿到的数据，xlsx转为csv；主要实盘用，偶尔回测拿指数、ETF数据用
         # 如果是回测数据，handle_TDX_data末尾要改
         # handle_TDX_data(asset)
+
+
