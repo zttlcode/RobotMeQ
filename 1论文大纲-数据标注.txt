@@ -1,3 +1,9 @@
+第四章的房价实例代码，可以作为样例
+卷积神经网络那一章最后的lenet的网络代码，训练代码train_ch6，可以作为我cnn的模仿，net涉及的API代码直接看官方文档吧
+批量规范化的框架实现有代码，填输出通道数就行，我用CNN处理序列，可以用么？当初清华框架里需要还原，是因为他是回归，而我是分类，应该不用还原
+
+
+
 我觉得自己接近真相了
 来股市，什么题材都有故事，题材没用
 首先，主力吸收了一堆筹码，然后炒起来，卖给散户
@@ -130,7 +136,7 @@ lightGBM比XGboost更快更省内存
 1  日内预测，先把5分钟级别的临近价格转为对数形式，然后用线性、机器学习模型训练模型，预测准确率1%以下
 2 把图神经网络和CNN结合起来，并加入多级别数据 和 情绪分析，最终策略胜率比 买入持有策略高50%  真复杂
 3 LSTM和GRU做个集成学习，准确率56%，再用PSO粒子群算法调参，准确率最终57%  印度的
-4 梯度加权类激活图(gradient-weighted class activation map, Grad-CAM) 把价格变成图，效果一般，Expert Systems With Applications 
+4 梯度加权类激活图(gradient-weighted class activation map, Grad-CAM) 把价格变成图，效果一般，Expert Systems With Applications
 真的是1区么？ 韩国的
 5 本研究采用深度学习和数据聚类方法
 提出一个可解释的自动化金融市场交易模型。在提出的方法中，特征向量
@@ -158,7 +164,7 @@ lightGBM比XGboost更快更省内存
 
 11 多级别  图识别 ，只讲准确率，没讲收益率
 12 识别图像，没讲收益率，但有代码
-13 资产组合优化  选股策略 
+13 资产组合优化  选股策略
 14 深度强化学习，收益率 8%~52%
 15  This paper proposes a novel Recurrent ensemble deep Random Vector Functional Link (RedRVFL)
  network 递归集成深度随机向量函数链路  只提了价格预测准确率  mae 3
@@ -198,7 +204,7 @@ neous，这可能会减少信息损失。与阿丽玛的经典相比
 
 30 基于图像训练   把多特征放到多通道
 31 数字币  趋势标注  先看     2
- a new attention-based CNN–LSTM model for multiple cryptocurrencies (ACLMC) 
+ a new attention-based CNN–LSTM model for multiple cryptocurrencies (ACLMC)
  受启发与2018年的文章，用局部最小值组成的序列代替原始价格，以抹除小波动。
  趋势分三类，上，下，平稳，平稳状态不交易   （数字币能做空）
  对同级别数据，通过weight-sharing进行encoder，以标识基本信息，
@@ -244,7 +250,7 @@ and a genetic algorithm  找最佳划分点
 focus on the optimization of feature extraction part of CNN,
 proposes a method to systematically optimize the parameters for the CNN model by using genetic algorithm (GA).
 26 27 44 29 46
-if the problem is too computationally complicated to be solved, GA can be used as a method to obtain a solution close 
+if the problem is too computationally complicated to be solved, GA can be used as a method to obtain a solution close
 to the optimal
 one
 用的方法是use a deep multi-channel CNN framework for amultivariate time-series classification
@@ -296,7 +302,7 @@ one
 有nlp的
 有个蜡烛图做CNN的
 
-2019Stock Market Analysis A Review and Taxonomy of   2区 引用 492  
+2019Stock Market Analysis A Review and Taxonomy of   2区 引用 492
 叙事的方式不错，可读性强，可以当作这个领域的历史了解
 
 2019Anensemble of LSTM neural networks for high-frequency 3区 226
@@ -365,7 +371,7 @@ table10列举了趋势预测的几篇论文
 跟最新的时序预测比太老了，还是价格回归。
 
 
-2020Stock Price Prediction Using Convolutional Neural     印度的会议 引用164 
+2020Stock Price Prediction Using Convolutional Neural     印度的会议 引用164
 输入类型分为三种：
     多时间步单变量
     多时间步多变量，每个输入序列一个通道
@@ -396,8 +402,8 @@ linguistics (volume 1: long papers) (pp. 1970–1979).
 首先通过序列模式挖掘，挖出蜡烛模式，再用序列相似性去匹配不同的蜡烛序列。
 此方法准确率56%，SVM 50%，LSTM50%
 蜡烛模式就是蜡烛图里的序列，
-Chen, J.-H., & Tsai, Y.-C. (2020). Encoding candlesticks as images for pattern 
-classification using convolutional neural networks. Financial Innovation, 6. https:// 
+Chen, J.-H., & Tsai, Y.-C. (2020). Encoding candlesticks as images for pattern
+classification using convolutional neural networks. Financial Innovation, 6. https://
 doi.org/10.1186/s40854-020-00187-0 用蜡烛图做趋势分类
 作者通过12篇论文总结了一下股票预测：
 	分为价格回归、趋势分类
