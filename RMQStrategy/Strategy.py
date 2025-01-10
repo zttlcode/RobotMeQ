@@ -312,7 +312,7 @@ def strategy_tea_radical(positionEntity,
                                     IEMultiLevel.updateDiverge(indicatorEntity)
 
                                     # 记录策略所有买卖点  格式 [["2021-04-26", 47, "buy"], ["2021-06-15", 55.1, "sell"]]
-                                    trade_point = [indicatorEntity.tick_time.strftime('%Y-%m-%d %H'),
+                                    trade_point = [indicatorEntity.tick_time.strftime('%Y-%m-%d %H:%M:%S'),
                                                    round(indicatorEntity.tick_close, 3),
                                                    "buy"]
                                     positionEntity.trade_point_list.append(trade_point)
@@ -357,7 +357,7 @@ def strategy_tea_radical(positionEntity,
                                     IEMultiLevel.updateDiverge(indicatorEntity)
 
                                     # 记录策略所有买卖点  格式 [["2021-04-26", 47, "buy"], ["2021-06-15", 55.1, "sell"]]
-                                    trade_point = [indicatorEntity.tick_time.strftime('%Y-%m-%d %H'),
+                                    trade_point = [indicatorEntity.tick_time.strftime('%Y-%m-%d %H:%M:%S'),
                                                    round(indicatorEntity.tick_close, 3),
                                                    "sell"]
                                     positionEntity.trade_point_list.append(trade_point)

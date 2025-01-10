@@ -60,4 +60,7 @@ def isWorkDay(filepath, today):
 
 
 if __name__ == '__main__':
-    getWorkDay()  # 获取今年的交易日。需要每年元旦运行
+    # getWorkDay()  # 获取今年的交易日。需要每年元旦运行
+    timeLevelList = ['5', '15', '30', '60', 'd']
+    for timeLevel in timeLevelList:
+        print(timeLevel)

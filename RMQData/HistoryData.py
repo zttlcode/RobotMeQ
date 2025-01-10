@@ -105,6 +105,117 @@ def query_hs300_stocks():
     bs.logout()
 
 
+def query_hs500_stocks():
+    # 登陆系统
+    lg = bs.login()
+    # 显示登陆返回信息
+    print('login respond error_code:' + lg.error_code)
+    print('login respond  error_msg:' + lg.error_msg)
+
+    # 获取中证500成分股
+    rs = bs.query_zz500_stocks()
+    print('query_zz500 error_code:' + rs.error_code)
+    print('query_zz500  error_msg:' + rs.error_msg)
+
+    # 打印结果集
+    zz500_stocks = []
+    while (rs.error_code == '0') & rs.next():
+        # 获取一条记录，将记录合并在一起
+        zz500_stocks.append(rs.get_row_data())
+    result = pd.DataFrame(zz500_stocks, columns=rs.fields)
+    # 结果集输出到csv文件
+    result.to_csv("../QuantData/hs500_stocks.csv", encoding="utf-8", index=False)
+    print(result)
+
+    # 登出系统
+    bs.logout()
+
+
+def query_ipo_date(stock_code):
+    # 登陆系统
+    lg = bs.login()
+    # 显示登陆返回信息
+    print('login respond error_code:' + lg.error_code)
+    print('login respond  error_msg:' + lg.error_msg)
+
+    # 获取证券基本资料
+    rs = bs.query_stock_basic(code=stock_code)
+    # rs = bs.query_stock_basic(code_name="浦发银行")  # 支持模糊查询
+    print('query_stock_basic respond error_code:' + rs.error_code)
+    print('query_stock_basic respond  error_msg:' + rs.error_msg)
+
+    # 打印结果集
+    data_list = []
+    while (rs.error_code == '0') & rs.next():
+        # 获取一条记录，将记录合并在一起
+        data_list.append(rs.get_row_data())
+    result = pd.DataFrame(data_list, columns=rs.fields)
+
+    # 登出系统
+    bs.logout()
+    return str(result.at[0, 'ipoDate'])
+
+
+def get_ipo_date_for_stock():
+    # 读取 CSV 文件，得到 DataFrame 对象
+    file_path = "../QuantData/hs500_stocks.csv"  # 文件路径
+    df = pd.read_csv(file_path)
+    # 遍历每行数据，调用 query_ipo_date 并修改第一列的日期
+    for index, row in df.iterrows():
+        stock_code = row['code']  # 提取编号
+        new_date = query_ipo_date(stock_code)  # 查询得到新的日期
+        df.at[index, 'updateDate'] = new_date  # 覆盖第一列的日期
+    df.rename(columns={'updateDate': 'ipodate'}, inplace=True)
+    # 将修改后的 DataFrame 写回 CSV 文件
+    df.to_csv(file_path, index=False)
+
+
+def get_stock_from_code_csv():
+    allStockCode = pd.read_csv("../QuantData/hs500_stocks.csv")
+    for index, row in allStockCode.iterrows():
+        assetList = RMQAsset.asset_generator(row['code'][3:], row['code_name'], ['5', '15', '30', '60', 'd'], 'stock',
+                                             1)  # asset是code等信息
+        for asset in assetList:  # 每个标的所有级别
+            lg = bs.login()
+            print('login respond error_code:' + lg.error_code)
+            print('login respond  error_msg:' + lg.error_msg)
+            if asset.barEntity.timeLevel == 'd':
+                # 日线数据，股票和指数接口一样
+                rs = bs.query_history_k_data_plus(row['code'],
+                                                  "date,open,high,low,close,volume",
+                                                  start_date=row['ipodate'],
+                                                  frequency="d", adjustflag="2")
+            else:
+                # 分钟先数据，只有股票
+                rs = bs.query_history_k_data_plus(row['code'],
+                                                  "date,time,open,high,low,close,volume",
+                                                  start_date=row['ipodate'],
+                                                  frequency=asset.barEntity.timeLevel, adjustflag="2")
+
+            print('query_history_k_data_plus respond error_code:' + rs.error_code)
+            print('query_history_k_data_plus respond  error_msg:' + rs.error_msg)
+            # 打印结果集
+            data_list = []
+            while (rs.error_code == '0') & rs.next():
+                # 获取一条记录，将记录合并在一起
+                data_list.append(rs.get_row_data())
+            result = pd.DataFrame(data_list, columns=rs.fields)
+
+            if 0 != len(data_list):
+                if 'd' == asset.barEntity.timeLevel:
+                    result.loc[:, 'date'] = pd.to_datetime(result.loc[:, 'date'])
+                    result.rename(columns={'date': 'time'}, inplace=True)  # 为了和分钟级bar保持一致，修改列名为time
+                else:
+                    # 证券宝的time字段20170703093500000，int类型处理不了，所以这里裁剪掉后三个0
+                    result.loc[:, 'time'] = [t[:-3] for t in result.loc[:, 'time']]
+                    result.loc[:, 'time'] = pd.to_datetime(result.loc[:, 'time'])
+                    result = result.loc[:, ['time', 'open', 'high', 'low', 'close', 'volume']]
+            result.to_csv(asset.barEntity.backtest_bar, index=False)
+            print(result)
+            # 登出系统
+            bs.logout()
+
+
 def handle_TDX_data(asset):
     """
     把通达信导出的xls数据，另存为xlsx后，此函数将其处理为csv文件
@@ -156,16 +267,14 @@ if __name__ == '__main__':
     ['5', '15', '30', '60', 'd']
     backtest_bar  live_bar
     """
-    # 获取沪深300股票代码
-    query_hs300_stocks()
-    # 遍历300股票，代码、名字、级别，输入进去，起始日期不填  最早拿到15年，或者上市日开始的
+    # get_stock_from_code_csv()  # 日线能从发行日开始，分钟级别最早是2019年元旦
     assetList = RMQAsset.asset_generator('600332', '', ['30'], 'stock', 1)
     for asset in assetList:
         # 接口取数据只能股票，回测方便
         # getData_BaoStock(asset, '2000-01-01', '2024-06-11', 'backtest_bar')
         # 日线要拿前250天的数据，单独加载，不然太慢
-        getData_BaoStock(asset, '2002-01-01', '2024-06-30', 'backtest_bar')
-
+        # getData_BaoStock(asset, '2002-01-01', '2024-06-30', 'backtest_bar')
+        pass
         # 通达信拿到的数据，xlsx转为csv；主要实盘用，偶尔回测拿指数、ETF数据用
         # 如果是回测数据，handle_TDX_data末尾要改
         # handle_TDX_data(asset)
