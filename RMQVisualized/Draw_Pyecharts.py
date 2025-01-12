@@ -48,6 +48,7 @@ def split_data_part(data, trade_point_list) -> Sequence:
     """
     买卖点显示到图表上  格式如下
     trade_point_list [["2022-01-01","18.25","buy"],["2022-01-05","20.25","sell"]]
+    [:10]
     """
     mark_line_data = []
     for i in range(len(data["times"])):  # 遍历x轴所有时间
@@ -357,27 +358,27 @@ if __name__ == "__main__":
         pyecharts整合Flask  https://pyecharts.org/#/zh-cn/web_flask
         https://echarts.apache.org/examples/zh/index.html#chart-type-candlestick
     """
-    # assetList = RMQAsset.asset_generator('000001', '', ['5', '15', '30', '60', 'd'], 'index')
-    assetList = RMQAsset.asset_generator('BTCUSDT', 'BTC', ['15', '60', '240', 'd'], 'crypto')
+    assetList = RMQAsset.asset_generator('000001', '', ['5', '15', '30', '60', 'd'], 'stock', 1)
+    # assetList = RMQAsset.asset_generator('BTCUSDT', 'BTC', ['15', '60', '240', 'd'], 'crypto')
 
     # 读取日线数据
-    filePath = RMTTools.read_config("RMQData", "trade_point_backtest") + 'all_' + assetList[0].assetsCode + '_d.csv'
-    df = pd.read_csv(filePath, encoding='gbk')
+    filePath = RMTTools.read_config("RMQData", "backtest_bar") + 'backtest_bar_' + assetList[0].assetsCode + '_30.csv'
+    df = pd.read_csv(filePath, encoding='utf-8')
 
     # 图表派策略买卖点
     tpl_filepath = RMTTools.read_config("RMQData", "trade_point_backtest") + "trade_point_list_"
-    df_tpl_5 = pd.read_csv(tpl_filepath + assetList[0].assetsCode + "_" + assetList[0].timeLevel + ".csv")
-    df_tpl_15 = pd.read_csv(tpl_filepath + assetList[1].assetsCode + "_" + assetList[1].timeLevel + ".csv")
-    df_tpl_30 = pd.read_csv(tpl_filepath + assetList[2].assetsCode + "_" + assetList[2].timeLevel + ".csv")
-    df_tpl_60 = pd.read_csv(tpl_filepath + assetList[3].assetsCode + "_" + assetList[3].timeLevel + ".csv")
-    # df_tpl_d = pd.read_csv(tpl_filepath + assetList[4].assetsCode + "_" + assetList[4].timeLevel + ".csv")
+    #df_tpl_5 = pd.read_csv(tpl_filepath + assetList[0].assetsCode + "_" + assetList[0].barEntity.timeLevel + ".csv")
+    #df_tpl_15 = pd.read_csv(tpl_filepath + assetList[1].assetsCode + "_" + assetList[1].barEntity.timeLevel + ".csv")
+    df_tpl_30 = pd.read_csv(tpl_filepath + assetList[2].assetsCode + "_" + assetList[2].barEntity.timeLevel + ".csv")
+    #df_tpl_60 = pd.read_csv(tpl_filepath + assetList[3].assetsCode + "_" + assetList[3].barEntity.timeLevel + ".csv")
+    #df_tpl_d = pd.read_csv(tpl_filepath + assetList[4].assetsCode + "_" + assetList[4].barEntity.timeLevel + ".csv")
 
-    # df_tpl = pd.concat([df_tpl_5, df_tpl_15, df_tpl_30, df_tpl_60, df_tpl_d]) # 各级别买卖点合并成一个df
-    df_tpl = pd.concat([df_tpl_5, df_tpl_15, df_tpl_30, df_tpl_60])  # 各级别买卖点合并成一个df
+    #df_tpl = pd.concat([df_tpl_5, df_tpl_15, df_tpl_30, df_tpl_60, df_tpl_d]) # 各级别买卖点合并成一个df
+    df_tpl = pd.concat([df_tpl_30])  # 各级别买卖点合并成一个df
     df_tpl.sort_values(by="0", axis=0, inplace=True)  # 按第一列（日期）排序,"0"是列名，axis=0表示按列，axis=1按行，在原数据上修改
     df_tpl.drop_duplicates(subset="0", keep="first", inplace=True)  # 按第一列删除重复，只保留重复的第一个,在Bar_HistoryData的150行是按列名删的
     trade_point_list_tbp = df_tpl.values.tolist()  # df转列表
-
+    print(trade_point_list_tbp)
     # trade_point_list_tbp = []
     # trade_point_list_tbp = [["2021-04-26", 47, "buy"], ["2021-06-15", 55.1, "sell"]]
     # trade_point_list_hg = [["2021-04-26", 47, "buy"], ["2021-06-15", 55.1, "sell"]]  # 海龟策略买卖点
