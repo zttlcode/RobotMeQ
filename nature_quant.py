@@ -34,13 +34,18 @@ def pre_handle():
     所有数据进行单级别回测，保留策略交易点，多进程运行
         目前策略：MACD+KDJ  （回归）
         涉及代码：旧代码在Run.py，5分钟bar转tick，给多级别同时用，回测一个股票5年要3小时。
-                为提高效率，单级别运行，各级别bar
+                为提高效率，单级别运行，启动10线程，2台电脑，预计2、3天跑完4000个行情
         待实验策略：王立新ride-moon （趋势）  
                 布林
                 均线等，看是否比单纯指标有收益率提升
                 （第三种方法、提前5天，直接抽特征自己发信号，不用判断当前信号是否有效）
     """
     df = pd.read_csv("所有股票代码.csv")
+    """ """"""
+    过滤交易点
+    
+    读取所有交易点位，和他对应的行情数据，判断这个点位出现后，他后面的行情是怎么样的？
+    """
     for index, row in df.iterrows():
         assetList = RMQAsset.asset_generator(row['code'], '上证', ['5', '15', '30', '60', 'd'], 'stock',
                                              1)  # asset是code等信息
@@ -56,20 +61,6 @@ def pre_handle():
             """
             # 把有效交易点和原视数据结合，标注有效、无效
             # trans_point2label(asset)
-
-
-def back_test(asset):
-
-    # 保存买卖点信息
-    if asset.positionEntity.trade_point_list:  # 不为空，则保存
-        df_tpl = pd.DataFrame(asset.positionEntity.trade_point_list)
-        df_tpl.to_csv(RMTTools.read_config("RMQData", "trade_point_backtest")
-                      + "trade_point_list_"
-                      + asset.indicatorEntity.IE_assetsCode
-                      + "_"
-                      + asset.indicatorEntity.IE_timeLevel
-                      + ".csv", index=False)
-
 
 def filter1(asset):
     pd.read_csv(asset.positionEntity.trade_point_list.path)

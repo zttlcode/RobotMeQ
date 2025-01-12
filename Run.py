@@ -141,7 +141,7 @@ def run_backTest_multip(data_chunk):
         print(f"Process {process_name} (PID {process_id}) is processing: {row['code'][3:]}")
         assetList = RMQAsset.asset_generator(row['code'][3:],
                                              row['code_name'],
-                                             ['5', '15', '30', '60', 'd'],
+                                             ['d'],
                                              'stock',
                                              1)
         run_back_test_no_tick(assetList)  # 0:02:29.502122 新回测，不转tick
@@ -163,10 +163,10 @@ if __name__ == '__main__':
     #                                        ['5', '15', '30', '60', 'd'],
     #                                        'index',
     #                                        1))
-    allStockCode = pd.read_csv("./QuantData/a800_stocks.csv")
+    allStockCode = pd.read_csv("./QuantData/new.csv")
     # 多个并行
     # 确定进程数量和数据块
-    num_processes = 20
+    num_processes = 7
     data_chunks = chunk_dataframe(allStockCode, num_processes)  # 把300个股票分给20个进程并行处理
     # 使用 multiprocessing 开启进程池
     with Pool(num_processes) as pool:
