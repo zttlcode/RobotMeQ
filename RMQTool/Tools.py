@@ -40,7 +40,7 @@ def getWorkDay():
     workday_list = []
     month = 1
     while month < 13:
-        res = requests.get("http://www.szse.cn/api/report/exchange/onepersistenthour/monthList?month=2024-"+str(month))
+        res = requests.get("http://www.szse.cn/api/report/exchange/onepersistenthour/monthList?month=2025-"+str(month))
         dic = json.loads(res.text)
         for dayDic in dic["data"]:
             if dayDic['jybz'] == '1':
@@ -60,7 +60,4 @@ def isWorkDay(filepath, today):
 
 
 if __name__ == '__main__':
-    # getWorkDay()  # 获取今年的交易日。需要每年元旦运行
-    timeLevelList = ['5', '15', '30', '60', 'd']
-    for timeLevel in timeLevelList:
-        print(timeLevel)
+    getWorkDay()  # 获取今年的交易日。需要每年元旦运行

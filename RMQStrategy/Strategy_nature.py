@@ -106,6 +106,7 @@ def strategy_tea_radical(positionEntity,
     except Exception as e:
         print("Error happens ", indicatorEntity.IE_assetsCode, " ", indicatorEntity.IE_timeLevel, " ", e)
 
+
 def strategy_fuzzy(positionEntity,
                    indicatorEntity,
                    windowDF_calIndic,

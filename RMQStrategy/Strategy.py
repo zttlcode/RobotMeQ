@@ -114,7 +114,9 @@ def strategy(asset, strategy_result, IEMultiLevel):
     # 每个tick都要重新算，特别耗时  时间窗口对性能提升很大 用windowDF，不要用上面的 indicatorEntity.bar_DataFrame
     # -----------------------------------------------------------------------------------------------
 
-    # 保守派背离策略  每个级别各玩各的，互不打扰  2024-4月~2026-4月 运行在阿里云服务器
+    # 保守派背离策略
+    # 2%移动止损
+    # 各级别参考日线KDJ，各自报信号时不累计背离次数
     strategy_tea_conservative(positionEntity,
                               indicatorEntity,
                               windowDF_calIndic,
@@ -122,7 +124,9 @@ def strategy(asset, strategy_result, IEMultiLevel):
                               strategy_result,
                               IEMultiLevel)
 
-    # 激进派背离策略，
+    # 激进派背离策略
+    # 无止损
+    # 各级别参考日线KDJ，各自报信号时累计背离次数
     # strategy_tea_radical(positionEntity,
     #                      indicatorEntity,
     #                      windowDF_calIndic,
@@ -130,7 +134,9 @@ def strategy(asset, strategy_result, IEMultiLevel):
     #                      strategy_result,
     #                      IEMultiLevel)
 
-    # ride-mood策略，增强版趋势跟随策略，反指率高达90%，经常小亏，偶尔大赚
+    # ride-mood策略
+    # 2%移动止损
+    # 增强版趋势跟随策略，反指率高达90%，经常小亏，偶尔大赚
     # strategy_fuzzy(positionEntity,
     #                indicatorEntity,
     #                windowDF_calIndic,

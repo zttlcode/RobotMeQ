@@ -4,6 +4,7 @@ import numpy as np
 from RMQTool import Tools as RMTTools
 
 """
+只适用于A股
 Bar文件里，绝大部分代码都是在把tick转为bar
 代码也不多，但很多细节逻辑却很复杂
 因为我要根据不同的级别生成bar，日线的，60分钟，15分钟等等。

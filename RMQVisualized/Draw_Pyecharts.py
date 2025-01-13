@@ -53,7 +53,9 @@ def split_data_part(data, trade_point_list) -> Sequence:
     mark_line_data = []
     for i in range(len(data["times"])):  # 遍历x轴所有时间
         if trade_point_list:  # 列表不空才比较，如果空，直接退出循环，后面的不用比了
-            if trade_point_list[0][0] == data["times"][i]:  # 时间对上了
+            # 如何展示分钟级别，则改成 trade_point_list[0][0][:10] == data["times"][i][:10]，同一天就留下
+            # 展示单级别分钟的，把[:10]去掉
+            if trade_point_list[0][0][:10] == data["times"][i]:  # 时间对上了
                 mark_line_data.append(
                     [
                         {
@@ -338,7 +340,7 @@ def draw_pyecharts(dataFrame, tplList, code):
         2）单个策略生成单页
     """
     if len(tplList) > 1:
-        # 1）多表格
+        # 1）多表格  等策略多了，就用下面的tab  增加策略,就继续加tab.add(……)
         tab = Tab()
         for tpl in tplList:
             tab.add(draw_chart(data, tpl[0]), tpl[1])
@@ -358,31 +360,42 @@ if __name__ == "__main__":
         pyecharts整合Flask  https://pyecharts.org/#/zh-cn/web_flask
         https://echarts.apache.org/examples/zh/index.html#chart-type-candlestick
     """
-    assetList = RMQAsset.asset_generator('000001', '', ['5', '15', '30', '60', 'd'], 'stock', 1)
+    assetList = RMQAsset.asset_generator('601800', '', ['5', '15', '30', '60', 'd'], 'stock', 1)
     # assetList = RMQAsset.asset_generator('BTCUSDT', 'BTC', ['15', '60', '240', 'd'], 'crypto')
 
     # 读取日线数据
-    filePath = RMTTools.read_config("RMQData", "backtest_bar") + 'backtest_bar_' + assetList[0].assetsCode + '_30.csv'
+    filePath = RMTTools.read_config("RMQData", "backtest_bar") + 'backtest_bar_' + assetList[0].assetsCode + '_d.csv'
     df = pd.read_csv(filePath, encoding='utf-8')
 
     # 图表派策略买卖点
     tpl_filepath = RMTTools.read_config("RMQData", "trade_point_backtest") + "trade_point_list_"
-    #df_tpl_5 = pd.read_csv(tpl_filepath + assetList[0].assetsCode + "_" + assetList[0].barEntity.timeLevel + ".csv")
-    #df_tpl_15 = pd.read_csv(tpl_filepath + assetList[1].assetsCode + "_" + assetList[1].barEntity.timeLevel + ".csv")
+    df_tpl_5 = pd.read_csv(tpl_filepath + assetList[0].assetsCode + "_" + assetList[0].barEntity.timeLevel + ".csv")
+    df_tpl_15 = pd.read_csv(tpl_filepath + assetList[1].assetsCode + "_" + assetList[1].barEntity.timeLevel + ".csv")
     df_tpl_30 = pd.read_csv(tpl_filepath + assetList[2].assetsCode + "_" + assetList[2].barEntity.timeLevel + ".csv")
-    #df_tpl_60 = pd.read_csv(tpl_filepath + assetList[3].assetsCode + "_" + assetList[3].barEntity.timeLevel + ".csv")
-    #df_tpl_d = pd.read_csv(tpl_filepath + assetList[4].assetsCode + "_" + assetList[4].barEntity.timeLevel + ".csv")
+    df_tpl_60 = pd.read_csv(tpl_filepath + assetList[3].assetsCode + "_" + assetList[3].barEntity.timeLevel + ".csv")
+    df_tpl_d = pd.read_csv(tpl_filepath + assetList[4].assetsCode + "_" + assetList[4].barEntity.timeLevel + ".csv")
 
-    #df_tpl = pd.concat([df_tpl_5, df_tpl_15, df_tpl_30, df_tpl_60, df_tpl_d]) # 各级别买卖点合并成一个df
-    df_tpl = pd.concat([df_tpl_30])  # 各级别买卖点合并成一个df
+    # 各级别买卖点合并成一个df
+    df_tpl = pd.concat([df_tpl_5, df_tpl_15, df_tpl_30, df_tpl_60, df_tpl_d])
+    # df_tpl = pd.concat([df_tpl_5, df_tpl_15, df_tpl_30, df_tpl_60])
     df_tpl.sort_values(by="0", axis=0, inplace=True)  # 按第一列（日期）排序,"0"是列名，axis=0表示按列，axis=1按行，在原数据上修改
-    df_tpl.drop_duplicates(subset="0", keep="first", inplace=True)  # 按第一列删除重复，只保留重复的第一个,在Bar_HistoryData的150行是按列名删的
+    # 后面split_data_part函数画交易点位时，是对比交易点日期和 df的日期，同一天几个信号只会比较一次，因此交易点只保留第一个日期。下面是去重
+    # 将时间列解析为日期格式
+    df_tpl['date_only'] = pd.to_datetime(df_tpl['0']).dt.date  # 提取日期部分
+    # 按日期去重，保留重复的第一行
+    df_tpl = df_tpl.drop_duplicates(subset='date_only', keep='first')
+    # 删除辅助列 'date_only'（如果不需要保留）
+    df_tpl = df_tpl.drop(columns=['date_only'])
+
+    print(df_tpl)
     trade_point_list_tbp = df_tpl.values.tolist()  # df转列表
     print(trade_point_list_tbp)
+
     # trade_point_list_tbp = []
     # trade_point_list_tbp = [["2021-04-26", 47, "buy"], ["2021-06-15", 55.1, "sell"]]
     # trade_point_list_hg = [["2021-04-26", 47, "buy"], ["2021-06-15", 55.1, "sell"]]  # 海龟策略买卖点
     # trade_point_list_jx = [["2021-04-26", 47, "buy"], ["2021-06-15", 55.1, "sell"]]  # 均线策略买卖点
+
     # 组成列表集合
     tpl_list = [[trade_point_list_tbp, assetList[0].assetsCode+"-图表派策略"],
                 # [trade_point_list_hg, assetCode + "-海龟策略"],

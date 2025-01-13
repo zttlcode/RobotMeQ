@@ -398,7 +398,7 @@ if __name__ == '__main__':
     docker run -it 2023c3642f33 /bin/bash
     以后就可以通过exec进入了
     
-    docker start 26dbf8178821  阿里云  保守策略  zhaot1993@qq.com
+    docker start 26dbf8178821  阿里云 2024-4月~2026-4月 保守策略  zhaot1993@qq.com
     docker exec -it 26dbf8178821 /bin/bash
         nohup python -u /home/RobotMeQ/Run_prd_ETF_A.py >> /home/log.out 2>&1 &
     tail -f /home/log.out

@@ -105,7 +105,7 @@ def query_hs300_stocks():
     bs.logout()
 
 
-def query_hs500_stocks():
+def query_zz500_stocks():
     # 登陆系统
     lg = bs.login()
     # 显示登陆返回信息
@@ -124,7 +124,7 @@ def query_hs500_stocks():
         zz500_stocks.append(rs.get_row_data())
     result = pd.DataFrame(zz500_stocks, columns=rs.fields)
     # 结果集输出到csv文件
-    result.to_csv("../QuantData/hs500_stocks.csv", encoding="utf-8", index=False)
+    result.to_csv("../QuantData/zz500_stocks.csv", encoding="utf-8", index=False)
     print(result)
 
     # 登出系统
@@ -158,7 +158,7 @@ def query_ipo_date(stock_code):
 
 def get_ipo_date_for_stock():
     # 读取 CSV 文件，得到 DataFrame 对象
-    file_path = "../QuantData/hs500_stocks.csv"  # 文件路径
+    file_path = "../QuantData/zz500_stocks.csv"  # 文件路径
     df = pd.read_csv(file_path)
     # 遍历每行数据，调用 query_ipo_date 并修改第一列的日期
     for index, row in df.iterrows():
@@ -171,7 +171,7 @@ def get_ipo_date_for_stock():
 
 
 def get_stock_from_code_csv():
-    allStockCode = pd.read_csv("../QuantData/hs500_stocks.csv")
+    allStockCode = pd.read_csv("../QuantData/zz500_stocks.csv")
     for index, row in allStockCode.iterrows():
         assetList = RMQAsset.asset_generator(row['code'][3:], row['code_name'], ['5', '15', '30', '60', 'd'], 'stock',
                                              1)  # asset是code等信息
@@ -267,16 +267,18 @@ if __name__ == '__main__':
     ['5', '15', '30', '60', 'd']
     backtest_bar  live_bar
     """
-    # get_stock_from_code_csv()  # 日线能从发行日开始，分钟级别最早是2019年元旦
-    assetList = RMQAsset.asset_generator('600332', '', ['30'], 'stock', 1)
-    for asset in assetList:
-        # 接口取数据只能股票，回测方便
-        # getData_BaoStock(asset, '2000-01-01', '2024-06-11', 'backtest_bar')
-        # 日线要拿前250天的数据，单独加载，不然太慢
-        # getData_BaoStock(asset, '2002-01-01', '2024-06-30', 'backtest_bar')
-        pass
-        # 通达信拿到的数据，xlsx转为csv；主要实盘用，偶尔回测拿指数、ETF数据用
-        # 如果是回测数据，handle_TDX_data末尾要改
-        # handle_TDX_data(asset)
+    # assetList = RMQAsset.asset_generator('600332', '', ['30'], 'stock', 1)
+    # for asset in assetList:
+    #     # 接口取数据只能股票，回测方便
+    #     # getData_BaoStock(asset, '2000-01-01', '2024-06-11', 'backtest_bar')
+    #     # 日线要拿前250天的数据，单独加载，不然太慢
+    #     # getData_BaoStock(asset, '2002-01-01', '2024-06-30', 'backtest_bar')
+
+    #     # 通达信拿到的数据，xlsx转为csv；主要实盘用，偶尔回测拿指数、ETF数据用
+    #     # 如果是回测数据，handle_TDX_data末尾要改
+    #     # handle_TDX_data(asset)
+
+    # 获取股票代码、获取股票发行日、获取股票各级别数据
+    get_stock_from_code_csv()  # 日线能从发行日开始，分钟级别最早是2019年元旦
 
 

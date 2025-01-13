@@ -419,7 +419,7 @@ def LeastSquares(df):
     # 这个暂定传df，但转为时间价格坐标系的代码还没写
 
     # 读取 时间、价格文件，返回斜率
-    ccpp = pd.read_csv('D:\\workspace\\github\\RobotMeQ\\QuantData\\LeastSquares.csv')  # 第一列为x轴，第二列为y轴 y = ax + b
+    ccpp = pd.read_csv('../QuantData/LeastSquares.csv')  # 第一列为x轴，第二列为y轴 y = ax + b
     # plt.show()  # 展示拟合图
     regression2 = smf.ols(formula='y~x', data=ccpp)  # y是被解释变量，x是解释变量 OLS Ordinary Least Squares 普通最小二乘法
     model2 = regression2.fit()
