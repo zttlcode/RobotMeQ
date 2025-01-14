@@ -164,7 +164,7 @@ if __name__ == '__main__':
     #                                        'index',
     #                                        1))
     # 并行回测，保存交易点
-    allStockCode = pd.read_csv("./QuantData/new.csv")
+    allStockCode = pd.read_csv("QuantData/a800_wait_handle_stocks.csv")
     # 多个并行
     # 确定进程数量和数据块
     num_processes = 15

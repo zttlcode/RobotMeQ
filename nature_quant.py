@@ -174,13 +174,13 @@ def filter1(assetList):
                                 signal_df.at[signal_time, "label"] = 4
 
     # 删除标记为 0 的数据
-    # signal_df = signal_df[signal_df["label"] != 0]
+    signal_df = signal_df[signal_df["label"] != 0]
 
     # 保存结果到新的 CSV 文件
     signal_df.to_csv((RMTTools.read_config("RMQData", "trade_point_backtest") + "trade_point_list_" +
                     assetList[0].assetsCode + "_concat_labeled" + ".csv"))
 
-    print("标注完成，结果已保存")
+    print(assetList[0].assetsCode + "标注完成")
 
 
 def pre_handle():
@@ -202,9 +202,6 @@ def pre_handle():
                 均线等，看是否比单纯指标有收益率提升
                 （第三种方法、提前5天，直接抽特征自己发信号，不用判断当前信号是否有效）
     """
-    """ """"""
-    过滤交易点
-    """
     allStockCode = pd.read_csv("./QuantData/a800_stocks.csv")
     for index, row in allStockCode.iterrows():
         assetList = RMQAsset.asset_generator(row['code'][3:],
@@ -213,24 +210,17 @@ def pre_handle():
                                              'stock',
                                              1)
 
-        # 拼接交易点
+        # 各级别交易点拼接在一起
         # concat_trade_point(assetList)
         # 过滤交易点
-        filter1(assetList)
-        break
+        # filter1(assetList)
         """
-        # 4、把预处理数据转为 单变量定长或变长分类，或 多变量定长或变长分类，
-        # 变长是因为对于回归类策略，一对交易点的间隔可能很短，也可能很长，太长就加个最大限度
-         # 组织数据
-         依次遍历交易点，比如5分钟第一个交易点出现，此时拿到对应时间及label，按长度找到每个上级序列，加上label，还要沪深300
+        把预处理数据转为 单变量定长或多变量定长
+        组织数据
+        依次遍历交易点，比如5分钟第一个交易点出现，此时拿到对应时间及label，按长度找到每个上级序列，加上label，还要沪深300
         """
         # 把有效交易点和原视数据结合，标注有效、无效
         # trans_point2label(asset)
-
-
-def trans_point2label():
-    pass
-    # 标注过交易点后，每个都要和buyandhold对比收益率，不应该出现效果差的
 
 
 def run_experiment():

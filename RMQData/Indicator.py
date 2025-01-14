@@ -16,7 +16,7 @@ class IndicatorEntity:
         self.IE_assetsCode = assetsCode  # 复制资产代码
         self.IE_assetsName = assetsName  # 复制资产名称
         self.IE_timeLevel = timeLeve  # 复制时间级别
-        self.signal = {}  # 记录每一次信号
+        self.signal = {}  # 记录每一次信号  因为激进派策略要记录第几次背离发消息，而收盘后内存清空，因此要持久化
 
         # 尝试读取signal JSON文件
         try:
