@@ -79,11 +79,33 @@ def filter1(assetList):
             如果收益率未达标，根据 20 天、30 天、40 天对数收益的正负一致性，决定是否标记为 3 或 4。
     时间范围校验：
         在数据不足 40 天的情况下，将剩余信号标记为 0 并删除。
+    
+    改动：
+        目前的标注方式刷掉了一般交易点，但策略导致的买入点还是太多  代表性的如下
+            Label=1: 260 行
+            Label=2: 253 行
+            Label=3: 66 行
+            Label=4: 50 行
+        因此严格条件：20、30、40全部为正
+            Label=1: 198 行
+            Label=2: 315 行
+            Label=3: 66 行
+            Label=4: 50 行
+        因此严格条件：10、20、30、40全部为正
+            Label=1: 170 行
+            Label=2: 343 行
+            Label=3: 66 行
+            Label=4: 50 行
+        因此严格条件：5、10、20、30、40全部为正
+            Label=1: 151 行
+            Label=2: 362 行
+            Label=3: 66 行
+            Label=4: 50 行
     """
     backtest_df_filePath = (RMTTools.read_config("RMQData", "backtest_bar") + 'backtest_bar_' +
-                assetList[0].assetsCode + '_d.csv')
+                            assetList[0].assetsCode + '_d.csv')
     signal_df_filepath = (RMTTools.read_config("RMQData", "trade_point_backtest") + "trade_point_list_" +
-                    assetList[0].assetsCode + "_concat" + ".csv")
+                          assetList[0].assetsCode + "_concat" + ".csv")
     # 读取 backtest.csv读取日线数据 和 signal.csv 为 DataFrame
     backtest_df = pd.read_csv(backtest_df_filePath, encoding='utf-8', parse_dates=['time'], index_col="time")
     signal_df = pd.read_csv(signal_df_filepath, parse_dates=["time"], index_col="time")
@@ -126,11 +148,15 @@ def filter1(assetList):
                             signal_df.at[signal_time, "label"] = 1
                         else:
                             # 计算第20天、第30天和第40天的对数收益
+                            close_5_day = next_40_days.iloc[4]["close"]
+                            close_10_day = next_40_days.iloc[9]["close"]
                             close_20_day = next_40_days.iloc[19]["close"]
                             close_30_day = next_40_days.iloc[29]["close"]
                             close_40_day = next_40_days.iloc[39]["close"]
 
                             log_returns = [
+                                np.log(close_5_day / trade_price),
+                                np.log(close_10_day / trade_price),
                                 np.log(close_20_day / trade_price),
                                 np.log(close_30_day / trade_price),
                                 np.log(close_40_day / trade_price),
@@ -140,7 +166,7 @@ def filter1(assetList):
                             positive_count = sum(lr > 0 for lr in log_returns)
                             negative_count = sum(lr <= 0 for lr in log_returns)
 
-                            if positive_count >= 2:
+                            if positive_count == 5:
                                 signal_df.at[signal_time, "label"] = 1
                             else:
                                 signal_df.at[signal_time, "label"] = 2
@@ -178,9 +204,167 @@ def filter1(assetList):
 
     # 保存结果到新的 CSV 文件
     signal_df.to_csv((RMTTools.read_config("RMQData", "trade_point_backtest") + "trade_point_list_" +
-                    assetList[0].assetsCode + "_concat_labeled" + ".csv"))
+                      assetList[0].assetsCode + "_concat_labeled" + ".csv"))
 
     print(assetList[0].assetsCode + "标注完成")
+
+
+def trans_labeled_point_to_ts(assetList):
+    """
+    把预处理数据转为 单变量定长或多变量定长
+    组织数据
+    依次遍历交易点，比如5分钟第一个交易点出现，此时拿到对应时间及label，按长度找到每个上级序列，加上label，还要沪深300
+    """
+    """
+        关于变长序列处理办法：
+        您可以将序列填充到最长的长度，或者如果长度不相等，则可以将它们截断为集合中最短的长度序列。
+        对于分类问题，数据用序列均值填充，并添加了低级高斯噪声。
+        加载等长是默认行为
+        https://www.aeon-toolkit.org/en/stable/examples/datasets/data_unequal.html
+        
+        我本来想用过滤出交易对，优点：一买对应一卖，统计收益率方便。缺点：有效点位减少2/3可能干扰模型（某个时间段都是有效买入区间）、变长序列处理方式可能干扰模型。
+        目前存在连续多个买入，连续多个卖出，可通过仓位管理控制，不再苛求策略。缺点：收益率统计要再想办法
+        
+    数据组装格式  aeon是个专门处理时序数据的库，包括组织数据，调算法，可看作scikit-learn加强版
+    https://www.aeon-toolkit.org/en/stable/examples/datasets/datasets.html
+    他们的方式是(n_cases, n_channels, n_timepoints)  样本数，特征数，时间点
+    在一个时间点观察到一个值，比如500天的日线收盘价就是 （1，500），用X表示  标记为有效买，那y就是1，若有连续5个交易点，那么
+        X = np.random.random((5, 1, 500))
+        y = np.array([1, 2, 1, 3, 4])  对应我四个分类：1有效买入，2无效买入，3有效卖出，4无效卖出
+    在一个时间点观察到一个向量，比如500天的日线 收盘价+成交量，那就是
+        X = np.random.random((5, 2, 500))  y不变
+    一个股票我有500多个点位，800个股票有40多万个点位，我的
+        日线 X_day = np.random.random((400000, 2, 500))
+        小时线 X_60 = np.random.random((400000, 2, 500))
+        大盘日线 X_day_sz000001_index = np.random.random((400000, 2, 250))
+    
+    UEA，时间序列分类，不含时间戳，一行数据是多个特征，用冒号分开，最后一个冒号后面是分类。
+        日线 X_day = np.random.random((400000, 2, 500))
+        这在UEA里，就算40万行，每行前面是500个close用逗号隔开，然后冒号，后面500个volume用逗号隔开，最后冒号，最后分类，一行是1000多个值
+            我这1000一行不多，他还有一行数据10万，900多个特征
+    write_dataframe_to_tsfile
+    
+    UEALoader读取ts文件逻辑：
+        以JapaneseVowels为例，12个特征，变长，意味着每行12个冒号，2个冒号之间有多少值不固定。
+        load_from_tsfile_to_dataframe先读出df、labels
+        df是三维，12个特征 * 270 * 每个冒号的变长序列 
+        label 是270*1 但各个类别的数据都放在一起了
+        
+        然后df 三维  转化为二维 ，原来 是 270 * 12  每一行这12个特征序列长度相同，现在把序列变为列，相当于第一行变长20行，第二行变长26行，等等
+        所以对于每一列来说，都是有4272行数据， 这4272不能除以270，而是有270行变长序列展开后加起来的  
+        
+        all_IDs是270，表示ts文件有270行数据
+        all_df是4272*12，表示12个特征，每个特征有4272个样本，也就是每行第一个冒号的几个值加起来，由于变长，我猜是按最短长度截短了，因为总数少了3000多
+        
+        
+    """
+    # 加载数据
+    concat_labeled_filePath = (RMTTools.read_config("RMQData", "trade_point_backtest") + "trade_point_list_" +
+                               assetList[0].assetsCode + "_concat_labeled" + ".csv")
+    index_d_filepath = (RMTTools.read_config("RMQData", "backtest_bar") + "backtest_bar_" +
+                        "000001_index_d" + ".csv")
+    data_d_filePath = (RMTTools.read_config("RMQData", "backtest_bar") + 'backtest_bar_' +
+                       assetList[0].assetsCode + '_d.csv')
+    data_60_df_filePath = (RMTTools.read_config("RMQData", "backtest_bar") + 'backtest_bar_' +
+                           assetList[0].assetsCode + '_60.csv')
+
+    concat_labeled = pd.read_csv(concat_labeled_filePath, index_col="time", parse_dates=True)
+    index_d = pd.read_csv(index_d_filepath, index_col="date", parse_dates=True)
+    data_d = pd.read_csv(data_d_filePath, index_col="time", parse_dates=True)
+    data_60 = pd.read_csv(data_60_df_filePath, index_col="time", parse_dates=True)
+
+    # 初始化存储结果的新 DataFrame
+    columns = ["index_d_close", "index_d_volume", "d_close", "d_volume", "60_close", "60_volume", "label"]
+    processed_df = pd.DataFrame(columns=columns)
+
+    # 遍历 concat_labeled 数据
+    for labeled_time, labeled_row in concat_labeled.iterrows():
+        labeled_date = labeled_time.date()
+        labeled_hour = labeled_time.hour
+        # 在 backtest_bar 中寻找同一日的数据
+        if pd.Timestamp(labeled_date) in index_d.index:
+            index_d_row_index = index_d.index.get_loc(pd.Timestamp(labeled_date))
+            if index_d_row_index >= 500:
+                index_d_close = index_d.iloc[index_d_row_index - 500: index_d_row_index]["close"]
+                index_d_volume = index_d.iloc[index_d_row_index - 500: index_d_row_index]["volume"]
+            else:
+                continue  # backtest_bar 越界，跳过
+        else:
+            continue  # 无匹配日期，跳过
+
+        # 在 d.csv 中寻找同一日的数据
+        if pd.Timestamp(labeled_date) in data_d.index:
+            d_row_index = data_d.index.get_loc(pd.Timestamp(labeled_date))
+            if d_row_index >= 500:
+                d_close = data_d.iloc[d_row_index - 500: d_row_index]["close"]
+                d_volume = data_d.iloc[d_row_index - 500: d_row_index]["volume"]
+            else:
+                continue  # d.csv 越界，跳过
+        else:
+            continue  # 无匹配日期，跳过
+
+        # 在 60.csv 中寻找同一日且同一小时的数据
+        if labeled_hour == 9 or labeled_hour == 13:
+            # 这俩匹配不上，只能改一下时间
+            labeled_hour += 1
+        day_hour_filter = (data_60.index.date == labeled_date) & (data_60.index.hour == labeled_hour)
+        matched_60 = data_60[day_hour_filter]
+        if len(matched_60) > 0:
+            matched_60_index = matched_60.index[-1]
+            matched_60_row_index = data_60.index.get_loc(matched_60_index)
+            if matched_60_row_index >= 500:
+                data_60_close = data_60.iloc[matched_60_row_index - 500: matched_60_row_index]["close"]
+                data_60_volume = data_60.iloc[matched_60_row_index - 500: matched_60_row_index]["volume"]
+            else:
+                continue  # 60.csv 越界，跳过
+        else:
+            continue  # 无匹配日期或小时，跳过
+
+        # 如果通过所有越界检查，将数据存入 DataFrame
+        # 将6个 Series 转换为 DataFrame 的一行
+        new_row = pd.DataFrame({
+            'index_d_close': [index_d_close.values],
+            'index_d_volume': [index_d_volume.values],
+            'd_close': [d_close.values],
+            'd_volume': [d_volume.values],
+            '60_close': [data_60_close.values],
+            '60_volume': [data_60_volume.values],
+            'label': labeled_row['label']
+        })
+
+        # 追加到主 DataFrame
+        processed_df = pd.concat([processed_df, new_row], ignore_index=True)
+    print(processed_df)
+    # 保存结果到文件（可选）
+    # processed_df.to_csv("./QuantData/temp.csv")
+    #
+    from sktime.datasets import write_dataframe_to_tsfile
+    from sktime.datasets._data_io import write_dataframe_to_tsfile
+
+    write_dataframe_to_tsfile(
+        processed_df,
+        path,
+        problem_name="sample_data",
+        class_label=None,
+        class_value_list=None,
+        equal_length=False,
+        series_length=-1,
+        missing_values="NaN",
+        comment=None,
+        fold="",
+    )
+    # write_dataframe_to_tsfile(
+    #     data,  # 时间序列数据的 DataFrame
+    #     path,  # 输出 .ts 文件的路径
+    #     problem_name=None,  # 问题名称（可选）
+    #     class_label=None,  # 是否包含分类标签
+    #     class_values=None,  # 标签值的列表（可选）
+    #     comment=None,  # 额外注释（可选）
+    #     fold=None,  # 文件表示的交叉验证折叠号（可选）
+    #     timestamp=False,  # 是否包含时间戳（可选）
+    #     equal_length=False,  # 是否所有序列等长（可选）
+    #     series_name=None  # 序列名称（可选）
+    # )
 
 
 def pre_handle():
@@ -214,13 +398,9 @@ def pre_handle():
         # concat_trade_point(assetList)
         # 过滤交易点
         # filter1(assetList)
-        """
-        把预处理数据转为 单变量定长或多变量定长
-        组织数据
-        依次遍历交易点，比如5分钟第一个交易点出现，此时拿到对应时间及label，按长度找到每个上级序列，加上label，还要沪深300
-        """
-        # 把有效交易点和原视数据结合，标注有效、无效
-        # trans_point2label(asset)
+        # 准备训练数据
+        trans_labeled_point_to_ts(assetList)
+        break
 
 
 def run_experiment():

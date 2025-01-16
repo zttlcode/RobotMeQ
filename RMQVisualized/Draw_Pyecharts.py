@@ -32,7 +32,8 @@ def split_data(origin_data) -> dict:
         deas.append(origin_data.loc[row][8])
         macds.append(origin_data.loc[row][9])
 
-    vols = [int(v) for v in vols]
+    # vols = [int(v) for v in vols]
+    vols = [int(v) if not pd.isna(v) else 0 for v in vols]
 
     return {
         "datas": datas,
@@ -361,7 +362,7 @@ if __name__ == "__main__":
         pyecharts整合Flask  https://pyecharts.org/#/zh-cn/web_flask
         https://echarts.apache.org/examples/zh/index.html#chart-type-candlestick
     """
-    assetList = RMQAsset.asset_generator('000032', '', ['5', '15', '30', '60', 'd'], 'stock', 1)
+    assetList = RMQAsset.asset_generator('000301', '', ['5', '15', '30', '60', 'd'], 'stock', 1)
     # assetList = RMQAsset.asset_generator('BTCUSDT', 'BTC', ['15', '60', '240', 'd'], 'crypto')
 
     # 读取日线数据
