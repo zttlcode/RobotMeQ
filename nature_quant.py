@@ -212,7 +212,81 @@ def filter1(assetList):
     print(assetList[0].assetsCode + "标注完成")
 
 
-def trans_labeled_point_to_ts_bak(assetList):
+def handling_uneven_samples(concat_labeled):
+    # 统计每个 label 的数量
+    label_counts = concat_labeled['label'].value_counts()
+    min_label_count = label_counts.min()
+
+    # 创建一个空的 DataFrame 来存储处理后的数据
+    final_data = []
+
+    # 按照连续相同的 label 分组
+    concat_labeled['group'] = (concat_labeled['label'] != concat_labeled['label'].shift()).cumsum()
+
+    # 对每个 label 类型进行处理
+    for label in label_counts.index:
+        label_data = concat_labeled[concat_labeled['label'] == label]
+
+        # 计算该 label 所有组的数量
+        group_count = label_data['group'].nunique()
+
+        # 如果 group_count 很大，确保每个组至少保留一行
+        rows_per_group = min_label_count // group_count
+        if rows_per_group == 0:
+            rows_per_group = 1  # 如果计算结果为0，则至少保留1行每组
+
+        # 初始化存储裁剪后的行
+        cropped_data = []
+
+        # 获取所有的分组
+        groups = list(label_data.groupby('group'))
+
+        # 累计已经保留的数据量
+        accumulated_data = 0
+
+        for idx, (group, group_data) in enumerate(groups):
+            group_size = len(group_data)
+
+            # len(groups) 是总的分组数，idx 是当前遍历的索引，所以 len(groups) - idx - 1 就是剩余的次数。
+            remaining = len(groups) - idx - 1
+
+            if group_count < min_label_count:
+                # 如果已经裁剪的数据量和剩余数据量合起来超过了 min_label_count，停止迭代
+                if accumulated_data + remaining <= min_label_count:
+                    cropped_data.append(group_data)
+                    accumulated_data += len(group_data)
+                    continue
+
+            # 如果组的大小超过每组应保留的行数，则裁掉前面部分
+            if group_size > rows_per_group:
+                group_data = group_data.tail(rows_per_group)
+
+            # 将裁剪后的组数据添加到 cropped_data
+            cropped_data.append(group_data)
+            accumulated_data += len(group_data)
+
+        # 将裁剪后的数据合并成一个 DataFrame
+        cropped_data = pd.concat(cropped_data)
+
+        # 如果裁剪后的数据总行数超过 min_label_count，裁掉前面的多余行
+        if len(cropped_data) > min_label_count:
+            cropped_data = cropped_data.tail(min_label_count)
+
+        # 将裁剪后的数据添加到 final_data
+        final_data.append(cropped_data)
+
+    # 将 final_data 合并成一个 DataFrame
+    final_data = pd.concat(final_data)
+
+    # 对最终数据进行排序，保持时间顺序
+    final_data = final_data.sort_index()
+
+    # 输出结果
+    final_data = final_data.drop(columns=['group'])  # 删除辅助列
+    return final_data
+
+
+def trans_labeled_point_to_ts(assetList, temp_data_dict, temp_label_list, time_point_step, handle_uneven_samples):
     # 加载数据
     concat_labeled_filePath = (RMTTools.read_config("RMQData", "trade_point_backtest") + "trade_point_list_" +
                                assetList[0].assetsCode + "_concat_labeled" + ".csv")
@@ -228,89 +302,10 @@ def trans_labeled_point_to_ts_bak(assetList):
     data_d = pd.read_csv(data_d_filePath, index_col="time", parse_dates=True)
     data_60 = pd.read_csv(data_60_df_filePath, index_col="time", parse_dates=True)
 
-    # 初始化存储结果的新 DataFrame
-    columns = ["index_d_close", "index_d_volume", "d_close", "d_volume", "close_60", "volume_60", "label"]
-    processed_df = pd.DataFrame(columns=columns)
-
-    # 遍历 concat_labeled 数据
-    for labeled_time, labeled_row in concat_labeled.iterrows():
-        labeled_date = labeled_time.date()
-        labeled_hour = labeled_time.hour
-        # 在 backtest_bar 中寻找同一日的数据
-        if pd.Timestamp(labeled_date) in index_d.index:
-            index_d_row_index = index_d.index.get_loc(pd.Timestamp(labeled_date))
-            if index_d_row_index >= 500:
-                index_d_close = index_d.iloc[index_d_row_index - 500: index_d_row_index]["close"]
-                index_d_volume = index_d.iloc[index_d_row_index - 500: index_d_row_index]["volume"]
-            else:
-                continue  # backtest_bar 越界，跳过
-        else:
-            continue  # 无匹配日期，跳过
-
-        # 在 d.csv 中寻找同一日的数据
-        if pd.Timestamp(labeled_date) in data_d.index:
-            d_row_index = data_d.index.get_loc(pd.Timestamp(labeled_date))
-            if d_row_index >= 500:
-                d_close = data_d.iloc[d_row_index - 500: d_row_index]["close"]
-                d_volume = data_d.iloc[d_row_index - 500: d_row_index]["volume"]
-            else:
-                continue  # d.csv 越界，跳过
-        else:
-            continue  # 无匹配日期，跳过
-
-        # 在 60.csv 中寻找同一日且同一小时的数据
-        if labeled_hour == 9 or labeled_hour == 13:
-            # 这俩匹配不上，只能改一下时间
-            labeled_hour += 1
-        day_hour_filter = (data_60.index.date == labeled_date) & (data_60.index.hour == labeled_hour)
-        matched_60 = data_60[day_hour_filter]
-        if len(matched_60) > 0:
-            matched_60_index = matched_60.index[-1]
-            matched_60_row_index = data_60.index.get_loc(matched_60_index)
-            if matched_60_row_index >= 500:
-                data_60_close = data_60.iloc[matched_60_row_index - 500: matched_60_row_index]["close"]
-                data_60_volume = data_60.iloc[matched_60_row_index - 500: matched_60_row_index]["volume"]
-            else:
-                continue  # 60.csv 越界，跳过
-        else:
-            continue  # 无匹配日期或小时，跳过
-
-        # 如果通过所有越界检查，将数据存入 DataFrame
-        # 将6个 Series 转换为 DataFrame 的一行
-        new_row = pd.DataFrame({
-            'index_d_close': [index_d_close.values],
-            'index_d_volume': [index_d_volume.values],
-            'd_close': [d_close.values],
-            'd_volume': [d_volume.values],
-            'close_60': [data_60_close.values],
-            'volume_60': [data_60_volume.values],
-            'label': labeled_row['label']
-        })
-
-        # 追加到主 DataFrame
-        processed_df = pd.concat([processed_df, new_row], ignore_index=True)
-
-    for column in processed_df.columns[:-1]:
-        processed_df[column] = processed_df[column].apply(lambda x: ','.join(map(str, x)))
-    # 保存结果到文件（可选）
-    processed_df.to_csv("./QuantData/temp.csv", index=False, quoting=csv.QUOTE_MINIMAL)
-
-
-def trans_labeled_point_to_ts(assetList, temp_data_dict, temp_label_list, time_point_step):
-    # 加载数据
-    concat_labeled_filePath = (RMTTools.read_config("RMQData", "trade_point_backtest") + "trade_point_list_" +
-                               assetList[0].assetsCode + "_concat_labeled" + ".csv")
-    index_d_filepath = (RMTTools.read_config("RMQData", "backtest_bar") + "backtest_bar_" +
-                        "000001_index_d" + ".csv")
-    data_d_filePath = (RMTTools.read_config("RMQData", "backtest_bar") + 'backtest_bar_' +
-                       assetList[0].assetsCode + '_d.csv')
-    data_60_df_filePath = (RMTTools.read_config("RMQData", "backtest_bar") + 'backtest_bar_' +
-                           assetList[0].assetsCode + '_60.csv')
-
-    concat_labeled = pd.read_csv(concat_labeled_filePath, index_col="time", parse_dates=True)
-    index_d = pd.read_csv(index_d_filepath, index_col="date", parse_dates=True)
-    data_d = pd.read_csv(data_d_filePath, index_col="time", parse_dates=True)
-    data_60 = pd.read_csv(data_60_df_filePath, index_col="time", parse_dates=True)
+    # 是否处理样本不均
+    if handle_uneven_samples:
+        concat_labeled = handling_uneven_samples(concat_labeled)
+        # print(assetList[0].assetsCode, "样本", concat_labeled['label'].value_counts())
 
     # 遍历 concat_labeled 数据
     for labeled_time, labeled_row in concat_labeled.iterrows():
@@ -373,31 +368,15 @@ def trans_labeled_point_to_ts(assetList, temp_data_dict, temp_label_list, time_p
     print(assetList[0].assetsCode, "结束", len(temp_label_list))
 
 
-def pre_handle():
-    """ """"""
-    数据预处理
-    A股、港股、美股、数字币。 每个市场风格不同，混合训练会降低特色，
-        目前只用A股数据，沪深300+中证500=A股前800家上市公司
-        涉及代码：HistoryData.py新增query_hs300_stocks、query_hs500_stocks，获取股票代码，
-                get_ipo_date_for_stock、query_ipo_date 找出股票代码对应发行日期
-                get_stock_from_code_csv 通过股票代码、发行日期，获取股票各级别历史行情
-        待实验市场：港股、美股标普500、数字币市值前10
-        数据来自证券宝，每个股票5种数据：日线、60m、30m、15m、5m。日线从该股发行日到2025年1月9日，分钟级最早为2019年1月2日。前复权，数据已压缩备份
-    所有数据进行单级别回测，保留策略交易点，多进程运行
-        目前策略：MACD+KDJ  （回归）
-        涉及代码：旧代码在Run.py，5分钟bar转tick，给多级别同时用，回测一个股票5年要3小时。
-                为提高效率，单级别运行，启动10线程，2台电脑，预计2、3天跑完4000个行情
-        待实验策略：王立新ride-moon （趋势）  
-                布林
-                均线等，看是否比单纯指标有收益率提升
-                （第三种方法、提前5天，直接抽特征自己发信号，不用判断当前信号是否有效）
-    """
+def prepare_dataset(flag, name, time_point_step, limit_length, handle_uneven_samples):
     allStockCode = pd.read_csv("./QuantData/a800_stocks.csv")
 
     allStockCode_shuffled = allStockCode.sample(frac=1, random_state=42).reset_index(drop=True)
-    # 每次运行前改2处
-    df_TRAIN = allStockCode_shuffled.iloc[:500]
-    df_TEST = allStockCode_shuffled.iloc[500:]
+
+    if flag == "_TRAIN":
+        df_dataset = allStockCode_shuffled.iloc[:500]
+    else:
+        df_dataset = allStockCode_shuffled.iloc[500:]
 
     # 创建一个字典来存储匹配的结果
     temp_data_dict = {'index_d_close': [], 'index_d_volume': [], 'd_close': [], 'd_volume': [], 'close_60': [],
@@ -428,7 +407,7 @@ def pre_handle():
     12列，每列4274，整体就是4274*12，  批量在取数据时，270里取了随机16行，一行是 (1,20多,12)，16行就是(16,20多,12)，16行找时间步最长的，就是
     (16,29,12)
     对我来说，40多万行随机取16行，一行是(1,500,6),16行就是(16,500,6)，进入我的cnn，
-    
+
     为了方便调试，我把时间步从500改为5，但我的数据用其他模型跑报错，断点对比了很久，发现是时间步最少是8，改成10不报错了
     但我的模型应该接收(16, 6, 1, 500)这种格式，batch_x是三维的，我调整为4维，不报错了
     """
@@ -475,22 +454,20 @@ def pre_handle():
 
         我本来想用过滤出交易对，优点：一买对应一卖，统计收益率方便。缺点：有效点位减少2/3可能干扰模型（某个时间段都是有效买入区间）、变长序列处理方式可能干扰模型。
         目前存在连续多个买入，连续多个卖出，可通过仓位管理控制，不再苛求策略。缺点：收益率统计要再想办法
-    
+
     """
-    for index, row in df_TEST.iterrows():
+    for index, row in df_dataset.iterrows():
         assetList = RMQAsset.asset_generator(row['code'][3:],
                                              row['code_name'],
                                              ['5', '15', '30', '60', 'd'],
                                              'stock',
                                              1)
-
-        # 各级别交易点拼接在一起
-        # concat_trade_point(assetList)
-        # 过滤交易点
-        # filter1(assetList)
         # 准备训练数据
-        trans_labeled_point_to_ts(assetList, temp_data_dict, temp_label_list, 500)
-
+        trans_labeled_point_to_ts(assetList, temp_data_dict, temp_label_list, time_point_step, handle_uneven_samples)
+        if limit_length == 0:  # 全数据
+            pass
+        elif len(temp_label_list) >= limit_length:  # 只要部分数据
+            break
     # 循环结束后，字典转为DataFrame
     result_df = pd.DataFrame(temp_data_dict)
     # 将列表转换成 Series
@@ -506,12 +483,63 @@ def pre_handle():
     write_dataframe_to_tsfile(
         data=result_df,
         path="./QuantData/trade_point_backTest_ts",  # 保存文件的路径
-        problem_name="a800_debug_500step_all",  # 问题名称
+        problem_name="a800_"+str(time_point_step)+"step_"+name+"limit",  # 问题名称
         class_label=["1", "2", "3", "4"],  # 是否有 class_label
         class_value_list=result_series,  # 是否有 class_label
         equal_length=True,
-        fold="_TEST"
+        fold=flag
     )
+
+
+def pre_handle():
+    """ """"""
+    数据预处理
+    A股、港股、美股、数字币。 每个市场风格不同，混合训练会降低特色，
+        目前只用A股数据，沪深300+中证500=A股前800家上市公司
+        涉及代码：HistoryData.py新增query_hs300_stocks、query_hs500_stocks，获取股票代码，
+                get_ipo_date_for_stock、query_ipo_date 找出股票代码对应发行日期
+                get_stock_from_code_csv 通过股票代码、发行日期，获取股票各级别历史行情
+        待实验市场：港股、美股标普500、数字币市值前10
+        数据来自证券宝，每个股票5种数据：日线、60m、30m、15m、5m。日线从该股发行日到2025年1月9日，分钟级最早为2019年1月2日。前复权，数据已压缩备份
+    所有数据进行单级别回测，保留策略交易点，多进程运行
+        目前策略：MACD+KDJ  （回归）
+        涉及代码：旧代码在Run.py，5分钟bar转tick，给多级别同时用，回测一个股票5年要3小时。
+                为提高效率，单级别运行，启动10线程，2台电脑，预计2、3天跑完4000个行情
+        待实验策略：王立新ride-moon （趋势）  
+                布林
+                均线等，看是否比单纯指标有收益率提升
+                （第三种方法、提前5天，直接抽特征自己发信号，不用判断当前信号是否有效）
+    """
+    allStockCode = pd.read_csv("./QuantData/a800_stocks.csv")
+
+    for index, row in allStockCode.iterrows():
+        assetList = RMQAsset.asset_generator(row['code'][3:],
+                                             row['code_name'],
+                                             ['5', '15', '30', '60', 'd'],
+                                             'stock',
+                                             1)
+
+        # 各级别交易点拼接在一起
+        # concat_trade_point(assetList)
+        # 过滤交易点1
+        # filter1(assetList)
+
+    # 过滤交易点完成，准备训练数据
+    """
+    增加标识——是否处理样本不均
+    tea策略买入点太多，filter1过滤后也是样本不均，导致大量无效买入
+    我在损失函数层面实验了cost-sensitive，从
+        criterion = nn.CrossEntropyLoss() 改为
+        criterion = nn.CrossEntropyLoss(weight=torch.tensor([0.25, 0.59, 0.08, 0.08]))  没什么用
+    https://zhuanlan.zhihu.com/p/494220661  
+        这篇提到了其他解决办法：
+            模型层面用决策树、
+            集成学习中把少的样本重复抽样，组成训练子集，给单个模型
+            样本极端少只有几十个时，将分类问题考虑成异常检测
+        这实验起来有些麻烦，我先尝试直接删样本吧，handle_uneven_samples True处理，False不处理，按4类中最少的为准，删除其他样本
+    """
+    prepare_dataset("_TRAIN", "2w", 250, 20000, True)  # 最多24.6万  limit_length==0 代表不截断，全数据
+    prepare_dataset("_TEST", "2w", 250, 10000, True)  # 最多14.6万
 
 
 def run_experiment():

@@ -56,34 +56,35 @@
 # index_zh_a_hist_min_em_df = ak.index_zh_a_hist_min_em(symbol="000001", period="5")
 # print(index_zh_a_hist_min_em_df)
 
-import pandas as pd
+# import pandas as pd
+#
+# # 读取CSV文件
+# file1 = pd.read_csv('file1.csv')  # 包含time列的数据
+# file2 = pd.read_csv('file2.csv')  # 包含time列和close列的数据
+# file3 = pd.read_csv('file3.csv')  # 包含time列和close列的数据
+#
+# # 创建一个字典来存储匹配的结果
+# data_dict = {'close_file2': [], 'close_file3': []}
+#
+# # 遍历file1中的time列
+# for time in file1['time']:
+#     # 在file2和file3中找到time列相同的数据
+#     data2 = file2[file2['time'] == time]
+#     data3 = file3[file3['time'] == time]
+#
+#     # 如果找到匹配的数据
+#     if not data2.empty and not data3.empty:
+#         # 找到file2和file3中对应的close列的前5行数据
+#         close_data2 = data2['close'].iloc[0:5].reset_index(drop=True)
+#         close_data3 = data3['close'].iloc[0:5].reset_index(drop=True)
+#
+#         # 将结果添加到字典中
+#         data_dict['close_file2'].append(close_data2)
+#         data_dict['close_file3'].append(close_data3)
+#
+# # 将字典转换为DataFrame
+# result = pd.DataFrame(data_dict)
 
-# 初始化一个空的 DataFrame
-df = pd.DataFrame()
 
-# 模拟循环生成数据
-for i in range(10):  # 假设循环10次
-    # 假设每次循环生成的 6 个 Series 对象
-    series1 = pd.Series([i * 1, i * 2, i * 3, i * 4, i * 5])
-    series2 = pd.Series([i * 2, i * 4, i * 6, i * 8, i * 10])
-    series3 = pd.Series([i * 3, i * 6, i * 9, i * 12, i * 15])
-    series4 = pd.Series([i * 4, i * 8, i * 12, i * 16, i * 20])
-    series5 = pd.Series([i * 5, i * 10, i * 15, i * 20, i * 25])
-    series6 = pd.Series([i * 6, i * 12, i * 18, i * 24, i * 30])
 
-    # 将这些 Series 组成一行
-    new_row = pd.DataFrame({
-        'col1': [series1.values],
-        'col2': [series2.values],
-        'col3': [series3.values],
-        'col4': [series4.values],
-        'col5': [series5.values],
-        'col6': [series6.values]
-    })
-
-    # 追加到主 DataFrame
-    df = pd.concat([df, new_row], ignore_index=True)
-
-# 查看结果
-print(df)
 
