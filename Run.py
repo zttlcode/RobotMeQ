@@ -113,12 +113,13 @@ def run_back_test_no_tick(assetList):
         # 保存买卖点信息
         if asset.positionEntity.trade_point_list:  # 不为空，则保存
             df_tpl = pd.DataFrame(asset.positionEntity.trade_point_list)
+            df_tpl.columns = ['time', 'price', 'signal']
             df_tpl.to_csv(RMTTools.read_config("RMQData", "trade_point_backtest")
                           + "trade_point_list_"
                           + asset.indicatorEntity.IE_assetsCode
                           + "_"
                           + asset.indicatorEntity.IE_timeLevel
-                          + ".csv", index=False)
+                          + "_tea_radical.csv", index=False)
 
 
 def chunk_dataframe(df, num_chunks):
@@ -170,7 +171,7 @@ if __name__ == '__main__':
     for index, row in allStockCode.iterrows():
         assetList = RMQAsset.asset_generator(row['code'][3:],
                                              row['code_name'],
-                                             ['5', '15', '30', '60', 'd'],
+                                             ['15', '30', '60', 'd'],
                                              'stock',
                                              1)
 

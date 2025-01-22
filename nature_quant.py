@@ -27,27 +27,34 @@ from RMQTool import Tools as RMTTools
 def concat_trade_point(assetList):
     # 读取交易点
     tpl_filepath = RMTTools.read_config("RMQData", "trade_point_backtest") + "trade_point_list_"
-    df_tpl_5 = pd.read_csv(tpl_filepath +
-                           assetList[0].assetsCode + "_" + assetList[0].barEntity.timeLevel + ".csv")
+    # df_tpl_5 = pd.read_csv(tpl_filepath +
+    #                        assetList[0].assetsCode + "_" + assetList[0].barEntity.timeLevel + ".csv")
+    # df_tpl_15 = pd.read_csv(tpl_filepath +
+    #                         assetList[1].assetsCode + "_" + assetList[1].barEntity.timeLevel + ".csv")
+    # df_tpl_30 = pd.read_csv(tpl_filepath +
+    #                         assetList[2].assetsCode + "_" + assetList[2].barEntity.timeLevel + ".csv")
+    # df_tpl_60 = pd.read_csv(tpl_filepath +
+    #                         assetList[3].assetsCode + "_" + assetList[3].barEntity.timeLevel + ".csv")
+
     df_tpl_15 = pd.read_csv(tpl_filepath +
-                            assetList[1].assetsCode + "_" + assetList[1].barEntity.timeLevel + ".csv")
+                            assetList[1].assetsCode + "_" + assetList[1].barEntity.timeLevel + "_tea_radical.csv")
     df_tpl_30 = pd.read_csv(tpl_filepath +
-                            assetList[2].assetsCode + "_" + assetList[2].barEntity.timeLevel + ".csv")
+                            assetList[2].assetsCode + "_" + assetList[2].barEntity.timeLevel + "_tea_radical.csv")
     df_tpl_60 = pd.read_csv(tpl_filepath +
-                            assetList[3].assetsCode + "_" + assetList[3].barEntity.timeLevel + ".csv")
+                            assetList[3].assetsCode + "_" + assetList[3].barEntity.timeLevel + "_tea_radical.csv")
     df_tpl_d = None
     # temp2中有16个股票是单边行情，没用日线交易信号
     try:
         df_tpl_d = pd.read_csv(tpl_filepath +
-                               assetList[4].assetsCode + "_" + assetList[4].barEntity.timeLevel + ".csv")
+                               assetList[4].assetsCode + "_" + assetList[4].barEntity.timeLevel + "_tea_radical.csv")
     except Exception as e:
         pass
 
     # 整合所有交易点
     if df_tpl_d is not None:
-        df_tpl = pd.concat([df_tpl_5, df_tpl_15, df_tpl_30, df_tpl_60, df_tpl_d], ignore_index=True)
+        df_tpl = pd.concat([df_tpl_15, df_tpl_30, df_tpl_60, df_tpl_d], ignore_index=True)
     else:
-        df_tpl = pd.concat([df_tpl_5, df_tpl_15, df_tpl_30, df_tpl_60], ignore_index=True)
+        df_tpl = pd.concat([df_tpl_15, df_tpl_30, df_tpl_60], ignore_index=True)
 
     # 将第一列转换为 datetime 格式
     df_tpl = df_tpl.set_index(df_tpl.columns[0])  # 使用第一列作为索引
@@ -62,7 +69,7 @@ def concat_trade_point(assetList):
     # 按索引（时间）排序
     df_tpl = df_tpl.sort_index()
     # 保存为新的 CSV 文件
-    df_tpl.to_csv(tpl_filepath + assetList[0].assetsCode + "_concat" + ".csv")
+    df_tpl.to_csv(tpl_filepath + assetList[0].assetsCode + "_concat_tea_radical" + ".csv")
 
 
 def filter1(assetList):
@@ -491,6 +498,76 @@ def prepare_dataset(flag, name, time_point_step, limit_length, handle_uneven_sam
     )
 
 
+def cal_return_rate(assetList):
+    # 加载数据
+    df_filePath = (RMTTools.read_config("RMQData", "trade_point_backtest") + "trade_point_list_" +
+                               assetList[0].assetsCode + "_60" + ".csv")  # _tea_radical  _concat 31.65% _concat_labeled  25.85 %
+    # _concat_tea_radical  去掉5分钟 38.76%
+
+    # 读取CSV文件
+    # df = pd.read_csv(df_filePath, index_col="time", parse_dates=True)
+    df = pd.read_csv(df_filePath)
+    df.columns = ['time', 'price', 'signal']
+
+    # 初始化资金和持仓状态
+    shares = 0  # 持股数
+    previous_total_cost = 0  # 之前总花费
+    latest_total_cost = 0  # 最新总花费
+    holding_value = 0  # 当前持股金额
+    previous_return_rate = 0.0  # 之前收益率
+    latest_return_rate = 0.0  # 最新收益率
+
+    # 遍历CSV文件数据
+    for index, row in df.iterrows():
+        price = row['price']
+        signal = row['signal']
+
+        # 更新当前持股价值
+        holding_value = shares * price
+
+        # 计算之前收益率
+        if previous_total_cost != 0:
+            profit_or_loss = holding_value - previous_total_cost  # 当前盈利或亏损金额
+            previous_return_rate = profit_or_loss / previous_total_cost  # 之前收益率
+
+        # 根据信号调整持仓和总花费
+        if signal == 'buy':
+            latest_total_cost = previous_total_cost + 100 * price  # 最新总花费增加买入成本
+            shares += 100  # 增加持股数
+        elif signal == 'sell' and shares >= 100:
+            latest_total_cost = previous_total_cost - 100 * price  # 最新总花费减少卖出收益
+            shares -= 100  # 减少持股数
+        else:
+            latest_total_cost = previous_total_cost  # 无操作时总花费不变
+
+        # 计算最新收益率
+        holding_value = shares * price  # 更新持股金额
+        if latest_total_cost != 0:
+            profit_or_loss = holding_value - latest_total_cost  # 最新盈利或亏损金额
+            latest_return_rate = profit_or_loss / latest_total_cost  # 最新收益率
+        else:
+            latest_return_rate = 0.0  # 防止除以零
+
+        # 打印当前状态
+        # print(f"时间: {row['time']}, 价格: {price}, 总成本: {previous_total_cost:.2f}, 收益率: {previous_return_rate:.2%}")
+        # print(f"{signal} 100股, 目前持股数: {shares}, 持股金额: {holding_value:.2f}")
+        # print(f"总成本: {latest_total_cost:.2f}, 收益率: {latest_return_rate:.2%}\n")
+
+        # 更新之前总花费
+        previous_total_cost = latest_total_cost
+
+    # 遍历完成后，计算最终状态
+    holding_value = shares * df.iloc[-1]['price']  # 最后一个价格计算持股价值
+    if latest_total_cost != 0:
+        final_profit_or_loss = holding_value - latest_total_cost
+        final_return_rate = final_profit_or_loss / latest_total_cost
+    else:
+        final_return_rate = 0.0
+
+    print(f"最终持股数: {shares}, 最终持股金额: {holding_value:.2f}")
+    print(f"最终总花费: {latest_total_cost:.2f}, 最终收益率: {final_return_rate:.2%}")
+
+
 def pre_handle():
     """ """"""
     数据预处理
@@ -523,6 +600,8 @@ def pre_handle():
         # concat_trade_point(assetList)
         # 过滤交易点1
         # filter1(assetList)
+        # 计算收益率
+        cal_return_rate(assetList)
 
     # 过滤交易点完成，准备训练数据
     """
@@ -538,8 +617,8 @@ def pre_handle():
             样本极端少只有几十个时，将分类问题考虑成异常检测
         这实验起来有些麻烦，我先尝试直接删样本吧，handle_uneven_samples True处理，False不处理，按4类中最少的为准，删除其他样本
     """
-    prepare_dataset("_TRAIN", "2w", 250, 20000, True)  # 最多24.6万  limit_length==0 代表不截断，全数据
-    prepare_dataset("_TEST", "2w", 250, 10000, True)  # 最多14.6万
+    # prepare_dataset("_TRAIN", "2w", 250, 20000, True)  # 最多24.6万  limit_length==0 代表不截断，全数据
+    # prepare_dataset("_TEST", "2w", 250, 10000, True)  # 最多14.6万
 
 
 def run_experiment():
