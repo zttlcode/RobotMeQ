@@ -86,7 +86,6 @@ def run_back_test_no_tick(assetList):
         然后在策略中，用barEntity算指标
     """
     for asset in assetList:
-        start = datetime.now()
         # 读取这个资产、这个级别的历史数据
         backtest_bar_data = pd.read_csv(asset.barEntity.backtest_bar, parse_dates=['time'])
         # 遍历他
@@ -163,27 +162,25 @@ if __name__ == '__main__':
     #                                        ['5', '15', '30', '60', 'd'],
     #                                        'index',
     #                                        1))
-    # 并行回测，保存交易点
-    allStockCode = pd.read_csv("QuantData/a800_wait_handle_stocks.csv")
-    # 多个并行
-    # 确定进程数量和数据块
-    num_processes = 15
-    data_chunks = chunk_dataframe(allStockCode, num_processes)  # 把300个股票分给20个进程并行处理
-    # 使用 multiprocessing 开启进程池
-    with Pool(num_processes) as pool:
-        pool.map(run_backTest_multip, data_chunks)
 
+    # 并行回测，保存交易点
+    allStockCode = pd.read_csv("./QuantData/a800_stocks.csv")
 
     # 实验一个
-    # for index, row in allStockCode.iterrows():
-    #     assetList = RMQAsset.asset_generator(row['code'][3:],
-    #                                          row['code_name'],
-    #                                          ['5', '15', '30', '60', 'd'],
-    #                                          'stock',
-    #                                          1)
-    #
-    #     # run_back_test(assetList)  # 0:18:27.437876 旧回测，转tick，运行时长  加tick会细化价格导致操作提前，但实盘是bar结束了算指标，所以不影响
-    #     run_back_test_no_tick(assetList)  # 0:02:29.502122 新回测，不转tick
-    #     break
+    for index, row in allStockCode.iterrows():
+        assetList = RMQAsset.asset_generator(row['code'][3:],
+                                             row['code_name'],
+                                             ['5', '15', '30', '60', 'd'],
+                                             'stock',
+                                             1)
 
+        # run_back_test(assetList)  # 0:18:27.437876 旧回测，转tick，运行时长  加tick会细化价格导致操作提前，但实盘是bar结束了算指标，所以不影响
+        run_back_test_no_tick(assetList)  # 0:02:29.502122 新回测，不转tick
+        break
 
+    # # 多个并行
+    # num_processes = 15  # 确定进程数量和数据块
+    # data_chunks = chunk_dataframe(allStockCode, num_processes)  # 把300个股票分给20个进程并行处理
+    # # 使用 multiprocessing 开启进程池
+    # with Pool(num_processes) as pool:
+    #     pool.map(run_backTest_multip, data_chunks)

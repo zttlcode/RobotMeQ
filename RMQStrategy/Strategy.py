@@ -163,7 +163,7 @@ def strategy_tea_conservative(positionEntity,
             indicatorEntity.last_cal_time = current_min  # 更新锁
 
             # 1、计算自己需要的指标
-            divergeDF = RMQIndicator.calMACD_area(windowDF_calIndic)  # df第0条是当前区域，第1条是过去的区域
+            divergeDF, windowDF_calIndic = RMQIndicator.calMACD_area(windowDF_calIndic)  # df第0条是当前区域，第1条是过去的区域
             # 2、更新多级别指标对象
             if indicatorEntity.IE_timeLevel == 'd':
                 # 目前只用到day级别，所以加这个判断和下面 kdj判断不等于d，都是为了减少计算量，提升系统速度
@@ -177,7 +177,9 @@ def strategy_tea_conservative(positionEntity,
                 if divergeDF.iloc[2]['area'] < 0:
                     # macd绿柱面积过去 > 现在  因为是负数，所以要更小
                     if (divergeDF.iloc[2]['area'] < divergeDF.iloc[0]['area']
-                            and divergeDF.iloc[2]['price'] > divergeDF.iloc[0]['price']):  # 过去最低价 > 现在最低价
+                            and divergeDF.iloc[2]['price'] > divergeDF.iloc[0]['price']
+                            and windowDF_calIndic.iloc[DFLastRow]['MACD'] >=
+                            windowDF_calIndic.iloc[DFLastRow - 1]['MACD']):  # 过去最低价 > 现在最低价
                         # KDJ判断
                         if indicatorEntity.IE_timeLevel != 'd':
                             windowDF_calIndic = RMQIndicator.calKDJ(windowDF_calIndic)  # 计算KDJ
@@ -222,8 +224,9 @@ def strategy_tea_conservative(positionEntity,
                 # 顶背离判断
                 if divergeDF.iloc[2]['area'] > 0:
                     if (divergeDF.iloc[2]['area'] > divergeDF.iloc[0]['area']
-                            and
-                            divergeDF.iloc[2]['price'] < divergeDF.iloc[0]['price']):
+                            and divergeDF.iloc[2]['price'] < divergeDF.iloc[0]['price']
+                            and windowDF_calIndic.iloc[DFLastRow]['MACD'] <=
+                            windowDF_calIndic.iloc[DFLastRow - 1]['MACD']):
                         # KDJ判断
                         if indicatorEntity.IE_timeLevel != 'd':
                             windowDF_calIndic = RMQIndicator.calKDJ(windowDF_calIndic)  # 计算KDJ
@@ -276,7 +279,7 @@ def strategy_tea_radical(positionEntity,
             indicatorEntity.last_cal_time = current_min  # 更新锁
 
             # 1、计算自己需要的指标
-            divergeDF = RMQIndicator.calMACD_area(windowDF_calIndic)  # df第0条是当前区域，第1条是过去的区域
+            divergeDF, windowDF_calIndic = RMQIndicator.calMACD_area(windowDF_calIndic)  # df第0条是当前区域，第1条是过去的区域
             # 2、更新多级别指标对象
             if indicatorEntity.IE_timeLevel == 'd':
                 # 目前只用到day级别，所以加这个判断和下面 kdj判断不等于d，都是为了减少计算量，提升系统速度
@@ -289,7 +292,9 @@ def strategy_tea_radical(positionEntity,
                         < divergeDF.iloc[0]['area']
                         and
                         divergeDF.iloc[2]['price']
-                        > divergeDF.iloc[0]['price']):  # 过去最低价 > 现在最低价
+                        > divergeDF.iloc[0]['price']
+                        and windowDF_calIndic.iloc[DFLastRow]['MACD'] >=
+                        windowDF_calIndic.iloc[DFLastRow - 1]['MACD']):  # 过去最低价 > 现在最低价
                     # KDJ判断
                     if indicatorEntity.IE_timeLevel != 'd':
                         windowDF_calIndic = RMQIndicator.calKDJ(windowDF_calIndic)  # 计算KDJ
@@ -335,9 +340,10 @@ def strategy_tea_radical(positionEntity,
             if divergeDF.iloc[2]['area'] > 0:  # 顶背离判断
                 if (divergeDF.iloc[2]['area']
                         > divergeDF.iloc[0]['area']
-                        and
-                        divergeDF.iloc[2]['price']
-                        < divergeDF.iloc[0]['price']):
+                        and divergeDF.iloc[2]['price']
+                        < divergeDF.iloc[0]['price']
+                        and windowDF_calIndic.iloc[DFLastRow]['MACD']
+                        <= windowDF_calIndic.iloc[DFLastRow - 1]['MACD']):
                     # KDJ判断
                     if indicatorEntity.IE_timeLevel != 'd':
                         windowDF_calIndic = RMQIndicator.calKDJ(windowDF_calIndic)  # 计算KDJ

@@ -199,10 +199,10 @@ def calMACD(dataFrame, shortTerm=12, longTerm=26, DIFTerm=9):
     return dataFrame
 
 
-def calMACD_area(df):
+def calMACD_area(DataFrame):
     # 定义计算MACD红绿柱面积的方法
     # 拿到macd
-    DataFrame = calMACD(df, 12, 26, 9)
+    DataFrame = calMACD(DataFrame, 12, 26, 9)
     # 计算好macd面积区域存储在列表里
     macd_area_dic = []
 
@@ -269,7 +269,7 @@ def calMACD_area(df):
     # 否则是空文件，都不处理
     result_DataFrame = pd.DataFrame(macd_area_dic)
     # result_DataFrame共2列，面积为正，对应最高价，反之最低价。0是最新数据
-    return result_DataFrame
+    return result_DataFrame, DataFrame
 
 
 def calMA(dataFrame):
