@@ -84,7 +84,3 @@
 #
 # # 将字典转换为DataFrame
 # result = pd.DataFrame(data_dict)
-
-
-
-

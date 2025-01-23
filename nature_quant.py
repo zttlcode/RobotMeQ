@@ -322,8 +322,10 @@ def trans_labeled_point_to_ts(assetList, temp_data_dict, temp_label_list, time_p
         if pd.Timestamp(labeled_date) in index_d.index:
             index_d_row_index = index_d.index.get_loc(pd.Timestamp(labeled_date))
             if index_d_row_index >= 500:
-                index_d_close = index_d.iloc[index_d_row_index - time_point_step: index_d_row_index]["close"].reset_index(drop=True)
-                index_d_volume = index_d.iloc[index_d_row_index - time_point_step: index_d_row_index]["volume"].reset_index(drop=True)
+                index_d_close = index_d.iloc[index_d_row_index - time_point_step: index_d_row_index][
+                    "close"].reset_index(drop=True)
+                index_d_volume = index_d.iloc[index_d_row_index - time_point_step: index_d_row_index][
+                    "volume"].reset_index(drop=True)
                 if index_d_close.isna().any() or index_d_volume.isna().any():
                     continue  # 数据NaN，跳过
             else:
@@ -354,8 +356,10 @@ def trans_labeled_point_to_ts(assetList, temp_data_dict, temp_label_list, time_p
             matched_60_index = matched_60.index[-1]
             matched_60_row_index = data_60.index.get_loc(matched_60_index)
             if matched_60_row_index >= 500:
-                close_60 = data_60.iloc[matched_60_row_index - time_point_step: matched_60_row_index]["close"].reset_index(drop=True)
-                volume_60 = data_60.iloc[matched_60_row_index - time_point_step: matched_60_row_index]["volume"].reset_index(drop=True)
+                close_60 = data_60.iloc[matched_60_row_index - time_point_step: matched_60_row_index][
+                    "close"].reset_index(drop=True)
+                volume_60 = data_60.iloc[matched_60_row_index - time_point_step: matched_60_row_index][
+                    "volume"].reset_index(drop=True)
                 if close_60.isna().any() or volume_60.isna().any():
                     continue  # 数据NaN，跳过
             else:
@@ -490,7 +494,7 @@ def prepare_dataset(flag, name, time_point_step, limit_length, handle_uneven_sam
     write_dataframe_to_tsfile(
         data=result_df,
         path="./QuantData/trade_point_backTest_ts",  # 保存文件的路径
-        problem_name="a800_"+str(time_point_step)+"step_"+name+"limit",  # 问题名称
+        problem_name="a800_" + str(time_point_step) + "step_" + name + "limit",  # 问题名称
         class_label=["1", "2", "3", "4"],  # 是否有 class_label
         class_value_list=result_series,  # 是否有 class_label
         equal_length=True,
@@ -501,7 +505,7 @@ def prepare_dataset(flag, name, time_point_step, limit_length, handle_uneven_sam
 def cal_return_rate(assetList):
     # 加载数据
     df_filePath = (RMTTools.read_config("RMQData", "trade_point_backtest") + "trade_point_list_" +
-                               assetList[0].assetsCode + "_60" + ".csv")  # _tea_radical  _concat 31.65% _concat_labeled  25.85 %
+                   assetList[0].assetsCode + "_60" + ".csv")  # _tea_radical  _concat 31.65% _concat_labeled  25.85 %
     # _concat_tea_radical  去掉5分钟 38.76%
 
     # 读取CSV文件
@@ -510,32 +514,34 @@ def cal_return_rate(assetList):
     df.columns = ['time', 'price', 'signal']
 
     # 初始化资金和持仓状态
-    shares = 0  # 持股数
-    previous_total_cost = 0  # 之前总花费
-    latest_total_cost = 0  # 最新总花费
-    holding_value = 0  # 当前持股金额
-    previous_return_rate = 0.0  # 之前收益率
-    latest_return_rate = 0.0  # 最新收益率
+    holding_value = 0  # 市值
+    shares = 0  # 持仓
+    cost_per_share = 0  # 每股成本
+    previous_total_cost = 0  # 总投资额
+    previous_return_rate = 0.0  # 收益率
+
+    latest_total_cost = 0  # 进行当日操作后的总投资额
+    latest_return_rate = 0.0  # 进行当日操作后的收益率
 
     # 遍历CSV文件数据
     for index, row in df.iterrows():
         price = row['price']
         signal = row['signal']
 
-        # 更新当前持股价值
+        # 新价格出现，更新市值
         holding_value = shares * price
 
-        # 计算之前收益率
+        # 计算目前收益率
         if previous_total_cost != 0:
-            profit_or_loss = holding_value - previous_total_cost  # 当前盈利或亏损金额
-            previous_return_rate = profit_or_loss / previous_total_cost  # 之前收益率
+            profit_or_loss = holding_value - previous_total_cost  # 当前盈利或亏损金额= 市值-总投资额
+            previous_return_rate = profit_or_loss / previous_total_cost  # 之前收益率= 盈亏/总投资额
 
         # 根据信号调整持仓和总花费
         if signal == 'buy':
-            latest_total_cost = previous_total_cost + 100 * price  # 最新总花费增加买入成本
+            latest_total_cost = previous_total_cost + 100 * price  # 总投资额增加
             shares += 100  # 增加持股数
         elif signal == 'sell' and shares >= 100:
-            latest_total_cost = previous_total_cost - 100 * price  # 最新总花费减少卖出收益
+            latest_total_cost = previous_total_cost - 100 * price  # 总投资额减少
             shares -= 100  # 减少持股数
         else:
             latest_total_cost = previous_total_cost  # 无操作时总花费不变
@@ -545,6 +551,7 @@ def cal_return_rate(assetList):
         if latest_total_cost != 0:
             profit_or_loss = holding_value - latest_total_cost  # 最新盈利或亏损金额
             latest_return_rate = profit_or_loss / latest_total_cost  # 最新收益率
+            cost_per_share = latest_total_cost / shares if shares != 0 else 0  # 每股成本
         else:
             latest_return_rate = 0.0  # 防止除以零
 
@@ -552,6 +559,12 @@ def cal_return_rate(assetList):
         # print(f"时间: {row['time']}, 价格: {price}, 总成本: {previous_total_cost:.2f}, 收益率: {previous_return_rate:.2%}")
         # print(f"{signal} 100股, 目前持股数: {shares}, 持股金额: {holding_value:.2f}")
         # print(f"总成本: {latest_total_cost:.2f}, 收益率: {latest_return_rate:.2%}\n")
+
+        print(
+            f"时间: {row['time']}, 现价: {price}, 总投资额: {previous_total_cost:.2f}, 收益率: {previous_return_rate:.2%}")
+        print(
+            f"{signal} 100股, 持仓: {shares}, 市值: {holding_value:.2f}, 现价: {price}, 成本: {cost_per_share:.2f}, 收益率变为: {latest_return_rate:.2%}")
+        print(f"总投资额变为: {latest_total_cost:.2f}\n")
 
         # 更新之前总花费
         previous_total_cost = latest_total_cost
@@ -564,8 +577,8 @@ def cal_return_rate(assetList):
     else:
         final_return_rate = 0.0
 
-    print(f"最终持股数: {shares}, 最终持股金额: {holding_value:.2f}")
-    print(f"最终总花费: {latest_total_cost:.2f}, 最终收益率: {final_return_rate:.2%}")
+    print(f"最终持股数: {shares}, 最终市值: {holding_value:.2f}")
+    print(f"最终总投资额: {latest_total_cost:.2f}, 最终持股收益率: {final_return_rate:.2%}")
 
 
 def pre_handle():
