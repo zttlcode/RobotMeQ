@@ -119,7 +119,7 @@ def run_back_test_no_tick(assetList):
                           + asset.indicatorEntity.IE_assetsCode
                           + "_"
                           + asset.indicatorEntity.IE_timeLevel
-                          + "_tea_radical.csv", index=False)
+                          + ".csv", index=False)
 
 
 def chunk_dataframe(df, num_chunks):

@@ -27,21 +27,15 @@ from RMQTool import Tools as RMTTools
 def concat_trade_point(assetList):
     # 读取交易点
     tpl_filepath = RMTTools.read_config("RMQData", "trade_point_backtest") + "trade_point_list_"
-    # df_tpl_5 = pd.read_csv(tpl_filepath +
-    #                        assetList[0].assetsCode + "_" + assetList[0].barEntity.timeLevel + ".csv")
-    # df_tpl_15 = pd.read_csv(tpl_filepath +
-    #                         assetList[1].assetsCode + "_" + assetList[1].barEntity.timeLevel + ".csv")
-    # df_tpl_30 = pd.read_csv(tpl_filepath +
-    #                         assetList[2].assetsCode + "_" + assetList[2].barEntity.timeLevel + ".csv")
-    # df_tpl_60 = pd.read_csv(tpl_filepath +
-    #                         assetList[3].assetsCode + "_" + assetList[3].barEntity.timeLevel + ".csv")
-
+    df_tpl_5 = pd.read_csv(tpl_filepath +
+                           assetList[0].assetsCode + "_" + assetList[0].barEntity.timeLevel + ".csv")
     df_tpl_15 = pd.read_csv(tpl_filepath +
-                            assetList[1].assetsCode + "_" + assetList[1].barEntity.timeLevel + "_tea_radical.csv")
+                            assetList[1].assetsCode + "_" + assetList[1].barEntity.timeLevel + ".csv")
     df_tpl_30 = pd.read_csv(tpl_filepath +
-                            assetList[2].assetsCode + "_" + assetList[2].barEntity.timeLevel + "_tea_radical.csv")
+                            assetList[2].assetsCode + "_" + assetList[2].barEntity.timeLevel + ".csv")
     df_tpl_60 = pd.read_csv(tpl_filepath +
-                            assetList[3].assetsCode + "_" + assetList[3].barEntity.timeLevel + "_tea_radical.csv")
+                            assetList[3].assetsCode + "_" + assetList[3].barEntity.timeLevel + ".csv")
+
     df_tpl_d = None
     # temp2中有16个股票是单边行情，没用日线交易信号
     try:
@@ -505,13 +499,16 @@ def prepare_dataset(flag, name, time_point_step, limit_length, handle_uneven_sam
 def cal_return_rate(assetList):
     # 加载数据
     df_filePath = (RMTTools.read_config("RMQData", "trade_point_backtest") + "trade_point_list_" +
-                   assetList[0].assetsCode + "_60" + ".csv")  # _tea_radical  _concat 31.65% _concat_labeled  25.85 %
+                   assetList[0].assetsCode + "_concat" + ".csv")  #_concat 31.65% _concat_labeled  25.85 %
     # _concat_tea_radical  去掉5分钟 38.76%
 
     # 读取CSV文件
     # df = pd.read_csv(df_filePath, index_col="time", parse_dates=True)
+    # filtered_df = df[df['label'].isin([1, 3])].drop(columns=['label'])
+
     df = pd.read_csv(df_filePath)
     df.columns = ['time', 'price', 'signal']
+    df = df.iloc[32:]
 
     # 初始化资金和持仓状态
     holding_value = 0  # 市值
@@ -560,11 +557,11 @@ def cal_return_rate(assetList):
         # print(f"{signal} 100股, 目前持股数: {shares}, 持股金额: {holding_value:.2f}")
         # print(f"总成本: {latest_total_cost:.2f}, 收益率: {latest_return_rate:.2%}\n")
 
-        print(
-            f"时间: {row['time']}, 现价: {price}, 总投资额: {previous_total_cost:.2f}, 收益率: {previous_return_rate:.2%}")
-        print(
-            f"{signal} 100股, 持仓: {shares}, 市值: {holding_value:.2f}, 现价: {price}, 成本: {cost_per_share:.2f}, 收益率变为: {latest_return_rate:.2%}")
-        print(f"总投资额变为: {latest_total_cost:.2f}\n")
+        # print(
+        #     f"时间: {row['time']}, 现价: {price}, 总投资额: {previous_total_cost:.2f}, 收益率: {previous_return_rate:.2%}")
+        # print(
+        #     f"{signal} 100股, 持仓: {shares}, 市值: {holding_value:.2f}, 现价: {price}, 成本: {cost_per_share:.2f}, 收益率变为: {latest_return_rate:.2%}")
+        # print(f"总投资额变为: {latest_total_cost:.2f}\n")
 
         # 更新之前总花费
         previous_total_cost = latest_total_cost
@@ -615,7 +612,7 @@ def pre_handle():
         # filter1(assetList)
         # 计算收益率
         cal_return_rate(assetList)
-
+        break
     # 过滤交易点完成，准备训练数据
     """
     增加标识——是否处理样本不均
