@@ -174,7 +174,7 @@ def get_stock_from_code_csv():
     allStockCode = pd.read_csv("../QuantData/zz500_stocks.csv")
     for index, row in allStockCode.iterrows():
         assetList = RMQAsset.asset_generator(row['code'][3:], row['code_name'], ['5', '15', '30', '60', 'd'], 'stock',
-                                             1)  # asset是code等信息
+                                             1, 'A')  # asset是code等信息
         for asset in assetList:  # 每个标的所有级别
             lg = bs.login()
             print('login respond error_code:' + lg.error_code)

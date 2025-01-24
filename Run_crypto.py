@@ -93,9 +93,12 @@ def run_back_test_crypto(assetList):
         # 保存买卖点信息
         if asset.positionEntity.trade_point_list:  # 不为空，则保存
             df_tpl = pd.DataFrame(asset.positionEntity.trade_point_list)
-            df_tpl.to_csv(RMTTools.read_config("RMQData", "trade_point_backtest") + "trade_point_list_" +
-                          asset.indicatorEntity.IE_assetsCode + "_" +
-                          asset.indicatorEntity.IE_timeLevel + ".csv", index=False)
+            df_tpl.to_csv(RMTTools.read_config("RMQData", "trade_point_backtest_fuzzy")
+                          + asset.assetsMarket
+                          + "_"
+                          + asset.indicatorEntity.IE_assetsCode
+                          + "_"
+                          + asset.indicatorEntity.IE_timeLevel + ".csv", index=False)
 
 
 if __name__ == '__main__':
@@ -104,4 +107,6 @@ if __name__ == '__main__':
     1、dockerfile的COPY pip.conf、aliyun删除；
     2、requirements.txt加 binance-connector==2.0.0，删baostock==0.8.8
     """
-    run_back_test_crypto(RMQAsset.asset_generator('BTCUSDT', 'BTC', ['15', '60', '240', 'd'], 'crypto', 0))
+    run_back_test_crypto(RMQAsset.asset_generator('BTCUSDT', 'BTC',
+                                                  ['15', '60', '240', 'd'], 'crypto',
+                                                  0, 'crypto'))

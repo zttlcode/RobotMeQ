@@ -2,7 +2,7 @@ import os
 from collections import Counter
 
 # 文件夹路径
-folder_path = "./QuantData/trade_point_backTest/"  # 替换为你的文件夹路径
+folder_path = "QuantData/trade_point_backtest_tea_radical/"  # 替换为你的文件夹路径
 
 # 步骤 1: 获取所有文件名，并提取 cc 值
 file_names = [f for f in os.listdir(folder_path) if f.endswith('.csv')]

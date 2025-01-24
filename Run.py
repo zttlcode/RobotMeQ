@@ -69,8 +69,9 @@ def run_back_test(assetList):
         # 保存买卖点信息
         if asset.positionEntity.trade_point_list:  # 不为空，则保存
             df_tpl = pd.DataFrame(asset.positionEntity.trade_point_list)
-            df_tpl.to_csv(RMTTools.read_config("RMQData", "trade_point_backtest")
-                          + "trade_point_list_"
+            df_tpl.to_csv(RMTTools.read_config("RMQData", "trade_point_backtest_tea_conservative")
+                          + asset.assetsMarket
+                          + "_"
                           + asset.indicatorEntity.IE_assetsCode
                           + "_"
                           + asset.indicatorEntity.IE_timeLevel
@@ -114,8 +115,9 @@ def run_back_test_no_tick(assetList):
         if asset.positionEntity.trade_point_list:  # 不为空，则保存
             df_tpl = pd.DataFrame(asset.positionEntity.trade_point_list)
             df_tpl.columns = ['time', 'price', 'signal']
-            df_tpl.to_csv(RMTTools.read_config("RMQData", "trade_point_backtest")
-                          + "trade_point_list_"
+            df_tpl.to_csv(RMTTools.read_config("RMQData", "trade_point_backtest_tea_radical")
+                          + asset.assetsMarket
+                          + "_"
                           + asset.indicatorEntity.IE_assetsCode
                           + "_"
                           + asset.indicatorEntity.IE_timeLevel
@@ -143,7 +145,7 @@ def run_backTest_multip(data_chunk):
                                              row['code_name'],
                                              ['5', '15', '30', '60', 'd'],
                                              'stock',
-                                             1)
+                                             1, 'A')
         run_back_test_no_tick(assetList)  # 0:02:29.502122 新回测，不转tick
 
 
@@ -173,7 +175,7 @@ if __name__ == '__main__':
                                              row['code_name'],
                                              ['15', '30', '60', 'd'],
                                              'stock',
-                                             1)
+                                             1, 'A')
 
         # run_back_test(assetList)  # 0:18:27.437876 旧回测，转tick，运行时长  加tick会细化价格导致操作提前，但实盘是bar结束了算指标，所以不影响
         run_back_test_no_tick(assetList)  # 0:02:29.502122 新回测，不转tick

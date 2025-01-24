@@ -4,11 +4,12 @@ from RMQData.Indicator import IndicatorEntity as RMQIndicatorEntity
 
 
 class Asset:
-    def __init__(self, assetsCode, assetsName, timeLevel, isRunMultiLevel, assetsType, tradeRule):
+    def __init__(self, assetsCode, assetsName, timeLevel, isRunMultiLevel, assetsType, tradeRule, assetsMarket):
         # 配置文件
         self.assetsCode = assetsCode
         self.assetsName = assetsName
         self.assetsType = assetsType
+        self.assetsMarket = assetsMarket
 
         # bar数据实例
         self.barEntity = RMQBarEntity(assetsCode, timeLevel, isRunMultiLevel)
@@ -35,28 +36,28 @@ class Asset:
 
 
 class Stock(Asset):
-    def __init__(self, assetsCode, assetsName, timeLevel, isRunMultiLevel, assetsType, tradeRule):
-        super().__init__(assetsCode, assetsName, timeLevel, isRunMultiLevel, assetsType, tradeRule)
+    def __init__(self, assetsCode, assetsName, timeLevel, isRunMultiLevel, assetsType, tradeRule, assetsMarket):
+        super().__init__(assetsCode, assetsName, timeLevel, isRunMultiLevel, assetsType, tradeRule, assetsMarket)
 
 
 class Index(Asset):
-    def __init__(self, assetsCode, assetsName, timeLevel, isRunMultiLevel, assetsType, tradeRule):
-        super().__init__(assetsCode, assetsName, timeLevel, isRunMultiLevel, assetsType, tradeRule)
+    def __init__(self, assetsCode, assetsName, timeLevel, isRunMultiLevel, assetsType, tradeRule, assetsMarket):
+        super().__init__(assetsCode, assetsName, timeLevel, isRunMultiLevel, assetsType, tradeRule, assetsMarket)
 
 
 class ETF(Asset):
-    def __init__(self, assetsCode, assetsName, timeLevel, isRunMultiLevel, assetsType, tradeRule):
-        super().__init__(assetsCode, assetsName, timeLevel, isRunMultiLevel, assetsType, tradeRule)
+    def __init__(self, assetsCode, assetsName, timeLevel, isRunMultiLevel, assetsType, tradeRule, assetsMarket):
+        super().__init__(assetsCode, assetsName, timeLevel, isRunMultiLevel, assetsType, tradeRule, assetsMarket)
 
 
 class Crypto(Asset):
-    def __init__(self, assetsCode, assetsName, timeLevel, isRunMultiLevel, assetsType):
-        super().__init__(assetsCode, assetsName, timeLevel, isRunMultiLevel, assetsType, 0)
+    def __init__(self, assetsCode, assetsName, timeLevel, isRunMultiLevel, assetsType, tradeRule, assetsMarket):
+        super().__init__(assetsCode, assetsName, timeLevel, isRunMultiLevel, assetsType, tradeRule, assetsMarket)
         self.back_test_bar_data = None  # 读取所有的回测数据
         self.back_test_cut_row = None  # 为了从读取的回测bar中，定位到自己要的回测开始时间
 
 
-def asset_generator(assetsCode, assetsName, timeLevelList, assetsType, tradeRule):
+def asset_generator(assetsCode, assetsName, timeLevelList, assetsType, tradeRule, assetsMarket):
     """
     :param tradeRule: T+1还是T+0
     :param assetsCode: 给代码
@@ -73,11 +74,11 @@ def asset_generator(assetsCode, assetsName, timeLevelList, assetsType, tradeRule
     assetList = []
     for timeLevel in timeLevelList:
         if assetsType == 'stock':
-            assetList.append(Stock(assetsCode, assetsName, timeLevel, isRunMultiLevel, assetsType, tradeRule))
+            assetList.append(Stock(assetsCode, assetsName, timeLevel, isRunMultiLevel, assetsType, tradeRule, assetsMarket))
         elif assetsType == 'index':
-            assetList.append(Index(assetsCode, assetsName, timeLevel, isRunMultiLevel, assetsType, tradeRule))
+            assetList.append(Index(assetsCode, assetsName, timeLevel, isRunMultiLevel, assetsType, tradeRule, assetsMarket))
         elif assetsType == 'ETF':
-            assetList.append(ETF(assetsCode, assetsName, timeLevel, isRunMultiLevel, assetsType, tradeRule))
+            assetList.append(ETF(assetsCode, assetsName, timeLevel, isRunMultiLevel, assetsType, tradeRule, assetsMarket))
         elif assetsType == 'crypto':
-            assetList.append(Crypto(assetsCode, assetsName, timeLevel, isRunMultiLevel, assetsType))
+            assetList.append(Crypto(assetsCode, assetsName, timeLevel, isRunMultiLevel, assetsType, tradeRule, assetsMarket))
     return assetList

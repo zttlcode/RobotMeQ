@@ -3,7 +3,7 @@
 #
 # # 过滤已经800里未处理的数据
 # # 文件夹路径和目标文件路径
-# folder_path = "./QuantData/trade_point_backTest/"  # 替换为存储CSV文件的文件夹路径
+# folder_path = "./QuantData/trade_point_backtest_tea_radical/"  # 替换为存储CSV文件的文件夹路径
 # hs_file_path = "./QuantData/a800_stocks.csv"  # hs.csv 文件路径
 # output_file_path = "./QuantData/a800_wait_handle_stocks.csv"  # 输出文件路径
 #

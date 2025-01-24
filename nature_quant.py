@@ -26,7 +26,10 @@ from RMQTool import Tools as RMTTools
 
 def concat_trade_point(assetList):
     # 读取交易点
-    tpl_filepath = RMTTools.read_config("RMQData", "trade_point_backtest") + "trade_point_list_"
+    tpl_filepath = (RMTTools.read_config("RMQData", "trade_point_backtest_tea_radical")
+                    + assetList[0].assetsMarket
+                    + "_")
+
     df_tpl_5 = pd.read_csv(tpl_filepath +
                            assetList[0].assetsCode + "_" + assetList[0].barEntity.timeLevel + ".csv")
     df_tpl_15 = pd.read_csv(tpl_filepath +
@@ -40,15 +43,18 @@ def concat_trade_point(assetList):
     # temp2中有16个股票是单边行情，没用日线交易信号
     try:
         df_tpl_d = pd.read_csv(tpl_filepath +
-                               assetList[4].assetsCode + "_" + assetList[4].barEntity.timeLevel + "_tea_radical.csv")
+                               assetList[4].assetsCode + "_" + assetList[4].barEntity.timeLevel + ".csv")
     except Exception as e:
         pass
 
     # 整合所有交易点
     if df_tpl_d is not None:
-        df_tpl = pd.concat([df_tpl_15, df_tpl_30, df_tpl_60, df_tpl_d], ignore_index=True)
+        df_tpl_d['time'] = pd.to_datetime(df_tpl_d['time'])  # 将 time 列转换为日期时间类型
+        # 筛选出时间在 2019年1月1日及之后的行  因为分钟级别数据都是从这天开始，日线数据太久远影响收益率
+        df_tpl_d_filtered = df_tpl_d[df_tpl_d['time'] >= '2019-01-01']
+        df_tpl = pd.concat([df_tpl_5, df_tpl_15, df_tpl_30, df_tpl_60, df_tpl_d_filtered], ignore_index=True)
     else:
-        df_tpl = pd.concat([df_tpl_15, df_tpl_30, df_tpl_60], ignore_index=True)
+        df_tpl = pd.concat([df_tpl_5, df_tpl_15, df_tpl_30, df_tpl_60], ignore_index=True)
 
     # 将第一列转换为 datetime 格式
     df_tpl = df_tpl.set_index(df_tpl.columns[0])  # 使用第一列作为索引
@@ -59,11 +65,11 @@ def concat_trade_point(assetList):
     df_tpl.index = df_tpl.index.map(
         lambda x: x.replace(hour=15, minute=0, second=0) if x.hour == 0 and x.minute == 0 and x.second == 0 else x)
     # 修改其余列的名称
-    df_tpl.columns = ['price', 'signal']
+    # df_tpl.columns = ['price', 'signal']
     # 按索引（时间）排序
     df_tpl = df_tpl.sort_index()
     # 保存为新的 CSV 文件
-    df_tpl.to_csv(tpl_filepath + assetList[0].assetsCode + "_concat_tea_radical" + ".csv")
+    df_tpl.to_csv(tpl_filepath + assetList[0].assetsCode + "_concat" + ".csv")
 
 
 def filter1(assetList):
@@ -108,8 +114,10 @@ def filter1(assetList):
     """
     backtest_df_filePath = (RMTTools.read_config("RMQData", "backtest_bar") + 'backtest_bar_' +
                             assetList[0].assetsCode + '_d.csv')
-    signal_df_filepath = (RMTTools.read_config("RMQData", "trade_point_backtest") + "trade_point_list_" +
-                          assetList[0].assetsCode + "_concat" + ".csv")
+    signal_df_filepath = (RMTTools.read_config("RMQData", "trade_point_backtest_tea_radical")
+                          + assetList[0].assetsMarket
+                          + "_"
+                          + assetList[0].assetsCode + "_concat" + ".csv")
     # 读取 backtest.csv读取日线数据 和 signal.csv 为 DataFrame
     backtest_df = pd.read_csv(backtest_df_filePath, encoding='utf-8', parse_dates=['time'], index_col="time")
     signal_df = pd.read_csv(signal_df_filepath, parse_dates=["time"], index_col="time")
@@ -207,8 +215,10 @@ def filter1(assetList):
     signal_df = signal_df[signal_df["label"] != 0]
 
     # 保存结果到新的 CSV 文件
-    signal_df.to_csv((RMTTools.read_config("RMQData", "trade_point_backtest") + "trade_point_list_" +
-                      assetList[0].assetsCode + "_concat_labeled" + ".csv"))
+    signal_df.to_csv((RMTTools.read_config("RMQData", "trade_point_backtest_tea_radical")
+                      + assetList[0].assetsMarket
+                      + "_"
+                      + assetList[0].assetsCode + "_concat_labeled" + ".csv"))
 
     print(assetList[0].assetsCode + "标注完成")
 
@@ -289,8 +299,10 @@ def handling_uneven_samples(concat_labeled):
 
 def trans_labeled_point_to_ts(assetList, temp_data_dict, temp_label_list, time_point_step, handle_uneven_samples):
     # 加载数据
-    concat_labeled_filePath = (RMTTools.read_config("RMQData", "trade_point_backtest") + "trade_point_list_" +
-                               assetList[0].assetsCode + "_concat_labeled" + ".csv")
+    concat_labeled_filePath = (RMTTools.read_config("RMQData", "trade_point_backtest_tea_radical")
+                               + assetList[0].assetsMarket
+                               + "_"
+                               + assetList[0].assetsCode + "_concat_labeled" + ".csv")
     index_d_filepath = (RMTTools.read_config("RMQData", "backtest_bar") + "backtest_bar_" +
                         "000001_index_d" + ".csv")
     data_d_filePath = (RMTTools.read_config("RMQData", "backtest_bar") + 'backtest_bar_' +
@@ -466,7 +478,7 @@ def prepare_dataset(flag, name, time_point_step, limit_length, handle_uneven_sam
                                              row['code_name'],
                                              ['5', '15', '30', '60', 'd'],
                                              'stock',
-                                             1)
+                                             1, 'A')
         # 准备训练数据
         trans_labeled_point_to_ts(assetList, temp_data_dict, temp_label_list, time_point_step, handle_uneven_samples)
         if limit_length == 0:  # 全数据
@@ -496,19 +508,20 @@ def prepare_dataset(flag, name, time_point_step, limit_length, handle_uneven_sam
     )
 
 
-def cal_return_rate(assetList):
+def cal_return_rate(assetList, flag):
     # 加载数据
-    df_filePath = (RMTTools.read_config("RMQData", "trade_point_backtest") + "trade_point_list_" +
-                   assetList[0].assetsCode + "_concat" + ".csv")  #_concat 31.65% _concat_labeled  25.85 %
-    # _concat_tea_radical  去掉5分钟 38.76%
+    df_filePath = (RMTTools.read_config("RMQData", "trade_point_backtest_tea_radical")
+                   + assetList[0].assetsMarket
+                   + "_"
+                   + assetList[0].assetsCode + str(flag) + ".csv")
 
     # 读取CSV文件
-    # df = pd.read_csv(df_filePath, index_col="time", parse_dates=True)
-    # filtered_df = df[df['label'].isin([1, 3])].drop(columns=['label'])
-
     df = pd.read_csv(df_filePath)
-    df.columns = ['time', 'price', 'signal']
-    df = df.iloc[32:]
+    # 如果有 4 列，是标注后数据，过滤有效交易点
+    if df.shape[1] == 4:
+        dataframe = df[df['label'].isin([1, 3])].drop(columns=['label'])
+    else:
+        dataframe = df
 
     # 初始化资金和持仓状态
     holding_value = 0  # 市值
@@ -521,7 +534,7 @@ def cal_return_rate(assetList):
     latest_return_rate = 0.0  # 进行当日操作后的收益率
 
     # 遍历CSV文件数据
-    for index, row in df.iterrows():
+    for index, row in dataframe.iterrows():
         price = row['price']
         signal = row['signal']
 
@@ -557,10 +570,10 @@ def cal_return_rate(assetList):
         # print(f"{signal} 100股, 目前持股数: {shares}, 持股金额: {holding_value:.2f}")
         # print(f"总成本: {latest_total_cost:.2f}, 收益率: {latest_return_rate:.2%}\n")
 
-        # print(
-        #     f"时间: {row['time']}, 现价: {price}, 总投资额: {previous_total_cost:.2f}, 收益率: {previous_return_rate:.2%}")
-        # print(
-        #     f"{signal} 100股, 持仓: {shares}, 市值: {holding_value:.2f}, 现价: {price}, 成本: {cost_per_share:.2f}, 收益率变为: {latest_return_rate:.2%}")
+        # print(f"时间: {row['time']}, 现价: {price}, 总投资额: {previous_total_cost:.2f}, "
+        #       f"收益率: {previous_return_rate:.2%}")
+        # print(f"{signal} 100股, 持仓: {shares}, 市值: {holding_value:.2f}, 现价: {price}, "
+        #       f"成本: {cost_per_share:.2f}, 收益率变为: {latest_return_rate:.2%}")
         # print(f"总投资额变为: {latest_total_cost:.2f}\n")
 
         # 更新之前总花费
@@ -574,8 +587,32 @@ def cal_return_rate(assetList):
     else:
         final_return_rate = 0.0
 
-    print(f"最终持股数: {shares}, 最终市值: {holding_value:.2f}")
-    print(f"最终总投资额: {latest_total_cost:.2f}, 最终持股收益率: {final_return_rate:.2%}")
+    print(f"{assetList[0].assetsCode}{flag} 最终结果 持股数: {shares}, 市值: {holding_value:.2f}, "
+          f"总投资额: {latest_total_cost:.2f}, 持股收益率: {final_return_rate:.2%}")
+
+    # return round(final_return_rate, 4)
+
+
+def compare_return_rate():
+    # 计算不同标注方式的收益率
+    allStockCode = pd.read_csv("./QuantData/a800_stocks.csv")
+    n = 0
+    temp_data_dict = {'have5label': []}
+    for index, row in allStockCode.iterrows():
+        assetList = RMQAsset.asset_generator(row['code'][3:],
+                                             row['code_name'],
+                                             ['5', '15', '30', '60', 'd'],
+                                             'stock',
+                                             1, 'A')
+
+        # 计算收益率  _5 _15 _30 _60 _d _concat _concat_labeled
+        have5 = cal_return_rate(assetList, "_concat_labeled")
+        # no5 = cal_return_rate(assetList, "_concat")
+        temp_data_dict['have5label'].append(have5)
+        # temp_data_dict['no5'].append(no5)
+    print(n)
+    result_df = pd.DataFrame(temp_data_dict)
+    result_df.to_csv("./QuantData/temp.csv", index=False)
 
 
 def pre_handle():
@@ -598,21 +635,19 @@ def pre_handle():
                 （第三种方法、提前5天，直接抽特征自己发信号，不用判断当前信号是否有效）
     """
     allStockCode = pd.read_csv("./QuantData/a800_stocks.csv")
-
     for index, row in allStockCode.iterrows():
         assetList = RMQAsset.asset_generator(row['code'][3:],
                                              row['code_name'],
                                              ['5', '15', '30', '60', 'd'],
                                              'stock',
-                                             1)
+                                             1, 'A')
 
         # 各级别交易点拼接在一起
-        # concat_trade_point(assetList)
+        concat_trade_point(assetList)
         # 过滤交易点1
         # filter1(assetList)
-        # 计算收益率
-        cal_return_rate(assetList)
-        break
+        # 计算收益率  _5 _15 _30 _60 _d _concat _concat_labeled
+        # cal_return_rate(assetList, "_concat_labeled")
     # 过滤交易点完成，准备训练数据
     """
     增加标识——是否处理样本不均
