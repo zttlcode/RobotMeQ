@@ -4,7 +4,6 @@ import os
 from datetime import datetime
 import RMQData.Tick as RMQTick
 import RMQStrategy.Strategy as RMQStrategy
-import RMQStrategy.Strategy_nature as RMQStrategy_nature
 import RMQData.Indicator as RMQIndicator
 import RMQData.Asset as RMQAsset
 import RMQVisualized.Draw_Matplotlib as RMQDrawPlot
@@ -149,6 +148,15 @@ def run_backTest_multip(data_chunk):
         run_back_test_no_tick(assetList)  # 0:02:29.502122 新回测，不转tick
 
 
+def parallel_backTest(allStockCode):
+    # 多个并行
+    num_processes = 15  # 确定进程数量和数据块
+    data_chunks = chunk_dataframe(allStockCode, num_processes)  # 把300个股票分给20个进程并行处理
+    # 使用 multiprocessing 开启进程池
+    with Pool(num_processes) as pool:
+        pool.map(run_backTest_multip, data_chunks)
+
+
 if __name__ == '__main__':
     """
     要想运行多级别，列表里加一个时间级别就行
@@ -160,30 +168,8 @@ if __name__ == '__main__':
     如果盘中重启，[0]还是上一个bar的数据，因为不满足整点，[0]的数据就会被更新，无法记录当前bar的最高最低值，和成交量
     如果盘中启动，收盘后，需要改第一个bar的数据，和其余三个bar的成交量。幸好我是小时线
     """
-    # run_back_test(RMQAsset.asset_generator('000001',
-    #                                        '上证',
-    #                                        ['5', '15', '30', '60', 'd'],
-    #                                        'index',
-    #                                        1))
-
-    # 并行回测，保存交易点
-    allStockCode = pd.read_csv("./QuantData/a800_stocks.csv")
-
-    # 实验一个
-    for index, row in allStockCode.iterrows():
-        assetList = RMQAsset.asset_generator(row['code'][3:],
-                                             row['code_name'],
-                                             ['5', '15', '30', '60', 'd'],
-                                             'stock',
-                                             1, 'A')
-
-        # run_back_test(assetList)  # 0:18:27.437876 旧回测，转tick，运行时长  加tick会细化价格导致操作提前，但实盘是bar结束了算指标，所以不影响
-        run_back_test_no_tick(assetList)  # 0:02:29.502122 新回测，不转tick
-        break
-
-    # # 多个并行
-    # num_processes = 15  # 确定进程数量和数据块
-    # data_chunks = chunk_dataframe(allStockCode, num_processes)  # 把300个股票分给20个进程并行处理
-    # # 使用 multiprocessing 开启进程池
-    # with Pool(num_processes) as pool:
-    #     pool.map(run_backTest_multip, data_chunks)
+    run_back_test(RMQAsset.asset_generator('000001',
+                                           '上证',
+                                           ['5', '15', '30', '60', 'd'],
+                                           'index',
+                                           1, 'A'))
