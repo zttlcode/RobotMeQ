@@ -104,7 +104,7 @@ def run_back_test_no_tick(assetList):
             asset.indicatorEntity.tick_volume = asset.barEntity.bar_DataFrame.at[end-1, 'volume']
             # 把一个标的 一个级别的所有数据回测，记录交易点
             # 这个策略做了改动，strategy中的判断日线被删除了
-            RMQStrategy_nature.strategy(asset, None, None)  # 整个系统最耗时的在这里，15毫秒
+            RMQStrategy.strategy(asset, None, None)  # 整个系统最耗时的在这里，15毫秒
         # backtest_result = asset.positionEntity.historyOrders
         # if 0 != len(asset.positionEntity.historyOrders):
         #     print(asset.indicatorEntity.IE_assetsCode + "_" + asset.indicatorEntity.IE_timeLevel, backtest_result)
@@ -173,7 +173,7 @@ if __name__ == '__main__':
     for index, row in allStockCode.iterrows():
         assetList = RMQAsset.asset_generator(row['code'][3:],
                                              row['code_name'],
-                                             ['15', '30', '60', 'd'],
+                                             ['5', '15', '30', '60', 'd'],
                                              'stock',
                                              1, 'A')
 

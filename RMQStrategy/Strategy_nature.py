@@ -4,35 +4,6 @@ import RMQData.Indicator as RMQIndicator
 import RMQStrategy.Strategy_fuzzy as RMQSFuzzy
 
 
-def strategy(asset, strategy_result, IEMultiLevel):
-    barEntity = asset.barEntity
-    indicatorEntity = asset.indicatorEntity
-    positionEntity = asset.positionEntity
-
-    length = len(barEntity.bar_DataFrame)
-    window = length - barEntity.bar_num  # 起始下标比如是0~60，100~160等，bar_num是60，iloc含头不含尾。现在bar_num是250
-    windowDF = barEntity.bar_DataFrame.iloc[window:length].copy()  # copy不改变原对象，不加copy会有改变临时对象的警告
-    windowDF = windowDF.reset_index(drop=True)  # 重置索引，这样df索引总是0~59
-
-    windowDF_calIndic = windowDF.iloc[:-1].copy()  # copy不改变原对象，不加copy会有改变临时对象的警告
-    windowDF_calIndic = windowDF_calIndic.reset_index(drop=True)  # 重置索引，这样df索引是0~58
-
-    # 激进派背离策略，
-    strategy_tea_radical(positionEntity,
-                         indicatorEntity,
-                         windowDF_calIndic,
-                         barEntity.bar_num - 2,  # 比如时间窗口60，最后一条数据下标永远是59
-                         strategy_result,
-                         IEMultiLevel)
-
-    # ride-mood策略，增强版趋势跟随策略，反指率高达90%，经常小亏，偶尔大赚
-    # strategy_fuzzy(positionEntity,
-    #                indicatorEntity,
-    #                windowDF_calIndic,
-    #                barEntity.bar_num - 1,  # 减了个实时价格，250变249，所以这里长度也跟着变成249
-    #                strategy_result)
-
-
 def strategy_tea_radical(positionEntity,
                          indicatorEntity,
                          windowDF_calIndic,
