@@ -79,18 +79,30 @@ def handling_uneven_samples(concat_labeled):
     return final_data
 
 
-def trans_labeled_point_to_ts(assetList, temp_data_dict, temp_label_list, time_point_step, handle_uneven_samples):
+def trans_labeled_point_to_ts(assetList, temp_data_dict, temp_label_list, time_point_step, handle_uneven_samples, strategy_name):
     # 加载数据
-    concat_labeled_filePath = (RMTTools.read_config("RMQData", "trade_point_backtest_tea_radical_nature")
+    item = 'trade_point_backtest_' + strategy_name
+    concat_labeled_filePath = (RMTTools.read_config("RMQData", item)
                                + assetList[0].assetsMarket
                                + "_"
                                + assetList[0].assetsCode + "_concat_labeled" + ".csv")
-    index_d_filepath = (RMTTools.read_config("RMQData", "backtest_bar") + "backtest_bar_" +
-                        "000001_index_d" + ".csv")
-    data_d_filePath = (RMTTools.read_config("RMQData", "backtest_bar") + 'backtest_bar_' +
-                       assetList[0].assetsCode + '_d.csv')
-    data_60_df_filePath = (RMTTools.read_config("RMQData", "backtest_bar") + 'backtest_bar_' +
-                           assetList[0].assetsCode + '_60.csv')
+    index_d_filepath = (RMTTools.read_config("RMQData", "backtest_bar")
+                        + "bar_"
+                        + assetList[0].assetsMarket
+                        + "_"
+                        + "000001_index_d" + ".csv")
+    data_d_filePath = (RMTTools.read_config("RMQData", "backtest_bar")
+                       + "bar_"
+                       + assetList[0].assetsMarket
+                       + "_"
+                       + assetList[0].assetsCode
+                       + '_d.csv')
+    data_60_df_filePath = (RMTTools.read_config("RMQData", "backtest_bar")
+                           + "bar_"
+                           + assetList[0].assetsMarket
+                           + "_"
+                           + assetList[0].assetsCode
+                           + '_60.csv')
 
     concat_labeled = pd.read_csv(concat_labeled_filePath, index_col="time", parse_dates=True)
     index_d = pd.read_csv(index_d_filepath, index_col="date", parse_dates=True)
@@ -167,7 +179,7 @@ def trans_labeled_point_to_ts(assetList, temp_data_dict, temp_label_list, time_p
     print(assetList[0].assetsCode, "结束", len(temp_label_list))
 
 
-def prepare_dataset(flag, name, time_point_step, limit_length, handle_uneven_samples):
+def prepare_dataset(flag, name, time_point_step, limit_length, handle_uneven_samples, strategy_name):
     allStockCode = pd.read_csv("./QuantData/a800_stocks.csv")
 
     allStockCode_shuffled = allStockCode.sample(frac=1, random_state=42).reset_index(drop=True)
@@ -262,7 +274,7 @@ def prepare_dataset(flag, name, time_point_step, limit_length, handle_uneven_sam
                                              'stock',
                                              1, 'A')
         # 准备训练数据
-        trans_labeled_point_to_ts(assetList, temp_data_dict, temp_label_list, time_point_step, handle_uneven_samples)
+        trans_labeled_point_to_ts(assetList, temp_data_dict, temp_label_list, time_point_step, handle_uneven_samples, strategy_name)
         if limit_length == 0:  # 全数据
             pass
         elif len(temp_label_list) >= limit_length:  # 只要部分数据

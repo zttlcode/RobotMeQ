@@ -12,7 +12,7 @@ def update_window_crypto(asset):
     asset.barEntity.bar_DataFrame = asset.back_test_bar_data.iloc[asset.back_test_cut_row:asset.back_test_cut_row + asset.barEntity.bar_num + 1].copy()
 
 
-def run_back_test_crypto(assetList):
+def run_back_test_crypto(assetList, strategy_name):
     """
     实现思路：
         原来是最小级别tick，更新各个级别的bar
@@ -77,7 +77,7 @@ def run_back_test_crypto(assetList):
                 asset.barEntity.bar_DataFrame.tail(1).iloc[0, 2] = max(assetList[0].barEntity.bar_DataFrame.tail(1).iloc[0, 2], asset.barEntity.bar_DataFrame.tail(1).iloc[0, 2])
                 asset.barEntity.bar_DataFrame.tail(1).iloc[0, 3] = min(assetList[0].barEntity.bar_DataFrame.tail(1).iloc[0, 3], asset.barEntity.bar_DataFrame.tail(1).iloc[0, 3])
 
-            RMQStrategy.strategy(asset, strategy_result, IEMultiLevel)
+            RMQStrategy.strategy(asset, strategy_result, IEMultiLevel, strategy_name)
 
         if assetList[0].barEntity.bar_DataFrame.tail(1).iloc[0, 0] == datetime(2023, 6, 19, 0, 0, 0):
             break
@@ -109,4 +109,4 @@ if __name__ == '__main__':
     """
     run_back_test_crypto(RMQAsset.asset_generator('BTCUSDT', 'BTC',
                                                   ['15', '60', '240', 'd'], 'crypto',
-                                                  0, 'crypto'))
+                                                  0, 'crypto'), 'tea_radical')

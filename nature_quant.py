@@ -24,9 +24,10 @@ from RMQModel import Label as RMQLabel
 import Run as Run
 
 
-def concat_trade_point(assetList):
+def concat_trade_point(assetList, strategy_name):
     # 读取交易点
-    tpl_filepath = (RMTTools.read_config("RMQData", "trade_point_backtest_tea_radical_nature")
+    item = 'trade_point_backtest_' + strategy_name
+    tpl_filepath = (RMTTools.read_config("RMQData", item)
                     + assetList[0].assetsMarket
                     + "_")
 
@@ -92,7 +93,7 @@ def pre_handle():
                 （第三种方法、提前5天，直接抽特征自己发信号，不用判断当前信号是否有效）
     """
     allStockCode = pd.read_csv("./QuantData/a800_stocks.csv")
-    # 回测，并行
+    # 回测，并行 需要手动改里面的策略名
     # Run.parallel_backTest(allStockCode)
     for index, row in allStockCode.iterrows():
         assetList = RMQAsset.asset_generator(row['code'][3:],
@@ -100,16 +101,17 @@ def pre_handle():
                                              ['5', '15', '30', '60', 'd'],
                                              'stock',
                                              1, 'A')
-        # 回测，保存交易点
-        # run_back_test(assetList)  # 0:18:27.437876 旧回测，转tick，运行时长  加tick会细化价格导致操作提前，但实盘是bar结束了算指标，所以不影响
-        Run.run_back_test_no_tick(assetList)  # 0:02:29.502122 新回测，不转tick
+        # 回测，保存交易点 Run.run_back_test(assetList, "tea_radical_nature")  # 0:18:27.437876 旧回测，转tick，运行时长
+        # 加tick会细化价格导致操作提前，但实盘是bar结束了算指标，所以不影响
+
+        Run.run_back_test_no_tick(assetList, "tea_radical_nature")  # 0:02:29.502122 新回测，不转tick
         break
         # 各级别交易点拼接在一起
-        # concat_trade_point(assetList)
+        # concat_trade_point(assetList, "tea_radical_nature")
         # 过滤交易点1
-        # RMQLabel.filter1(assetList)
+        # RMQLabel.filter1(assetList, "tea_radical_nature")
         # 计算收益率  _5 _15 _30 _60 _d _concat _concat_labeled
-        # RMQYield.cal_return_rate(assetList, "_concat_labeled")
+        # RMQYield.cal_return_rate(assetList, "_concat_labeled", "tea_radical_nature")
     # 过滤交易点完成，准备训练数据
     """
     增加标识——是否处理样本不均
@@ -124,8 +126,8 @@ def pre_handle():
             样本极端少只有几十个时，将分类问题考虑成异常检测
         这实验起来有些麻烦，我先尝试直接删样本吧，handle_uneven_samples True处理，False不处理，按4类中最少的为准，删除其他样本
     """
-    # RMQDataset.prepare_dataset("_TRAIN", "2w", 250, 20000, True)  # 最多24.6万  limit_length==0 代表不截断，全数据
-    # RMQDataset.prepare_dataset("_TEST", "2w", 250, 10000, True)  # 最多14.6万
+    # RMQDataset.prepare_dataset("_TRAIN", "2w", 250, 20000, True, "tea_radical_nature")  # 最多24.6万  limit_length==0 代表不截断，全数据
+    # RMQDataset.prepare_dataset("_TEST", "2w", 250, 10000, True, "tea_radical_nature")  # 最多14.6万
 
 
 def run_experiment():

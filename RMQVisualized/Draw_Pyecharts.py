@@ -370,7 +370,13 @@ if __name__ == "__main__":
     # assetList = RMQAsset.asset_generator('BTCUSDT', 'BTC', ['15', '60', '240', 'd'], 'crypto')
 
     # 读取日线数据
-    filePath = RMTTools.read_config("RMQData", "backtest_bar") + 'backtest_bar_' + assetList[0].assetsCode + '_d.csv'
+    filePath = (RMTTools.read_config("RMQData", "backtest_bar")
+                + "bar_"
+                + assetList[0].assetsMarket
+                + "_"
+                + assetList[0].assetsCode
+                + '_d.csv')
+
     df = pd.read_csv(filePath, encoding='utf-8')
 
     """
@@ -401,7 +407,8 @@ if __name__ == "__main__":
     2、多级别合并绘画，改用这个时，改59行判断时间代码
     """
     # 使用nature_quant过滤交易点后，再次可视化交易点位
-    df_labeled = pd.read_csv((RMTTools.read_config("RMQData", "trade_point_backtest_tea_radical_nature")
+    item = 'trade_point_backtest_' + "tea_radical_nature"
+    df_labeled = pd.read_csv((RMTTools.read_config("RMQData", item)
                               + assetList[0].assetsMarket
                               + '_'
                               + assetList[0].assetsCode

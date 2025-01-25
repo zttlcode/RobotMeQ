@@ -16,7 +16,7 @@ from RMQTool import Tools as RMTTools
 # from RobotMeQ.RMQVisualized import DrawByMatplotlib as RMQMat
 
 
-def run_back_test(assetList):
+def run_back_test(assetList, strategy_name):
     strategy_result = RMQStrategy.StrategyResultEntity()  # 收集多级别行情信息，推送消息
     strategy_result.live = False
     IEMultiLevel = RMQIndicator.IndicatorEntityMultiLevel(assetList)  # 多级别的指标要互相交流，所以通过这个公共指标对象交流
@@ -56,7 +56,7 @@ def run_back_test(assetList):
                 asset.update_indicatorDF_by_tick()  # 必须在此更新，不然就要把5个值作为参数传递，不好看
                 RMQStrategy.strategy(asset,
                                      strategy_result,
-                                     IEMultiLevel)  # 整个系统最耗时的在这里，15毫秒
+                                     IEMultiLevel, strategy_name)  # 整个系统最耗时的在这里，15毫秒
 
     # 返回结果
     for asset in assetList:
@@ -68,7 +68,8 @@ def run_back_test(assetList):
         # 保存买卖点信息
         if asset.positionEntity.trade_point_list:  # 不为空，则保存
             df_tpl = pd.DataFrame(asset.positionEntity.trade_point_list)
-            df_tpl.to_csv(RMTTools.read_config("RMQData", "trade_point_backtest_tea_conservative")
+            item = 'trade_point_backtest_' + strategy_name
+            df_tpl.to_csv(RMTTools.read_config("RMQData", item)
                           + asset.assetsMarket
                           + "_"
                           + asset.indicatorEntity.IE_assetsCode
@@ -77,7 +78,7 @@ def run_back_test(assetList):
                           + ".csv", index=False)
 
 
-def run_back_test_no_tick(assetList):
+def run_back_test_no_tick(assetList, strategy_name):
     """
     注意：我之前代码的回测是多级别，从5分钟级别转tick，各级别再跟着tick转bar，这是因为策略要判断当时日线指标，但现在不用
     加日线过滤出了子集，不加就是全集，交易点位变多了，影响不大。
@@ -103,7 +104,7 @@ def run_back_test_no_tick(assetList):
             asset.indicatorEntity.tick_volume = asset.barEntity.bar_DataFrame.at[end-1, 'volume']
             # 把一个标的 一个级别的所有数据回测，记录交易点
             # 这个策略做了改动，strategy中的判断日线被删除了
-            RMQStrategy.strategy(asset, None, None)  # 整个系统最耗时的在这里，15毫秒
+            RMQStrategy.strategy(asset, None, None, strategy_name)  # 整个系统最耗时的在这里，15毫秒
         # backtest_result = asset.positionEntity.historyOrders
         # if 0 != len(asset.positionEntity.historyOrders):
         #     print(asset.indicatorEntity.IE_assetsCode + "_" + asset.indicatorEntity.IE_timeLevel, backtest_result)
@@ -114,7 +115,8 @@ def run_back_test_no_tick(assetList):
         if asset.positionEntity.trade_point_list:  # 不为空，则保存
             df_tpl = pd.DataFrame(asset.positionEntity.trade_point_list)
             df_tpl.columns = ['time', 'price', 'signal']
-            df_tpl.to_csv(RMTTools.read_config("RMQData", "trade_point_backtest_tea_radical_nature")
+            item = 'trade_point_backtest_' + strategy_name
+            df_tpl.to_csv(RMTTools.read_config("RMQData", item)
                           + asset.assetsMarket
                           + "_"
                           + asset.indicatorEntity.IE_assetsCode
@@ -145,7 +147,7 @@ def run_backTest_multip(data_chunk):
                                              ['5', '15', '30', '60', 'd'],
                                              'stock',
                                              1, 'A')
-        run_back_test_no_tick(assetList)  # 0:02:29.502122 新回测，不转tick
+        run_back_test_no_tick(assetList, "tea_radical_nature")  # 0:02:29.502122 新回测，不转tick
 
 
 def parallel_backTest(allStockCode):
@@ -172,4 +174,4 @@ if __name__ == '__main__':
                                            '上证',
                                            ['5', '15', '30', '60', 'd'],
                                            'index',
-                                           1, 'A'))
+                                           1, 'A'), "tea_radical_nature")

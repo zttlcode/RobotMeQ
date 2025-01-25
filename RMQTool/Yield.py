@@ -4,9 +4,10 @@ from RMQTool import Tools as RMTTools
 import RMQData.Asset as RMQAsset
 
 
-def cal_return_rate(assetList, flag):
+def cal_return_rate(assetList, flag, strategy_name):
     # 加载数据
-    df_filePath = (RMTTools.read_config("RMQData", "trade_point_backtest_tea_radical_nature")
+    item = 'trade_point_backtest_' + strategy_name
+    df_filePath = (RMTTools.read_config("RMQData", item)
                    + assetList[0].assetsMarket
                    + "_"
                    + assetList[0].assetsCode + str(flag) + ".csv")
@@ -102,9 +103,9 @@ def compare_return_rate():
                                              1, 'A')
 
         # 计算收益率  _5 _15 _30 _60 _d _concat _concat_labeled
-        have5 = cal_return_rate(assetList, "_concat_labeled")
+        # have5 = cal_return_rate(assetList, "_concat_labeled", "tea_radical_nature")
         # no5 = cal_return_rate(assetList, "_concat")
-        temp_data_dict['have5label'].append(have5)
+        # temp_data_dict['have5label'].append(have5)
         # temp_data_dict['no5'].append(no5)
     print(n)
     result_df = pd.DataFrame(temp_data_dict)

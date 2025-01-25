@@ -11,7 +11,7 @@ import RMQData.Indicator as RMQIndicator
 import RMQData.Asset as RMQAsset
 
 
-def run_live_crypto(assetList):
+def run_live_crypto(assetList, strategy_name):
     """
     pip官方文档也教了pip安装官方源时，怎么用代理
     C:\\Users\Mr.EthanZ\AppData\Roaming\pip\pip.ini 文件里直接配置 proxy = http://127.0.0.1:33210 就可以了
@@ -78,7 +78,7 @@ proxy=http://127.0.0.1:33210
                 asset.indicatorEntity.tick_close = data.at[299, 'close']
                 asset.indicatorEntity.tick_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
                 print(asset.indicatorEntity.tick_close)
-                RMQStrategy.strategy(asset, strategy_result, IEMultiLevel)
+                RMQStrategy.strategy(asset, strategy_result, IEMultiLevel, strategy_name)
         except Exception as e:
             print("Error happens", datetime.now().strftime('%Y-%m-%d %H:%M:%S'), e)
             sleep(3)  # 因为continue之后不走下面，所以再调一次
@@ -92,7 +92,7 @@ def start_process():
                                                         'BTC',
                                                         ['15', '60', '240', 'd'],
                                                         'crypto',
-                                                        0),))
+                                                        0, 'crypto'), 'tea_radical',))
                  ]
 
     for p in processes:

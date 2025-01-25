@@ -78,7 +78,7 @@ class StrategyResultEntity:
         pass
 
 
-def strategy(asset, strategy_result, IEMultiLevel):
+def strategy(asset, strategy_result, IEMultiLevel, strategy_name):
     barEntity = asset.barEntity
     indicatorEntity = asset.indicatorEntity
     positionEntity = asset.positionEntity
@@ -116,39 +116,42 @@ def strategy(asset, strategy_result, IEMultiLevel):
     # 每个tick都要重新算，特别耗时  时间窗口对性能提升很大 用windowDF，不要用上面的 indicatorEntity.bar_DataFrame
     # -----------------------------------------------------------------------------------------------
 
-    # 保守派背离策略
-    # 2%移动止损
-    # 各级别参考日线KDJ，各自报信号时不累计背离次数
-    # RMQSTea.strategy_tea_conservative(positionEntity,
-    #                                   indicatorEntity,
-    #                                   windowDF_calIndic,
-    #                                   barEntity.bar_num - 2,  # 比如时间窗口60，最后一条数据下标永远是59
-    #                                   strategy_result,
-    #                                   IEMultiLevel)
-
-    # 激进派背离策略
-    # 无止损
-    # 各级别参考日线KDJ，各自报信号时累计背离次数
-    # RMQSTea.strategy_tea_radical(positionEntity,
-    #                              indicatorEntity,
-    #                              windowDF_calIndic,
-    #                              barEntity.bar_num - 2,  # 比如时间窗口60，最后一条数据下标永远是59
-    #                              strategy_result,
-    #                              IEMultiLevel)
-
-    # 激进派背离策略  修改：取消日线，不发消息
-    RMQSNature.strategy_tea_radical(positionEntity,
-                                    indicatorEntity,
-                                    windowDF_calIndic,
-                                    barEntity.bar_num - 2,  # 比如时间窗口60，最后一条数据下标永远是59
-                                    strategy_result,
-                                    IEMultiLevel)
-
-    # ride-mood策略
-    # 2%移动止损
-    # 增强版趋势跟随策略，反指率高达90%，经常小亏，偶尔大赚
-    # RMQSFuzzy.strategy_fuzzy(positionEntity,
-    #                          indicatorEntity,
-    #                          windowDF_calIndic,
-    #                          barEntity.bar_num - 1,  # 减了个实时价格，250变249，所以这里长度也跟着变成249
-    #                          strategy_result)
+    if strategy_name == "tea_conservative":
+        # 保守派背离策略
+        # 2%移动止损
+        # 各级别参考日线KDJ，各自报信号时不累计背离次数
+        RMQSTea.strategy_tea_conservative(positionEntity,
+                                          indicatorEntity,
+                                          windowDF_calIndic,
+                                          barEntity.bar_num - 2,  # 比如时间窗口60，最后一条数据下标永远是59
+                                          strategy_result,
+                                          IEMultiLevel)
+    elif strategy_name == "tea_radical":
+        # 激进派背离策略
+        # 无止损
+        # 各级别参考日线KDJ，各自报信号时累计背离次数
+        RMQSTea.strategy_tea_radical(positionEntity,
+                                     indicatorEntity,
+                                     windowDF_calIndic,
+                                     barEntity.bar_num - 2,  # 比如时间窗口60，最后一条数据下标永远是59
+                                     strategy_result,
+                                     IEMultiLevel)
+    elif strategy_name == "tea_radical_nature":
+        # 激进派背离策略  修改：取消日线，不发消息
+        RMQSNature.strategy_tea_radical(positionEntity,
+                                        indicatorEntity,
+                                        windowDF_calIndic,
+                                        barEntity.bar_num - 2,  # 比如时间窗口60，最后一条数据下标永远是59
+                                        strategy_result,
+                                        IEMultiLevel)
+    elif strategy_name == "fuzzy":
+        # ride-mood策略
+        # 2%移动止损
+        # 增强版趋势跟随策略，反指率高达90%，经常小亏，偶尔大赚
+        RMQSFuzzy.strategy_fuzzy(positionEntity,
+                                 indicatorEntity,
+                                 windowDF_calIndic,
+                                 barEntity.bar_num - 1,  # 减了个实时价格，250变249，所以这里长度也跟着变成249
+                                 strategy_result)
+    else:
+        print("未指定策略")
