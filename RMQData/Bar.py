@@ -17,24 +17,30 @@ bar数据转为模拟的实时数据要改时间，模拟的实时数据又要�
 
 
 class Bar:
-    def __init__(self, assetsCode, timeLevel, isRunMultiLevel):
+    def __init__(self, assetsCode, timeLevel, isRunMultiLevel, assetsMarket):
         # 配置文件
         self.timeLevel = timeLevel
         self.bar_num = 250  # 够多少个bar才计算指标，也是计算指标的时间窗口大小  60时，耗时15毫秒，250时，耗时30毫秒
         self.backtest_bar = (RMTTools.read_config("RMQData", "backtest_bar")
-                             + "backtest_bar_"
+                             + "bar_"
+                             + assetsMarket
+                             + "_"
                              + assetsCode
                              + "_"
                              + timeLevel
                              + ".csv")  # 几年的bar数据做回测
         self.backtest_tick = (RMTTools.read_config("RMQData", "backtest_tick")
-                              + "backtest_tick_"
+                              + "tick_"
+                              + assetsMarket
+                              + "_"
                               + assetsCode
                               + "_"
                               + timeLevel
                               + ".csv")  # bar数据转为tick
         self.live_bar = (RMTTools.read_config("RMQData", "live_bar")
                          + "live_bar_"
+                         + assetsMarket
+                         + "_"
                          + assetsCode
                          + "_"
                          + timeLevel

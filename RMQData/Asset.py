@@ -12,7 +12,7 @@ class Asset:
         self.assetsMarket = assetsMarket
 
         # bar数据实例
-        self.barEntity = RMQBarEntity(assetsCode, timeLevel, isRunMultiLevel)
+        self.barEntity = RMQBarEntity(assetsCode, timeLevel, isRunMultiLevel, assetsMarket)
         # 指标数据实例
         self.indicatorEntity = RMQIndicatorEntity(assetsCode, assetsName, self.barEntity.timeLevel)
         # 订单数据实例
