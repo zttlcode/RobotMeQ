@@ -81,7 +81,7 @@ def handling_uneven_samples(concat_labeled):
 
 def trans_labeled_point_to_ts(assetList, temp_data_dict, temp_label_list, time_point_step, handle_uneven_samples):
     # 加载数据
-    concat_labeled_filePath = (RMTTools.read_config("RMQData", "trade_point_backtest_tea_radical")
+    concat_labeled_filePath = (RMTTools.read_config("RMQData", "trade_point_backtest_tea_radical_nature")
                                + assetList[0].assetsMarket
                                + "_"
                                + assetList[0].assetsCode + "_concat_labeled" + ".csv")

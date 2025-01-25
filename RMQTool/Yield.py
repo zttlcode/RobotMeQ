@@ -6,7 +6,7 @@ import RMQData.Asset as RMQAsset
 
 def cal_return_rate(assetList, flag):
     # 加载数据
-    df_filePath = (RMTTools.read_config("RMQData", "trade_point_backtest_tea_radical")
+    df_filePath = (RMTTools.read_config("RMQData", "trade_point_backtest_tea_radical_nature")
                    + assetList[0].assetsMarket
                    + "_"
                    + assetList[0].assetsCode + str(flag) + ".csv")

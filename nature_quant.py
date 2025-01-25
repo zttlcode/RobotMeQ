@@ -26,7 +26,7 @@ import Run as Run
 
 def concat_trade_point(assetList):
     # 读取交易点
-    tpl_filepath = (RMTTools.read_config("RMQData", "trade_point_backtest_tea_radical")
+    tpl_filepath = (RMTTools.read_config("RMQData", "trade_point_backtest_tea_radical_nature")
                     + assetList[0].assetsMarket
                     + "_")
 

@@ -3,7 +3,7 @@
 #
 # # 过滤已经800里未处理的数据
 # # 文件夹路径和目标文件路径
-# folder_path = "./QuantData/trade_point_backtest_tea_radical/"  # 替换为存储CSV文件的文件夹路径
+# folder_path = "./QuantData/trade_point_backtest_tea_radical_nature/"  # 替换为存储CSV文件的文件夹路径
 # hs_file_path = "./QuantData/a800_stocks.csv"  # hs.csv 文件路径
 # output_file_path = "./QuantData/a800_wait_handle_stocks.csv"  # 输出文件路径
 #
@@ -27,7 +27,7 @@
 # import glob
 #
 # # 设置文件夹路径
-# folder_path = './QuantData/trade_point_backtest_tea_radical/'  # 替换为你实际的文件夹路径
+# folder_path = './QuantData/trade_point_backtest_tea_radical_nature/'  # 替换为你实际的文件夹路径
 #
 # # 使用 glob 模块查找所有以 concat_labeled.csv 结尾的文件
 # files = glob.glob(os.path.join(folder_path, '*concat_labeled.csv'))
@@ -44,7 +44,7 @@
 # import pandas as pd
 #
 # # 设置文件夹路径
-# folder_path = './QuantData/trade_point_backtest_tea_radical/'  # 替换为实际的文件夹路径
+# folder_path = './QuantData/trade_point_backtest_tea_radical_nature/'  # 替换为实际的文件夹路径
 #
 # # 查找所有以 concat_labeled.csv 结尾的文件
 # files = glob.glob(os.path.join(folder_path, '*concat_labeled.csv'))
@@ -114,7 +114,7 @@
 # import os
 #
 # # 指定文件夹路径
-# folder_path = './QuantData/trade_point_backtest_tea_radical/'
+# folder_path = './QuantData/trade_point_backtest_tea_radical_nature/'
 #
 # # 获取文件夹下所有符合条件的 CSV 文件
 # csv_files = [

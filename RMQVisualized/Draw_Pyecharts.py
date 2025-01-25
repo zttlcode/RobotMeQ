@@ -401,7 +401,7 @@ if __name__ == "__main__":
     2、多级别合并绘画，改用这个时，改59行判断时间代码
     """
     # 使用nature_quant过滤交易点后，再次可视化交易点位
-    df_labeled = pd.read_csv((RMTTools.read_config("RMQData", "trade_point_backtest_tea_radical")
+    df_labeled = pd.read_csv((RMTTools.read_config("RMQData", "trade_point_backtest_tea_radical_nature")
                               + assetList[0].assetsMarket
                               + '_'
                               + assetList[0].assetsCode

@@ -114,7 +114,7 @@ def run_back_test_no_tick(assetList):
         if asset.positionEntity.trade_point_list:  # 不为空，则保存
             df_tpl = pd.DataFrame(asset.positionEntity.trade_point_list)
             df_tpl.columns = ['time', 'price', 'signal']
-            df_tpl.to_csv(RMTTools.read_config("RMQData", "trade_point_backtest_tea_radical")
+            df_tpl.to_csv(RMTTools.read_config("RMQData", "trade_point_backtest_tea_radical_nature")
                           + asset.assetsMarket
                           + "_"
                           + asset.indicatorEntity.IE_assetsCode

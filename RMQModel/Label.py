@@ -46,7 +46,7 @@ def filter1(assetList):
     """
     backtest_df_filePath = (RMTTools.read_config("RMQData", "backtest_bar") + 'backtest_bar_' +
                             assetList[0].assetsCode + '_d.csv')
-    signal_df_filepath = (RMTTools.read_config("RMQData", "trade_point_backtest_tea_radical")
+    signal_df_filepath = (RMTTools.read_config("RMQData", "trade_point_backtest_tea_radical_nature")
                           + assetList[0].assetsMarket
                           + "_"
                           + assetList[0].assetsCode + "_concat" + ".csv")
@@ -147,7 +147,7 @@ def filter1(assetList):
     signal_df = signal_df[signal_df["label"] != 0]
 
     # 保存结果到新的 CSV 文件
-    signal_df.to_csv((RMTTools.read_config("RMQData", "trade_point_backtest_tea_radical")
+    signal_df.to_csv((RMTTools.read_config("RMQData", "trade_point_backtest_tea_radical_nature")
                       + assetList[0].assetsMarket
                       + "_"
                       + assetList[0].assetsCode + "_concat_labeled" + ".csv"))
