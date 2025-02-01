@@ -57,7 +57,7 @@ def split_data_part(data, trade_point_list) -> Sequence:
             # 如果展示分钟或日级别与日线行情，则改成 trade_point_list[0][0][:10] == data["times"][i][:10]，同一天就留下
             # 展示单级别分钟与分钟行情，把[:10]去掉
             # nature_quant过滤交易点，则trade_point_list[0][0]精确到日，也把[:10]去掉
-            if trade_point_list[0][0][:10] == data["times"][i]:  # 时间对上了
+            if trade_point_list[0][0] == data["times"][i]:  # 时间对上了
                 mark_line_data.append(
                     [
                         {
@@ -358,17 +358,43 @@ def draw_pyecharts(dataFrame, tplList, code, time_level):
                           "_" + str(time_level) + ".html")
 
 
-if __name__ == "__main__":
+def show_single(asset, flag):
+    # 读取日线数据
+    filePath = (RMTTools.read_config("RMQData", "backtest_bar")
+                + "bar_"
+                + asset.assetsMarket
+                + "_"
+                + asset.assetsCode
+                + '_'
+                + asset.barEntity.timeLevel
+                + '.csv')
+    df_price = pd.read_csv(filePath, encoding='utf-8')
     """
-        python可视化画蜡烛图 https://gallery.pyecharts.org/#/Candlestick/professional_kline_chart
-        官网 https://pyecharts.org/#/
-        pyecharts整合Flask  https://pyecharts.org/#/zh-cn/web_flask
-        https://echarts.apache.org/examples/zh/index.html#chart-type-candlestick
+    各级别但单独绘画，改用这个时，改59行判断时间代码
     """
-    assetList = RMQAsset.asset_generator('600015', '', ['5', '15', '30', '60', 'd'],
-                                         'stock', 1, 'A')
-    # assetList = RMQAsset.asset_generator('BTCUSDT', 'BTC', ['15', '60', '240', 'd'], 'crypto')
+    item = 'trade_point_backtest_' + "tea_radical_nature"
+    tpl_filepath = RMTTools.read_config("RMQData", item)
+    df_tpl = pd.read_csv(tpl_filepath + asset.assetsMarket + '_' + asset.assetsCode + str(flag) + ".csv")
+    # 后面split_data_part函数画交易点位时，是对比交易点日期和 df的日期，同一天几个信号只会比较一次，因此交易点只保留第一个日期。下面是去重
+    # 将时间列解析为日期格式
+    df_tpl['date_only'] = pd.to_datetime(df_tpl['time']).dt.date  # 提取日期部分
+    # 按日期去重，保留重复的第一行
+    df_tpl = df_tpl.drop_duplicates(subset='date_only', keep='first')
+    # 删除辅助列 'date_only'（如果不需要保留）
+    df_tpl = df_tpl.drop(columns=['date_only'])
+    if df_tpl.shape[1] == 4:
+        filtered_df = df_tpl[df_tpl["label"].isin([1, 3])].copy()
+    else:
+        filtered_df = df_tpl
+    trade_point_list_tbp = filtered_df.values.tolist()  # df转列表
 
+    # 组成列表集合
+    tpl_list = [[trade_point_list_tbp, asset.assetsCode + "-策略"], ]
+    # 生成图表
+    draw_pyecharts(df_price, tpl_list, asset.assetsCode, str(flag))
+
+
+def show_multi_concat(assetList, flag):
     # 读取日线数据
     filePath = (RMTTools.read_config("RMQData", "backtest_bar")
                 + "bar_"
@@ -377,34 +403,9 @@ if __name__ == "__main__":
                 + assetList[0].assetsCode
                 + '_d.csv')
 
-    df = pd.read_csv(filePath, encoding='utf-8')
-
+    df_price = pd.read_csv(filePath, encoding='utf-8')
     """
-    1、各级别但单独绘画，改用这个时，改59行判断时间代码
-    """
-    # tpl_filepath = RMTTools.read_config("RMQData", "trade_point_backtest") + "trade_point_list_"
-    # df_tpl_5 = pd.read_csv(tpl_filepath + assetList[0].assetsCode + "_" + assetList[0].barEntity.timeLevel + ".csv")
-    # df_tpl_15 = pd.read_csv(tpl_filepath + assetList[1].assetsCode + "_" + assetList[1].barEntity.timeLevel + ".csv")
-    # df_tpl_30 = pd.read_csv(tpl_filepath + assetList[2].assetsCode + "_" + assetList[2].barEntity.timeLevel + ".csv")
-    # df_tpl_60 = pd.read_csv(tpl_filepath + assetList[3].assetsCode + "_" + assetList[3].barEntity.timeLevel + ".csv")
-    # df_tpl_d = pd.read_csv(tpl_filepath + assetList[4].assetsCode + "_" + assetList[4].barEntity.timeLevel + ".csv")
-    #
-    # # 各级别买卖点合并成一个df
-    # df_tpl = pd.concat([df_tpl_15, df_tpl_30, df_tpl_60, df_tpl_d])
-    # # df_tpl = pd.concat([df_tpl_5, df_tpl_15, df_tpl_30, df_tpl_60, df_tpl_d])
-    # df_tpl.sort_values(by="time", axis=0, inplace=True)  # 按第一列（日期）排序,"0"是列名，axis=0表示按列，axis=1按行，在原数据上修改
-    # # 后面split_data_part函数画交易点位时，是对比交易点日期和 df的日期，同一天几个信号只会比较一次，因此交易点只保留第一个日期。下面是去重
-    # # 将时间列解析为日期格式
-    # df_tpl['date_only'] = pd.to_datetime(df_tpl['time']).dt.date  # 提取日期部分
-    # # 按日期去重，保留重复的第一行
-    # df_tpl = df_tpl.drop_duplicates(subset='date_only', keep='first')
-    # # 删除辅助列 'date_only'（如果不需要保留）
-    # df_tpl = df_tpl.drop(columns=['date_only'])
-    #
-    # trade_point_list_tbp = df_tpl.values.tolist()  # df转列表
-
-    """
-    2、多级别合并绘画，改用这个时，改59行判断时间代码
+    多级别合并绘画，改用这个时，改59行判断时间代码
     """
     # 使用nature_quant过滤交易点后，再次可视化交易点位
     item = 'trade_point_backtest_' + "tea_radical_nature"
@@ -412,11 +413,15 @@ if __name__ == "__main__":
                               + assetList[0].assetsMarket
                               + '_'
                               + assetList[0].assetsCode
-                              + "_concat_labeled2"
+                              + str(flag)
                               + ".csv"), encoding='utf-8',
                              parse_dates=["time"])
-    # 过滤出 label 为 1 或 3 的行
-    filtered_df = df_labeled[df_labeled["label"].isin([1, 3])].copy()
+    if df_labeled.shape[1] == 4:
+        # 过滤出 label 为 1 或 3 的行
+        filtered_df = df_labeled[df_labeled["label"].isin([1, 3])].copy()
+    else:
+        filtered_df = df_labeled
+
     # 去掉 time 列的时分秒，只保留日期
     filtered_df["time"] = filtered_df["time"].dt.date
     # 按 time 去重，只保留同一天的第一行数据
@@ -424,16 +429,75 @@ if __name__ == "__main__":
     unique_df['time'] = unique_df['time'].astype(str)
     trade_point_list_tbp = unique_df.values.tolist()  # df转列表
 
+    # 组成列表集合
+    tpl_list = [[trade_point_list_tbp, assetList[0].assetsCode + "-图表派策略"],]
+    # 生成图表
+    draw_pyecharts(df_price, tpl_list, assetList[0].assetsCode, flag)
+
+
+def show_mix(assetList):
+    # 读取日线数据
+    filePath = (RMTTools.read_config("RMQData", "backtest_bar")
+                + "bar_"
+                + assetList[0].assetsMarket
+                + "_"
+                + assetList[0].assetsCode
+                + '_15.csv')
+
+    df = pd.read_csv(filePath, encoding='utf-8')
+
+    """
+    1、各级别但单独绘画，改用这个时，改59行判断时间代码
+    """
+    item = 'trade_point_backtest_' + "tea_radical_nature"
+    tpl_filepath = RMTTools.read_config("RMQData", item)
+    df_tpl_5 = pd.read_csv(tpl_filepath + assetList[0].assetsMarket + '_' + assetList[0].assetsCode + "_" +
+                           assetList[0].barEntity.timeLevel + ".csv")
+    df_tpl_15 = pd.read_csv(tpl_filepath + assetList[0].assetsMarket + '_' + assetList[1].assetsCode + "_" +
+                            assetList[1].barEntity.timeLevel + ".csv")
+    df_tpl_30 = pd.read_csv(tpl_filepath + assetList[0].assetsMarket + '_' + assetList[2].assetsCode + "_" +
+                            assetList[2].barEntity.timeLevel + ".csv")
+    df_tpl_60 = pd.read_csv(tpl_filepath + assetList[0].assetsMarket + '_' + assetList[3].assetsCode + "_" +
+                            assetList[3].barEntity.timeLevel + ".csv")
+    df_tpl_d = pd.read_csv(tpl_filepath + assetList[0].assetsMarket + '_' + assetList[4].assetsCode + "_" +
+                           assetList[4].barEntity.timeLevel + ".csv")
+
+    # 各级别买卖点合并成一个df
+    df_tpl = pd.concat([df_tpl_15])
+    # df_tpl = pd.concat([df_tpl_5, df_tpl_15, df_tpl_30, df_tpl_60, df_tpl_d])
+    df_tpl.sort_values(by="time", axis=0, inplace=True)  # 按第一列（日期）排序,"0"是列名，axis=0表示按列，axis=1按行，在原数据上修改
+    # 后面split_data_part函数画交易点位时，是对比交易点日期和 df的日期，同一天几个信号只会比较一次，因此交易点只保留第一个日期。下面是去重
+    # 将时间列解析为日期格式
+    df_tpl['date_only'] = pd.to_datetime(df_tpl['time']).dt.date  # 提取日期部分
+    # 按日期去重，保留重复的第一行
+    df_tpl = df_tpl.drop_duplicates(subset='date_only', keep='first')
+    # 删除辅助列 'date_only'（如果不需要保留）
+    df_tpl = df_tpl.drop(columns=['date_only'])
+    filtered_df = df_tpl[df_tpl["label"].isin([1, 3])].copy()
+
+    trade_point_list_tbp = filtered_df.values.tolist()  # df转列表
+
     # trade_point_list_tbp = []
     # trade_point_list_tbp = [["2021-04-26", 47, "buy"], ["2021-06-15", 55.1, "sell"]]
     # trade_point_list_hg = [["2021-04-26", 47, "buy"], ["2021-06-15", 55.1, "sell"]]  # 海龟策略买卖点
     # trade_point_list_jx = [["2021-04-26", 47, "buy"], ["2021-06-15", 55.1, "sell"]]  # 均线策略买卖点
+
     # 组成列表集合
     tpl_list = [[trade_point_list_tbp, assetList[0].assetsCode + "-图表派策略"],
                 # [trade_point_list_hg, assetCode + "-海龟策略"],
                 # [trade_point_list_jx, assetCode + "-均线策略"],
                 ]
-
     # 生成图表
-    draw_pyecharts(df, tpl_list, assetList[0].assetsCode, "concat2")
-    # 本地运行，每天收盘后，生成html页面，上传到pythonanywhere
+    draw_pyecharts(df, tpl_list, assetList[0].assetsCode, "15")
+
+
+if __name__ == "__main__":
+    """
+        python可视化画蜡烛图 https://gallery.pyecharts.org/#/Candlestick/professional_kline_chart
+        官网 https://pyecharts.org/#/
+        pyecharts整合Flask  https://pyecharts.org/#/zh-cn/web_flask
+        https://echarts.apache.org/examples/zh/index.html#chart-type-candlestick
+        本地运行，每天收盘后，生成html页面，上传到pythonanywhere
+    """
+    assetList = RMQAsset.asset_generator('600010', '', ['5', '15', '30', '60', 'd'],
+                                         'stock', 1, 'A')

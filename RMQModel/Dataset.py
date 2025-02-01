@@ -301,3 +301,51 @@ def prepare_dataset(flag, name, time_point_step, limit_length, handle_uneven_sam
         fold=flag
     )
 
+
+def concat_trade_point(assetList, strategy_name):
+    # 读取交易点
+    item = 'trade_point_backtest_' + strategy_name
+    tpl_filepath = (RMTTools.read_config("RMQData", item)
+                    + assetList[0].assetsMarket
+                    + "_")
+
+    df_tpl_5 = pd.read_csv(tpl_filepath +
+                           assetList[0].assetsCode + "_" + assetList[0].barEntity.timeLevel + ".csv")
+    df_tpl_15 = pd.read_csv(tpl_filepath +
+                            assetList[1].assetsCode + "_" + assetList[1].barEntity.timeLevel + ".csv")
+    df_tpl_30 = pd.read_csv(tpl_filepath +
+                            assetList[2].assetsCode + "_" + assetList[2].barEntity.timeLevel + ".csv")
+    df_tpl_60 = pd.read_csv(tpl_filepath +
+                            assetList[3].assetsCode + "_" + assetList[3].barEntity.timeLevel + ".csv")
+
+    df_tpl_d = None
+    # temp2中有16个股票是单边行情，没用日线交易信号
+    try:
+        df_tpl_d = pd.read_csv(tpl_filepath +
+                               assetList[4].assetsCode + "_" + assetList[4].barEntity.timeLevel + ".csv")
+    except Exception as e:
+        pass
+
+    # 整合所有交易点
+    if df_tpl_d is not None:
+        df_tpl_d['time'] = pd.to_datetime(df_tpl_d['time'])  # 将 time 列转换为日期时间类型
+        # 筛选出时间在 2019年1月1日及之后的行  因为分钟级别数据都是从这天开始，日线数据太久远影响收益率
+        df_tpl_d_filtered = df_tpl_d[df_tpl_d['time'] >= '2019-01-01']
+        df_tpl = pd.concat([df_tpl_5, df_tpl_15, df_tpl_30, df_tpl_60, df_tpl_d_filtered], ignore_index=True)
+    else:
+        df_tpl = pd.concat([df_tpl_5, df_tpl_15, df_tpl_30, df_tpl_60], ignore_index=True)
+
+    # 将第一列转换为 datetime 格式
+    df_tpl = df_tpl.set_index(df_tpl.columns[0])  # 使用第一列作为索引
+    df_tpl.index.name = 'time'  # 将索引命名为 'time'
+    # 修改时间列格式（索引）
+    df_tpl.index = pd.to_datetime(df_tpl.index)
+    # 修改时间列中含有00:00:00的部分为15:00:00
+    df_tpl.index = df_tpl.index.map(
+        lambda x: x.replace(hour=15, minute=0, second=0) if x.hour == 0 and x.minute == 0 and x.second == 0 else x)
+    # 修改其余列的名称
+    # df_tpl.columns = ['price', 'signal']
+    # 按索引（时间）排序
+    df_tpl = df_tpl.sort_index()
+    # 保存为新的 CSV 文件
+    df_tpl.to_csv(tpl_filepath + assetList[0].assetsCode + "_concat" + ".csv")

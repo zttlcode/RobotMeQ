@@ -21,56 +21,8 @@ from RMQTool import Tools as RMTTools
 from RMQTool import Yield as RMQYield
 from RMQModel import Dataset as RMQDataset
 from RMQModel import Label as RMQLabel
+from RMQVisualized import Draw_Pyecharts as RMQDraw_Pyecharts
 import Run as Run
-
-
-def concat_trade_point(assetList, strategy_name):
-    # 读取交易点
-    item = 'trade_point_backtest_' + strategy_name
-    tpl_filepath = (RMTTools.read_config("RMQData", item)
-                    + assetList[0].assetsMarket
-                    + "_")
-
-    df_tpl_5 = pd.read_csv(tpl_filepath +
-                           assetList[0].assetsCode + "_" + assetList[0].barEntity.timeLevel + ".csv")
-    df_tpl_15 = pd.read_csv(tpl_filepath +
-                            assetList[1].assetsCode + "_" + assetList[1].barEntity.timeLevel + ".csv")
-    df_tpl_30 = pd.read_csv(tpl_filepath +
-                            assetList[2].assetsCode + "_" + assetList[2].barEntity.timeLevel + ".csv")
-    df_tpl_60 = pd.read_csv(tpl_filepath +
-                            assetList[3].assetsCode + "_" + assetList[3].barEntity.timeLevel + ".csv")
-
-    df_tpl_d = None
-    # temp2中有16个股票是单边行情，没用日线交易信号
-    try:
-        df_tpl_d = pd.read_csv(tpl_filepath +
-                               assetList[4].assetsCode + "_" + assetList[4].barEntity.timeLevel + ".csv")
-    except Exception as e:
-        pass
-
-    # 整合所有交易点
-    if df_tpl_d is not None:
-        df_tpl_d['time'] = pd.to_datetime(df_tpl_d['time'])  # 将 time 列转换为日期时间类型
-        # 筛选出时间在 2019年1月1日及之后的行  因为分钟级别数据都是从这天开始，日线数据太久远影响收益率
-        df_tpl_d_filtered = df_tpl_d[df_tpl_d['time'] >= '2019-01-01']
-        df_tpl = pd.concat([df_tpl_5, df_tpl_15, df_tpl_30, df_tpl_60, df_tpl_d_filtered], ignore_index=True)
-    else:
-        df_tpl = pd.concat([df_tpl_5, df_tpl_15, df_tpl_30, df_tpl_60], ignore_index=True)
-
-    # 将第一列转换为 datetime 格式
-    df_tpl = df_tpl.set_index(df_tpl.columns[0])  # 使用第一列作为索引
-    df_tpl.index.name = 'time'  # 将索引命名为 'time'
-    # 修改时间列格式（索引）
-    df_tpl.index = pd.to_datetime(df_tpl.index)
-    # 修改时间列中含有00:00:00的部分为15:00:00
-    df_tpl.index = df_tpl.index.map(
-        lambda x: x.replace(hour=15, minute=0, second=0) if x.hour == 0 and x.minute == 0 and x.second == 0 else x)
-    # 修改其余列的名称
-    # df_tpl.columns = ['price', 'signal']
-    # 按索引（时间）排序
-    df_tpl = df_tpl.sort_index()
-    # 保存为新的 CSV 文件
-    df_tpl.to_csv(tpl_filepath + assetList[0].assetsCode + "_concat" + ".csv")
 
 
 def pre_handle():
@@ -92,7 +44,7 @@ def pre_handle():
                 均线等，看是否比单纯指标有收益率提升
                 （第三种方法、提前5天，直接抽特征自己发信号，不用判断当前信号是否有效）
     """
-    allStockCode = pd.read_csv("./QuantData/a800_stocks.csv")
+    allStockCode = pd.read_csv("./QuantData/a800_wait_handle_stocks.csv")
     # 回测，并行 需要手动改里面的策略名
     # Run.parallel_backTest(allStockCode)
     for index, row in allStockCode.iterrows():
@@ -101,17 +53,39 @@ def pre_handle():
                                              ['5', '15', '30', '60', 'd'],
                                              'stock',
                                              1, 'A')
-        # 回测，保存交易点 Run.run_back_test(assetList, "tea_radical_nature")  # 0:18:27.437876 旧回测，转tick，运行时长
-        # 加tick会细化价格导致操作提前，但实盘是bar结束了算指标，所以不影响
 
-        Run.run_back_test_no_tick(assetList, "tea_radical_nature")  # 0:02:29.502122 新回测，不转tick
-        break
+        # 回测，保存交易点
+        # 加tick会细化价格导致操作提前，但实盘是bar结束了算指标，所以不影响
+        # Run.run_back_test(assetList, "tea_radical_nature")  # 0:18:27.437876 旧回测，转tick，运行时长
+        # Run.run_back_test_no_tick(assetList, "tea_radical_nature")  # 0:02:29.502122 新回测，不转tick
         # 各级别交易点拼接在一起
         # concat_trade_point(assetList, "tea_radical_nature")
         # 过滤交易点1
-        # RMQLabel.filter1(assetList, "tea_radical_nature")
+        # RMQLabel.tea_radical_filter1(assetList, "tea_radical_nature")
         # 计算收益率  _5 _15 _30 _60 _d _concat _concat_labeled
-        # RMQYield.cal_return_rate(assetList, "_concat_labeled", "tea_radical_nature")
+        # RMQYield.cal_return_rate(assetList[0], "_concat_filter1", "tea_radical_nature")
+        for asset in assetList:
+            # 过滤交易点2
+            # RMQLabel.tea_radical_filter2(asset, "tea_radical_nature")
+            # 过滤交易点3
+            # RMQLabel.tea_radical_filter3(asset, "tea_radical_nature")
+            # 过滤交易点4
+            # RMQLabel.tea_radical_filter4(asset, "tea_radical_nature")
+
+            flag0 = "_" + asset.barEntity.timeLevel  # 原始交易点
+            flag1 = "_concat_filter1"  # _concat _concat_filter1  多级别组合+标注交易点
+            flag2 = "_" + asset.barEntity.timeLevel + "_filter3"  # 各级别标注交易点
+
+            # 计算收益率
+            # RMQYield.cal_return_rate(asset, flag2, "tea_radical_nature")
+            # 画点位图
+            RMQDraw_Pyecharts.show_single(asset, flag2)  # 1、生成单级别图
+
+        # 画点位图
+        RMQDraw_Pyecharts.show_multi_concat(assetList, "_concat_filter1")  # 2、多级别混合图
+        RMQDraw_Pyecharts.show_mix(assetList)  # 3、自己在函数里自定义
+
+        # print(assetList[0].assetsCode + "标注完成")
     # 过滤交易点完成，准备训练数据
     """
     增加标识——是否处理样本不均
@@ -126,8 +100,10 @@ def pre_handle():
             样本极端少只有几十个时，将分类问题考虑成异常检测
         这实验起来有些麻烦，我先尝试直接删样本吧，handle_uneven_samples True处理，False不处理，按4类中最少的为准，删除其他样本
     """
-    # RMQDataset.prepare_dataset("_TRAIN", "2w", 250, 20000, True, "tea_radical_nature")  # 最多24.6万  limit_length==0 代表不截断，全数据
-    # RMQDataset.prepare_dataset("_TEST", "2w", 250, 10000, True, "tea_radical_nature")  # 最多14.6万
+    # 最多24.6万  limit_length==0 代表不截断，全数据
+    # RMQDataset.prepare_dataset("_TRAIN", "2w", 250, 20000, True, "tea_radical_nature")
+    # 最多14.6万
+    # RMQDataset.prepare_dataset("_TEST", "2w", 250, 10000, True, "tea_radical_nature")
 
 
 def run_experiment():

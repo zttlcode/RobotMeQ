@@ -4,13 +4,14 @@ from RMQTool import Tools as RMTTools
 import RMQData.Asset as RMQAsset
 
 
-def cal_return_rate(assetList, flag, strategy_name):
+def cal_return_rate(asset, flag, strategy_name):
     # 加载数据
     item = 'trade_point_backtest_' + strategy_name
     df_filePath = (RMTTools.read_config("RMQData", item)
-                   + assetList[0].assetsMarket
+                   + asset.assetsMarket
                    + "_"
-                   + assetList[0].assetsCode + str(flag) + ".csv")
+                   + asset.assetsCode
+                   + str(flag) + ".csv")
 
     # 读取CSV文件
     df = pd.read_csv(df_filePath)
@@ -84,7 +85,7 @@ def cal_return_rate(assetList, flag, strategy_name):
     else:
         final_return_rate = 0.0
 
-    print(f"{assetList[0].assetsCode}{flag} 最终结果 持股数: {shares}, 市值: {holding_value:.2f}, "
+    print(f"{asset.assetsCode}{flag} 最终结果 持股数: {shares}, 市值: {holding_value:.2f}, "
           f"总投资额: {latest_total_cost:.2f}, 持股收益率: {final_return_rate:.2%}")
 
     # return round(final_return_rate, 4)

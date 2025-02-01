@@ -2,9 +2,10 @@ import pandas as pd
 import numpy as np
 
 from RMQTool import Tools as RMTTools
+import RMQData.Indicator as RMQIndicator
 
 
-def filter1(assetList, strategy_name):
+def tea_radical_filter1(assetList, strategy_name):
     """ """
     """
     对数收益计算：
@@ -155,6 +156,414 @@ def filter1(assetList, strategy_name):
     signal_df.to_csv((RMTTools.read_config("RMQData", item)
                       + assetList[0].assetsMarket
                       + "_"
-                      + assetList[0].assetsCode + "_concat_labeled" + ".csv"))
+                      + assetList[0].assetsCode + "_concat_filter1.csv"))
 
     print(assetList[0].assetsCode + "标注完成")
+
+
+def tea_radical_filter2(asset, strategy_name):
+    """ """
+    """
+    单级别各自标记
+    """
+    backtest_df_filePath = (RMTTools.read_config("RMQData", "backtest_bar")
+                            + "bar_"
+                            + asset.assetsMarket
+                            + "_"
+                            + asset.assetsCode
+                            + "_"
+                            + asset.barEntity.timeLevel
+                            + '.csv')
+    item = 'trade_point_backtest_' + strategy_name
+    signal_df_filepath = (RMTTools.read_config("RMQData", item)
+                          + asset.assetsMarket
+                          + "_"
+                          + asset.assetsCode
+                          + "_"
+                          + asset.barEntity.timeLevel
+                          + ".csv")
+    # 读取 backtest.csv读取日线数据 和 signal.csv 为 DataFrame
+    backtest_df = pd.read_csv(backtest_df_filePath, encoding='utf-8', parse_dates=['time'], index_col="time")
+    signal_df = pd.read_csv(signal_df_filepath, parse_dates=["time"], index_col="time")
+    # 创建一个新列 'label'，用于标注信号数据
+    signal_df["label"] = np.nan
+
+    # 遍历 signal_df，按时间对比 backtest_df
+    for signal_time, signal_row in signal_df.iterrows():
+        # 获取 signal 的日期
+        if asset.barEntity.timeLevel == 'd':
+            # （忽略时间部分）
+            signal_date = signal_time.strftime("%Y-%m-%d")
+        else:
+            signal_date = signal_time
+
+        # 在 backtest_df 中找到对应日期的行
+        if signal_date in backtest_df.index:
+            backtest_row = backtest_df.loc[backtest_df.index == signal_date]
+
+            if not backtest_row.empty:
+                # 获取 backtest_df 中这一天的索引
+                backtest_index = backtest_row.index[0]
+                # 获取整数索引位置
+                backtest_position = backtest_df.index.get_loc(backtest_index)
+
+                # 检查是否有足够的剩余数据（顺延 40 行）
+                if backtest_position + 40 > len(backtest_df):
+                    # 如果剩余数据不足 40 行，将剩余数据标记为 0
+                    signal_df.loc[signal_time:, "label"] = 0
+                    break  # 直接退出循环
+                else:
+                    # 获取从当前行开始顺延 40 行数据
+                    next_40_bars = backtest_df.iloc[backtest_position: backtest_position + 40]
+                    next_20_bars = next_40_bars.iloc[:20]
+                    trade_price = signal_row["price"]
+
+                    # 根据信号类型执行不同的逻辑
+                    if signal_row["signal"] == "buy":
+                        # 获取 close 列的最大值
+                        max_close = next_20_bars["close"].max()
+                        return_rate = (max_close / trade_price) - 1
+
+                        if return_rate > 0.1:  # 收益率是否大于10%
+                            signal_df.at[signal_time, "label"] = 1
+                        else:
+                            # 计算第20天、第30天和第40天的对数收益
+                            close_5_bar = next_40_bars.iloc[4]["close"]
+                            close_10_bar = next_40_bars.iloc[9]["close"]
+                            close_20_bar = next_40_bars.iloc[19]["close"]
+                            close_30_bar = next_40_bars.iloc[29]["close"]
+                            close_40_bar = next_40_bars.iloc[39]["close"]
+
+                            log_returns = [
+                                np.log(close_5_bar / trade_price),
+                                np.log(close_10_bar / trade_price),
+                                np.log(close_20_bar / trade_price),
+                                np.log(close_30_bar / trade_price),
+                                np.log(close_40_bar / trade_price),
+                            ]
+
+                            # 判断对数收益的正负一致性
+                            positive_count = sum(lr > 0 for lr in log_returns)
+                            negative_count = sum(lr <= 0 for lr in log_returns)
+
+                            if positive_count == 5:
+                                signal_df.at[signal_time, "label"] = 1
+                            else:
+                                signal_df.at[signal_time, "label"] = 2
+
+                    elif signal_row["signal"] == "sell":
+                        # 获取 close 列的最小值
+                        min_close = next_20_bars["close"].min()
+                        return_rate = (min_close / trade_price) - 1
+
+                        if return_rate < -0.1:  # 收益率是否小于-10%
+                            signal_df.at[signal_time, "label"] = 3
+                        else:
+                            # 计算第20天、第30天和第40天的对数收益
+                            close_20_bar = next_40_bars.iloc[19]["close"]
+                            close_30_bar = next_40_bars.iloc[29]["close"]
+                            close_40_bar = next_40_bars.iloc[39]["close"]
+
+                            log_returns = [
+                                np.log(close_20_bar / trade_price),
+                                np.log(close_30_bar / trade_price),
+                                np.log(close_40_bar / trade_price),
+                            ]
+
+                            # 判断对数收益的正负一致性
+                            positive_count = sum(lr > 0 for lr in log_returns)
+                            negative_count = sum(lr <= 0 for lr in log_returns)
+
+                            if negative_count >= 2:
+                                signal_df.at[signal_time, "label"] = 3
+                            else:
+                                signal_df.at[signal_time, "label"] = 4
+
+    # 删除标记为 0 的数据
+    signal_df = signal_df[signal_df["label"] != 0]
+
+    # 保存结果到新的 CSV 文件
+    signal_df.to_csv((RMTTools.read_config("RMQData", item)
+                      + asset.assetsMarket
+                      + "_"
+                      + asset.assetsCode
+                      + "_"
+                      + asset.barEntity.timeLevel
+                      + "_filter2.csv"))
+
+
+def tea_radical_filter3(asset, strategy_name):
+    """ """
+    """
+    MACD指标标记
+    """
+    backtest_df_filePath = (RMTTools.read_config("RMQData", "backtest_bar")
+                            + "bar_"
+                            + asset.assetsMarket
+                            + "_"
+                            + asset.assetsCode
+                            + "_"
+                            + asset.barEntity.timeLevel
+                            + '.csv')
+    item = 'trade_point_backtest_' + strategy_name
+    signal_df_filepath = (RMTTools.read_config("RMQData", item)
+                          + asset.assetsMarket
+                          + "_"
+                          + asset.assetsCode
+                          + "_"
+                          + asset.barEntity.timeLevel
+                          + ".csv")
+    # 读取 backtest.csv读取日线数据 和 signal.csv 为 DataFrame
+    backtest_df = pd.read_csv(backtest_df_filePath, encoding='utf-8', parse_dates=['time'], index_col="time")
+    signal_df = pd.read_csv(signal_df_filepath, parse_dates=["time"], index_col="time")
+    # 创建一个新列 'label'，用于标注信号数据
+    signal_df["label"] = np.nan
+
+    # 遍历 signal_df，按时间对比 backtest_df
+    for signal_time, signal_row in signal_df.iterrows():
+        # 获取 signal 的日期
+        if asset.barEntity.timeLevel == 'd':
+            # （忽略时间部分）
+            signal_date = signal_time.strftime("%Y-%m-%d")
+        else:
+            signal_date = signal_time
+
+        # 在 backtest_df 中找到对应日期的行
+        if signal_date in backtest_df.index:
+            backtest_row = backtest_df.loc[backtest_df.index == signal_date]
+
+            if not backtest_row.empty:
+                # 获取 backtest_df 中这一天的索引
+                backtest_index = backtest_row.index[0]
+                # 获取整数索引位置
+                backtest_position = backtest_df.index.get_loc(backtest_index)
+
+                # 检查是否有足够的剩余数据（顺延 60 行）  为了算指标，前面也要顺40行
+                if backtest_position + 60 > len(backtest_df):
+                    # 如果剩余数据不足 60 行，将剩余数据标记为 0
+                    signal_df.loc[signal_time:, "label"] = 0
+                    break  # 直接退出循环
+                elif backtest_position <= 40:
+                    # 太靠前了，过
+                    continue
+                else:
+                    # 获取从当前行开始顺延 40 行数据
+                    window_100_bar = backtest_df.iloc[backtest_position - 40: backtest_position + 60].reset_index(drop=True)
+                    window_100_bar = RMQIndicator.calMACD(window_100_bar)
+                    trade_MACD = window_100_bar.iloc[40]["MACD"]
+                    trade_DIF = window_100_bar.iloc[40]["DIF"]
+                    trade_DEA = window_100_bar.iloc[40]["DEA"]
+                    offset = 100.0  # 为了解决对数计算有负数，增加偏移量
+
+                    # 根据信号类型执行不同的逻辑
+                    if signal_row["signal"] == "buy":
+                        # 计算第20天、第30天和第40天的对数收益
+                        MACD_5_bar = window_100_bar.iloc[44]["MACD"]
+                        MACD_10_bar = window_100_bar.iloc[49]["MACD"]
+
+                        DIF_5_bar = window_100_bar.iloc[44]["DIF"]
+                        DIF_10_bar = window_100_bar.iloc[49]["DIF"]
+
+                        DEA_5_bar = window_100_bar.iloc[44]["DEA"]
+                        DEA_10_bar = window_100_bar.iloc[49]["DEA"]
+
+                        log_returns = [
+                            np.log((MACD_5_bar + offset) / (trade_MACD + offset)),
+                            np.log((MACD_10_bar + offset) / (trade_MACD + offset)),
+                            np.log((DIF_5_bar + offset) / (trade_DIF + offset)),
+                            np.log((DIF_10_bar + offset) / (trade_DIF + offset)),
+                            np.log((DEA_5_bar + offset) / (trade_DEA + offset)),
+                            np.log((DEA_10_bar + offset) / (trade_DEA + offset)),
+                        ]
+
+                        # 判断对数收益的正负一致性
+                        positive_count = sum(lr >= 0 for lr in log_returns)
+                        negative_count = sum(lr < 0 for lr in log_returns)
+
+                        if positive_count == 6:
+                            signal_df.at[signal_time, "label"] = 1
+                        else:
+                            signal_df.at[signal_time, "label"] = 2
+
+                    elif signal_row["signal"] == "sell":
+                        # 计算第20天、第30天和第40天的对数收益
+                        MACD_10_bar = window_100_bar.iloc[49]["MACD"]
+
+                        DIF_10_bar = window_100_bar.iloc[49]["DIF"]
+
+                        log_returns = [
+                            np.log((MACD_10_bar + offset) / (trade_MACD + offset)),
+                            np.log((DIF_10_bar + offset) / (trade_DIF + offset)),
+                        ]
+
+                        # 判断对数收益的正负一致性
+                        positive_count = sum(lr >= 0 for lr in log_returns)
+                        negative_count = sum(lr < 0 for lr in log_returns)
+
+                        if negative_count == 2:
+                            signal_df.at[signal_time, "label"] = 3
+                        else:
+                            signal_df.at[signal_time, "label"] = 4
+
+    # 删除标记为 0 的数据
+    signal_df = signal_df[signal_df["label"] != 0]
+
+    # 保存结果到新的 CSV 文件
+    signal_df.to_csv((RMTTools.read_config("RMQData", item)
+                      + asset.assetsMarket
+                      + "_"
+                      + asset.assetsCode
+                      + "_"
+                      + asset.barEntity.timeLevel
+                      + "_filter3.csv"))
+
+
+def tea_radical_filter4(asset, strategy_name):
+    """ """
+    """
+    MACD指标标记 + 价格过滤
+    """
+    backtest_df_filePath = (RMTTools.read_config("RMQData", "backtest_bar")
+                            + "bar_"
+                            + asset.assetsMarket
+                            + "_"
+                            + asset.assetsCode
+                            + "_"
+                            + asset.barEntity.timeLevel
+                            + '.csv')
+    item = 'trade_point_backtest_' + strategy_name
+    signal_df_filepath = (RMTTools.read_config("RMQData", item)
+                          + asset.assetsMarket
+                          + "_"
+                          + asset.assetsCode
+                          + "_"
+                          + asset.barEntity.timeLevel
+                          + ".csv")
+    # 读取 backtest.csv读取日线数据 和 signal.csv 为 DataFrame
+    backtest_df = pd.read_csv(backtest_df_filePath, encoding='utf-8', parse_dates=['time'], index_col="time")
+    signal_df = pd.read_csv(signal_df_filepath, parse_dates=["time"], index_col="time")
+    # 创建一个新列 'label'，用于标注信号数据
+    signal_df["label"] = np.nan
+
+    # 遍历 signal_df，按时间对比 backtest_df
+    for signal_time, signal_row in signal_df.iterrows():
+        # 获取 signal 的日期
+        if asset.barEntity.timeLevel == 'd':
+            # （忽略时间部分）
+            signal_date = signal_time.strftime("%Y-%m-%d")
+        else:
+            signal_date = signal_time
+
+        # 在 backtest_df 中找到对应日期的行
+        if signal_date in backtest_df.index:
+            backtest_row = backtest_df.loc[backtest_df.index == signal_date]
+
+            if not backtest_row.empty:
+                # 获取 backtest_df 中这一天的索引
+                backtest_index = backtest_row.index[0]
+                # 获取整数索引位置
+                backtest_position = backtest_df.index.get_loc(backtest_index)
+
+                # 检查是否有足够的剩余数据（顺延 60 行）  为了算指标，前面也要顺40行
+                if backtest_position + 60 > len(backtest_df):
+                    # 如果剩余数据不足 60 行，将剩余数据标记为 0
+                    signal_df.loc[signal_time:, "label"] = 0
+                    break  # 直接退出循环
+                elif backtest_position <= 40:
+                    # 太靠前了，过
+                    continue
+                else:
+                    # 获取从当前行开始顺延 40 行数据
+                    window_100_bar = backtest_df.iloc[backtest_position - 40: backtest_position + 60].reset_index(drop=True)
+                    window_100_bar = RMQIndicator.calMACD(window_100_bar)
+                    trade_MACD = window_100_bar.iloc[40]["MACD"]
+                    trade_DIF = window_100_bar.iloc[40]["DIF"]
+                    trade_DEA = window_100_bar.iloc[40]["DEA"]
+                    trade_price = signal_row["price"]
+                    offset = 100.0  # 为了解决对数计算有负数，增加偏移量
+
+                    # 根据信号类型执行不同的逻辑
+                    if signal_row["signal"] == "buy":
+                        # 计算第20天、第30天和第40天的对数收益
+                        MACD_5_bar = window_100_bar.iloc[44]["MACD"]
+                        MACD_10_bar = window_100_bar.iloc[49]["MACD"]
+
+                        DIF_5_bar = window_100_bar.iloc[44]["DIF"]
+                        DIF_10_bar = window_100_bar.iloc[49]["DIF"]
+
+                        DEA_5_bar = window_100_bar.iloc[44]["DEA"]
+                        DEA_10_bar = window_100_bar.iloc[49]["DEA"]
+
+                        # 计算第20天、第30天和第40天的对数收益
+                        close_5_bar = window_100_bar.iloc[44]["close"]
+                        close_10_bar = window_100_bar.iloc[49]["close"]
+                        close_20_bar = window_100_bar.iloc[59]["close"]
+                        close_30_bar = window_100_bar.iloc[69]["close"]
+                        close_40_bar = window_100_bar.iloc[79]["close"]
+
+                        log_returns = [
+                            np.log((MACD_5_bar + offset) / (trade_MACD + offset)),
+                            np.log((MACD_10_bar + offset) / (trade_MACD + offset)),
+                            np.log((DIF_5_bar + offset) / (trade_DIF + offset)),
+                            np.log((DIF_10_bar + offset) / (trade_DIF + offset)),
+                            np.log((DEA_5_bar + offset) / (trade_DEA + offset)),
+                            np.log((DEA_10_bar + offset) / (trade_DEA + offset)),
+                            np.log(close_5_bar / trade_price),
+                            np.log(close_10_bar / trade_price),
+                            np.log(close_20_bar / trade_price),
+                            np.log(close_30_bar / trade_price),
+                            np.log(close_40_bar / trade_price),
+                        ]
+
+                        # 判断对数收益的正负一致性
+                        positive_count = sum(lr >= 0 for lr in log_returns)
+                        negative_count = sum(lr < 0 for lr in log_returns)
+
+                        if positive_count == 11:
+                            signal_df.at[signal_time, "label"] = 1
+                        else:
+                            signal_df.at[signal_time, "label"] = 2
+
+                    elif signal_row["signal"] == "sell":
+                        # 计算第20天、第30天和第40天的对数收益
+                        MACD_10_bar = window_100_bar.iloc[49]["MACD"]
+
+                        DIF_10_bar = window_100_bar.iloc[49]["DIF"]
+
+                        # 计算第20天、第30天和第40天的对数收益
+                        close_20_bar = window_100_bar.iloc[59]["close"]
+                        close_30_bar = window_100_bar.iloc[69]["close"]
+                        close_40_bar = window_100_bar.iloc[79]["close"]
+
+                        log_returns = [
+                            np.log((MACD_10_bar + offset) / (trade_MACD + offset)),
+                            np.log((DIF_10_bar + offset) / (trade_DIF + offset)),
+                            np.log(close_20_bar / trade_price),
+                            np.log(close_30_bar / trade_price),
+                            np.log(close_40_bar / trade_price),
+                        ]
+
+                        # 判断对数收益的正负一致性
+                        positive_count = sum(lr >= 0 for lr in log_returns)
+                        negative_count = sum(lr < 0 for lr in log_returns)
+
+                        if negative_count >= 4:
+                            signal_df.at[signal_time, "label"] = 3
+                        else:
+                            signal_df.at[signal_time, "label"] = 4
+
+    # 删除标记为 0 的数据
+    signal_df = signal_df[signal_df["label"] != 0]
+
+    # 保存结果到新的 CSV 文件
+    signal_df.to_csv((RMTTools.read_config("RMQData", item)
+                      + asset.assetsMarket
+                      + "_"
+                      + asset.assetsCode
+                      + "_"
+                      + asset.barEntity.timeLevel
+                      + "_filter4.csv"))
+
+
+def fuzzy_filter1(assetList, strategy_name):
+    pass
