@@ -74,7 +74,7 @@ def pre_handle():
 
             flag0 = "_" + asset.barEntity.timeLevel  # 原始交易点
             flag1 = "_concat_filter1"  # _concat _concat_filter1  多级别组合+标注交易点
-            flag2 = "_" + asset.barEntity.timeLevel + "_filter3"  # 各级别标注交易点
+            flag2 = "_" + asset.barEntity.timeLevel + "_filter3"  # _filter4  各级别标注交易点
 
             # 计算收益率
             # RMQYield.cal_return_rate(asset, flag2, "tea_radical_nature")
@@ -83,7 +83,7 @@ def pre_handle():
 
         # 画点位图
         RMQDraw_Pyecharts.show_multi_concat(assetList, "_concat_filter1")  # 2、多级别混合图
-        RMQDraw_Pyecharts.show_mix(assetList)  # 3、自己在函数里自定义
+        # RMQDraw_Pyecharts.show_mix(assetList)  # 3、自己在函数里自定义
 
         # print(assetList[0].assetsCode + "标注完成")
     # 过滤交易点完成，准备训练数据

@@ -57,7 +57,11 @@ def split_data_part(data, trade_point_list) -> Sequence:
             # 如果展示分钟或日级别与日线行情，则改成 trade_point_list[0][0][:10] == data["times"][i][:10]，同一天就留下
             # 展示单级别分钟与分钟行情，把[:10]去掉
             # nature_quant过滤交易点，则trade_point_list[0][0]精确到日，也把[:10]去掉
-            if trade_point_list[0][0] == data["times"][i]:  # 时间对上了
+            if len(data["times"][i]) <= 10:  # 日线数据做背景，分钟级要截断
+                trade_date = trade_point_list[0][0][:10]
+            else:  # 都是分钟级，直接比较
+                trade_date = trade_point_list[0][0]
+            if trade_date == data["times"][i]:  # 时间对上了
                 mark_line_data.append(
                     [
                         {
@@ -436,7 +440,7 @@ def show_multi_concat(assetList, flag):
 
 
 def show_mix(assetList):
-    # 读取日线数据
+    # 读取价格数据
     filePath = (RMTTools.read_config("RMQData", "backtest_bar")
                 + "bar_"
                 + assetList[0].assetsMarket
@@ -447,7 +451,7 @@ def show_mix(assetList):
     df = pd.read_csv(filePath, encoding='utf-8')
 
     """
-    1、各级别但单独绘画，改用这个时，改59行判断时间代码
+    自己挑想要的级别
     """
     item = 'trade_point_backtest_' + "tea_radical_nature"
     tpl_filepath = RMTTools.read_config("RMQData", item)
@@ -473,7 +477,13 @@ def show_mix(assetList):
     df_tpl = df_tpl.drop_duplicates(subset='date_only', keep='first')
     # 删除辅助列 'date_only'（如果不需要保留）
     df_tpl = df_tpl.drop(columns=['date_only'])
-    filtered_df = df_tpl[df_tpl["label"].isin([1, 3])].copy()
+
+    if df_tpl.shape[1] == 4:
+        # 过滤出 label 为 1 或 3 的行
+        filtered_df = df_tpl[df_tpl["label"].isin([1, 3])].copy()
+    else:
+        filtered_df = df_tpl
+
 
     trade_point_list_tbp = filtered_df.values.tolist()  # df转列表
 
