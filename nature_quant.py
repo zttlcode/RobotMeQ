@@ -17,12 +17,9 @@ patchtst  分段？通道独立我可以试试，时间段token，每个特征�
 import pandas as pd
 
 import RMQData.Asset as RMQAsset
-from RMQTool import Tools as RMTTools
-from RMQTool import Yield as RMQYield
 from RMQModel import Dataset as RMQDataset
-from RMQModel import Label as RMQLabel
+from RMQModel import Evaluate as RMQEvaluate
 from RMQVisualized import Draw_Pyecharts as RMQDraw_Pyecharts
-import Run as Run
 
 
 def pre_handle():
@@ -58,52 +55,50 @@ def pre_handle():
         # 加tick会细化价格导致操作提前，但实盘是bar结束了算指标，所以不影响
         # Run.run_back_test(assetList, "tea_radical_nature")  # 0:18:27.437876 旧回测，转tick，运行时长
         # Run.run_back_test_no_tick(assetList, "tea_radical_nature")  # 0:02:29.502122 新回测，不转tick
+
         # 各级别交易点拼接在一起
         # concat_trade_point(assetList, "tea_radical_nature")
-        # 过滤交易点1
-        # RMQLabel.tea_radical_filter1(assetList, "tea_radical_nature")
-        # 计算收益率  _5 _15 _30 _60 _d _concat _concat_labeled
-        # RMQYield.cal_return_rate(assetList[0], "_concat_filter1", "tea_radical_nature")
-        for asset in assetList:
-            # 过滤交易点2
-            # RMQLabel.tea_radical_filter2(asset, "tea_radical_nature")
-            # 过滤交易点3
-            # RMQLabel.tea_radical_filter3(asset, "tea_radical_nature")
-            # 过滤交易点4
-            # RMQLabel.tea_radical_filter4(asset, "tea_radical_nature")
 
-            flag0 = "_" + asset.barEntity.timeLevel  # 原始交易点
-            flag1 = "_concat_filter1"  # _concat _concat_filter1  多级别组合+标注交易点
-            flag2 = "_" + asset.barEntity.timeLevel + "_filter3"  # _filter4  各级别标注交易点
+        """
+        过滤交易点
+            strategy_name: tea_radical_nature
+            label_name: 
+                filter1: 多级别交易点合并，校验交易后日线级别涨跌幅、40个bar内趋势
+                filter2：单级别校验各自涨跌幅、40个bar内趋势
+                filter3：单级别校验各自MACD、DIF是否维持趋势
+                filter4：单级别校验各自MACD、DIF+40个bar内趋势
+        """
+        # RMQLabel.label(assetList, "tea_radical_nature", "filter1")
 
-            # 计算收益率
-            # RMQYield.cal_return_rate(asset, flag2, "tea_radical_nature")
-            # 画点位图
-            RMQDraw_Pyecharts.show_single(asset, flag2)  # 1、生成单级别图
+        """
+        画K线买卖点图
+            method_name:
+                mix: 自己在函数里自定义，用什么级别组合自己改，不需要flag
+                multi_concat：多级别点位合并图，此时flag只会是 _concat 或 _concat_filter1
+                single：单级别图，会用到不同过滤方式，因此flag有2种，
+                        原始交易点："_" + asset.barEntity.timeLevel  此时flag是 None
+                        各级别标注交易点："_" + asset.barEntity.timeLevel + "_filter3"  此时flag是 _filter2 _filter3 _filter4
+        """
+        # RMQDraw_Pyecharts.show(assetList, "single", "_filter3")
 
-        # 画点位图
-        RMQDraw_Pyecharts.show_multi_concat(assetList, "_concat_filter1")  # 2、多级别混合图
-        # RMQDraw_Pyecharts.show_mix(assetList)  # 3、自己在函数里自定义
+        """
+        计算收益率
+            is_concat: True 计算合并交易点的收益率  此时flag只会是 _concat 或 _concat_filter1
+                       False 计算各个级别，此时flag有2种，
+                        原始交易点："_" + asset.barEntity.timeLevel  此时flag是 None
+                        各级别标注交易点："_" + asset.barEntity.timeLevel + "_filter3"  此时flag是 _filter2 _filter3 _filter4
+        """
+        # RMQEvaluate.return_rate(assetList, False, "_filter3", "tea_radical_nature")
 
-        # print(assetList[0].assetsCode + "标注完成")
-    # 过滤交易点完成，准备训练数据
     """
-    增加标识——是否处理样本不均
-    tea策略买入点太多，filter1过滤后也是样本不均，导致大量无效买入
-    我在损失函数层面实验了cost-sensitive，从
-        criterion = nn.CrossEntropyLoss() 改为
-        criterion = nn.CrossEntropyLoss(weight=torch.tensor([0.25, 0.59, 0.08, 0.08]))  没什么用
-    https://zhuanlan.zhihu.com/p/494220661  
-        这篇提到了其他解决办法：
-            模型层面用决策树、
-            集成学习中把少的样本重复抽样，组成训练子集，给单个模型
-            样本极端少只有几十个时，将分类问题考虑成异常检测
-        这实验起来有些麻烦，我先尝试直接删样本吧，handle_uneven_samples True处理，False不处理，按4类中最少的为准，删除其他样本
+    标注完成，准备训练数据
+        按照原始标注方法，_TRAIN 最多24.6万  _TEST 最多14.6万
+        limit_length==0 代表不截断，全数据
     """
-    # 最多24.6万  limit_length==0 代表不截断，全数据
-    # RMQDataset.prepare_dataset("_TRAIN", "2w", 250, 20000, True, "tea_radical_nature")
-    # 最多14.6万
-    # RMQDataset.prepare_dataset("_TEST", "2w", 250, 10000, True, "tea_radical_nature")
+    RMQDataset.prepare_dataset("_TRAIN", "2w", 250, 20000, True,
+                               "tea_radical_nature", "point_to_ts2")
+    RMQDataset.prepare_dataset("_TEST", "2w", 250, 10000, True,
+                               "tea_radical_nature", "point_to_ts2")
 
 
 def run_experiment():

@@ -91,6 +91,19 @@ def cal_return_rate(asset, flag, strategy_name):
     # return round(final_return_rate, 4)
 
 
+def return_rate(assetList, is_concat, flag, strategy_name):
+    if is_concat:
+        cal_return_rate(assetList[0], flag, strategy_name)
+    else:
+        for asset in assetList:
+            if flag:  # flag不是None
+                cal_return_rate(asset, "_" + asset.barEntity.timeLevel + str(flag), strategy_name)
+            else:
+                cal_return_rate(asset, "_" + asset.barEntity.timeLevel, strategy_name)
+
+    print(assetList[0].assetsCode + "收益率计算完成")
+
+
 def compare_return_rate():
     # 计算不同标注方式的收益率
     allStockCode = pd.read_csv("./QuantData/a800_stocks.csv")

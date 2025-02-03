@@ -5,8 +5,7 @@ from RMQTool import Tools as RMTTools
 import RMQData.Indicator as RMQIndicator
 
 
-def tea_radical_filter1(assetList, strategy_name):
-    """ """
+def tea_radical_nature_filter1(assetList, strategy_name):
     """
     对数收益计算：
         对 buy 和 sell 信号，分别计算第20天、第30天和第40天的对数收益。
@@ -161,7 +160,7 @@ def tea_radical_filter1(assetList, strategy_name):
     print(assetList[0].assetsCode + "标注完成")
 
 
-def tea_radical_filter2(asset, strategy_name):
+def tea_radical_nature_filter2(asset, strategy_name):
     """ """
     """
     单级别各自标记
@@ -292,7 +291,7 @@ def tea_radical_filter2(asset, strategy_name):
                       + "_filter2.csv"))
 
 
-def tea_radical_filter3(asset, strategy_name):
+def tea_radical_nature_filter3(asset, strategy_name):
     """ """
     """
     MACD指标标记
@@ -418,7 +417,7 @@ def tea_radical_filter3(asset, strategy_name):
                       + "_filter3.csv"))
 
 
-def tea_radical_filter4(asset, strategy_name):
+def tea_radical_nature_filter4(asset, strategy_name):
     """ """
     """
     MACD指标标记 + 价格过滤
@@ -567,3 +566,19 @@ def tea_radical_filter4(asset, strategy_name):
 
 def fuzzy_filter1(assetList, strategy_name):
     pass
+
+
+def label(assetList, strategy_name, label_name):
+    if label_name == "filter1":
+        tea_radical_nature_filter1(assetList, strategy_name)
+    elif label_name == "filter2":
+        for asset in assetList:
+            tea_radical_nature_filter2(asset, strategy_name)
+    elif label_name == "filter3":
+        for asset in assetList:
+            tea_radical_nature_filter3(asset, strategy_name)
+    elif label_name == "filter4":
+        for asset in assetList:
+            tea_radical_nature_filter4(asset, strategy_name)
+
+    print(assetList[0].assetsCode + "标注完成")

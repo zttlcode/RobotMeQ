@@ -5,7 +5,7 @@ from RMQTool import Tools as RMTTools
 import RMQData.Asset as RMQAsset
 
 
-def handling_uneven_samples(concat_labeled):
+def handling_uneven_samples_tea_radical_nature_1(concat_labeled):
     # 统计每个 label 的数量
     label_counts = concat_labeled['label'].value_counts()
     min_label_count = label_counts.min()
@@ -79,7 +79,8 @@ def handling_uneven_samples(concat_labeled):
     return final_data
 
 
-def trans_labeled_point_to_ts(assetList, temp_data_dict, temp_label_list, time_point_step, handle_uneven_samples, strategy_name):
+def tea_radical_nature_point_to_ts1(assetList, temp_data_dict, temp_label_list, time_point_step, handle_uneven_samples,
+                                     strategy_name):
     # 加载数据
     item = 'trade_point_backtest_' + strategy_name
     concat_labeled_filePath = (RMTTools.read_config("RMQData", item)
@@ -111,7 +112,7 @@ def trans_labeled_point_to_ts(assetList, temp_data_dict, temp_label_list, time_p
 
     # 是否处理样本不均
     if handle_uneven_samples:
-        concat_labeled = handling_uneven_samples(concat_labeled)
+        concat_labeled = handling_uneven_samples_tea_radical_nature_1(concat_labeled)
         # print(assetList[0].assetsCode, "样本", concat_labeled['label'].value_counts())
 
     # 遍历 concat_labeled 数据
@@ -179,7 +180,109 @@ def trans_labeled_point_to_ts(assetList, temp_data_dict, temp_label_list, time_p
     print(assetList[0].assetsCode, "结束", len(temp_label_list))
 
 
-def prepare_dataset(flag, name, time_point_step, limit_length, handle_uneven_samples, strategy_name):
+def tea_radical_nature_point_to_ts2(assetList, temp_data_dict, temp_label_list, time_point_step, handle_uneven_samples,
+                                     strategy_name):
+    # 加载数据
+    #   prepare_dataset 都要改，特征数量不一样了
+    item = 'trade_point_backtest_' + strategy_name
+    concat_labeled_filePath = (RMTTools.read_config("RMQData", item)
+                               + assetList[0].assetsMarket
+                               + "_"
+                               + assetList[0].assetsCode + "_concat_labeled" + ".csv")
+    index_d_filepath = (RMTTools.read_config("RMQData", "backtest_bar")
+                        + "bar_"
+                        + assetList[0].assetsMarket
+                        + "_"
+                        + "000001_index_d" + ".csv")
+    data_d_filePath = (RMTTools.read_config("RMQData", "backtest_bar")
+                       + "bar_"
+                       + assetList[0].assetsMarket
+                       + "_"
+                       + assetList[0].assetsCode
+                       + '_d.csv')
+    data_60_df_filePath = (RMTTools.read_config("RMQData", "backtest_bar")
+                           + "bar_"
+                           + assetList[0].assetsMarket
+                           + "_"
+                           + assetList[0].assetsCode
+                           + '_60.csv')
+
+    concat_labeled = pd.read_csv(concat_labeled_filePath, index_col="time", parse_dates=True)
+    index_d = pd.read_csv(index_d_filepath, index_col="date", parse_dates=True)
+    data_d = pd.read_csv(data_d_filePath, index_col="time", parse_dates=True)
+    data_60 = pd.read_csv(data_60_df_filePath, index_col="time", parse_dates=True)
+
+    # 是否处理样本不均
+    if handle_uneven_samples:
+        concat_labeled = handling_uneven_samples_tea_radical_nature_1(concat_labeled)
+        # print(assetList[0].assetsCode, "样本", concat_labeled['label'].value_counts())
+
+    # 遍历 concat_labeled 数据
+    for labeled_time, labeled_row in concat_labeled.iterrows():
+        labeled_date = labeled_time.date()
+        labeled_hour = labeled_time.hour
+        # 在 backtest_bar 中寻找同一日的数据
+        if pd.Timestamp(labeled_date) in index_d.index:
+            index_d_row_index = index_d.index.get_loc(pd.Timestamp(labeled_date))
+            if index_d_row_index >= 500:
+                index_d_close = index_d.iloc[index_d_row_index - time_point_step: index_d_row_index][
+                    "close"].reset_index(drop=True)
+                index_d_volume = index_d.iloc[index_d_row_index - time_point_step: index_d_row_index][
+                    "volume"].reset_index(drop=True)
+                if index_d_close.isna().any() or index_d_volume.isna().any():
+                    continue  # 数据NaN，跳过
+            else:
+                continue  # backtest_bar 越界，跳过
+        else:
+            continue  # 无匹配日期，跳过
+
+        # 在 d.csv 中寻找同一日的数据
+        if pd.Timestamp(labeled_date) in data_d.index:
+            d_row_index = data_d.index.get_loc(pd.Timestamp(labeled_date))
+            if d_row_index >= 500:
+                d_close = data_d.iloc[d_row_index - time_point_step: d_row_index]["close"].reset_index(drop=True)
+                d_volume = data_d.iloc[d_row_index - time_point_step: d_row_index]["volume"].reset_index(drop=True)
+                if d_close.isna().any() or d_volume.isna().any():
+                    continue  # 数据NaN，跳过
+            else:
+                continue  # d.csv 越界，跳过
+        else:
+            continue  # 无匹配日期，跳过
+
+        # 在 60.csv 中寻找同一日且同一小时的数据
+        if labeled_hour == 9 or labeled_hour == 13:
+            # 这俩匹配不上，只能改一下时间
+            labeled_hour += 1
+        day_hour_filter = (data_60.index.date == labeled_date) & (data_60.index.hour == labeled_hour)
+        matched_60 = data_60[day_hour_filter]
+        if len(matched_60) > 0:
+            matched_60_index = matched_60.index[-1]
+            matched_60_row_index = data_60.index.get_loc(matched_60_index)
+            if matched_60_row_index >= 500:
+                close_60 = data_60.iloc[matched_60_row_index - time_point_step: matched_60_row_index][
+                    "close"].reset_index(drop=True)
+                volume_60 = data_60.iloc[matched_60_row_index - time_point_step: matched_60_row_index][
+                    "volume"].reset_index(drop=True)
+                if close_60.isna().any() or volume_60.isna().any():
+                    continue  # 数据NaN，跳过
+            else:
+                continue  # 60.csv 越界，跳过
+        else:
+            continue  # 无匹配日期或小时，跳过
+
+        # # 如果通过所有越界检查，将数据存入字典  标签存入列表
+        temp_data_dict['index_d_close'].append(index_d_close)
+        temp_data_dict['index_d_volume'].append(index_d_volume)
+        temp_data_dict['d_close'].append(d_close)
+        temp_data_dict['d_volume'].append(d_volume)
+        temp_data_dict['close_60'].append(close_60)
+        temp_data_dict['volume_60'].append(volume_60)
+        temp_label_list.append(labeled_row['label'])
+
+    print(assetList[0].assetsCode, "结束", len(temp_label_list))
+
+
+def prepare_dataset(flag, name, time_point_step, limit_length, handle_uneven_samples, strategy_name, p2t_name):
     allStockCode = pd.read_csv("./QuantData/a800_stocks.csv")
 
     allStockCode_shuffled = allStockCode.sample(frac=1, random_state=42).reset_index(drop=True)
@@ -274,7 +377,14 @@ def prepare_dataset(flag, name, time_point_step, limit_length, handle_uneven_sam
                                              'stock',
                                              1, 'A')
         # 准备训练数据
-        trans_labeled_point_to_ts(assetList, temp_data_dict, temp_label_list, time_point_step, handle_uneven_samples, strategy_name)
+        if p2t_name == "point_to_ts1":
+            tea_radical_nature_point_to_ts1(assetList, temp_data_dict, temp_label_list, time_point_step,
+                                            handle_uneven_samples,
+                                            strategy_name)
+        elif p2t_name == "point_to_ts2":
+            tea_radical_nature_point_to_ts2(assetList, temp_data_dict, temp_label_list, time_point_step,
+                                            handle_uneven_samples,
+                                            strategy_name)
         if limit_length == 0:  # 全数据
             pass
         elif len(temp_label_list) >= limit_length:  # 只要部分数据
