@@ -220,8 +220,10 @@ def tea_radical_nature_point_to_ts2(assetList, temp_data_dict, temp_label_list, 
 
     labeled = pd.read_csv(labeled_filePath, index_col="time", parse_dates=True)
     data_0 = pd.read_csv(data_0_filepath, index_col="time", parse_dates=True)
-    data_1 = pd.read_csv(data_1_filePath, index_col="time", parse_dates=True)
-    data_2 = pd.read_csv(data_2_filePath, index_col="time", parse_dates=True)
+    #data_1 = pd.read_csv(data_1_filePath, index_col="time", parse_dates=True)
+    #data_2 = pd.read_csv(data_2_filePath, index_col="time", parse_dates=True)
+    data_1 = pd.read_csv(data_1_filePath, parse_dates=["time"])
+    data_2 = pd.read_csv(data_2_filePath, parse_dates=["time"])
 
     # 是否处理样本不均
     if handle_uneven_samples:
@@ -236,7 +238,7 @@ def tea_radical_nature_point_to_ts2(assetList, temp_data_dict, temp_label_list, 
         if len(matched_0) > 0:
             matched_0_index = matched_0.index[-1]
             matched_0_row_index = data_0.index.get_loc(matched_0_index)
-            if matched_0_row_index >= 500:
+            if matched_0_row_index >= time_point_step:
                 # 时间索引用完了，跟tea_radical_nature_label3一样删掉它，不然计算指标会报错
                 data_0_tmp = data_0.iloc[matched_0_row_index - time_point_step: matched_0_row_index].reset_index(drop=True)
                 data_0_tmp = RMQIndicator.calMACD(data_0_tmp)
@@ -273,10 +275,11 @@ def tea_radical_nature_point_to_ts2(assetList, temp_data_dict, temp_label_list, 
                 continue
 
             # 获取上一行的time
-            data_1_prev_row_time = data_1.loc[data_1_prev_index, "time"]
+            # data_1_prev_row_time = data_1.loc[data_1_prev_index, "time"]
+            # data_1_row_index = data_1.index.get_loc(pd.Timestamp(data_1_prev_row_time))
+            data_1_row_index = data_1_prev_index
 
-            data_1_row_index = data_1.index.get_loc(pd.Timestamp(data_1_prev_row_time))
-            if data_1_row_index >= 500:
+            if data_1_row_index >= time_point_step:
                 data_1_tmp = data_1.iloc[data_1_row_index - time_point_step: data_1_row_index].reset_index(drop=True)
                 data_1_tmp = RMQIndicator.calMACD(data_1_tmp)
                 data_1_tmp = RMQIndicator.calKDJ(data_1_tmp)
@@ -312,10 +315,11 @@ def tea_radical_nature_point_to_ts2(assetList, temp_data_dict, temp_label_list, 
                 continue
 
             # 获取上一行的time
-            data_2_prev_row_time = data_1.loc[data_2_prev_index, "time"]
+            # data_2_prev_row_time = data_1.loc[data_2_prev_index, "time"]
+            # data_2_row_index = data_1.index.get_loc(pd.Timestamp(data_2_prev_row_time))
+            data_2_row_index = data_2_prev_index
 
-            data_2_row_index = data_1.index.get_loc(pd.Timestamp(data_2_prev_row_time))
-            if data_2_row_index >= 500:
+            if data_2_row_index >= time_point_step:
                 data_2_tmp = data_2.iloc[data_2_row_index - time_point_step: data_2_row_index].reset_index(drop=True)
                 data_2_tmp = RMQIndicator.calMACD(data_2_tmp)
                 data_2_tmp = RMQIndicator.calKDJ(data_2_tmp)
@@ -503,6 +507,7 @@ def tea_radical_nature_feature2(flag, name, time_point_step, limit_length, handl
 
     if flag == "_TRAIN":
         df_dataset = allStockCode_shuffled.iloc[:500]
+        df_dataset = allStockCode
     else:
         df_dataset = allStockCode_shuffled.iloc[500:]
 
@@ -532,6 +537,7 @@ def tea_radical_nature_feature2(flag, name, time_point_step, limit_length, handl
             pass
         elif len(temp_label_list) >= limit_length:  # 只要部分数据
             break
+        break
     # 循环结束后，字典转为DataFrame
     result_df = pd.DataFrame(temp_data_dict)
     # 将列表转换成 Series

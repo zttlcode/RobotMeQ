@@ -20,6 +20,7 @@ import RMQData.Asset as RMQAsset
 from RMQModel import Dataset as RMQDataset
 from RMQModel import Evaluate as RMQEvaluate
 from RMQVisualized import Draw_Pyecharts as RMQDraw_Pyecharts
+from RMQModel import Label as RMQLabel
 
 
 def pre_handle():
@@ -68,7 +69,7 @@ def pre_handle():
                 label3：单级别校验各自MACD、DIF是否维持趋势
                 label4：单级别校验各自MACD、DIF+40个bar内趋势
         """
-        # RMQLabel.label(assetList, "tea_radical_nature", "filter1")
+        # RMQLabel.label(assetList, "tea_radical_nature", "label3")
 
         """
         画K线买卖点图
@@ -89,6 +90,7 @@ def pre_handle():
                         各级别标注交易点："_" + asset.barEntity.timeLevel + "_label3"  此时flag是 _label2 _label3 _label4
         """
         # RMQEvaluate.return_rate(assetList, False, "_label3", "tea_radical_nature")
+        break
 
     """
     标注完成，准备训练数据
@@ -110,12 +112,13 @@ def pre_handle():
         label_name: 合并标注交易点的  此时flag只会是 _concat_label1
                     各级别标注交易点  "_" + asset.barEntity.timeLevel + "_label3"  此时flag是 _label2 _label3 _label4
     """
-    RMQDataset.prepare_dataset("_TRAIN", "2w", 250, 20000, True,
-                               "tea_radical_nature", "feature1", "point_to_ts2",
+    RMQDataset.prepare_dataset("_TRAIN", "1w", 200, 1000, False,
+                               "tea_radical_nature", "feature2", "point_to_ts2",
                                "_label3")
-    RMQDataset.prepare_dataset("_TEST", "2w", 250, 10000, True,
-                               "tea_radical_nature", "feature1", "point_to_ts2",
-                               "_label3")
+    # RMQDataset.prepare_dataset("_TEST", "2w", 250, 5000, True,
+    #                            "tea_radical_nature", "feature2", "point_to_ts2",
+    #                            "_label3")
+
 
 
 def run_experiment():
