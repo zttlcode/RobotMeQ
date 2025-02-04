@@ -63,10 +63,10 @@ def pre_handle():
         过滤交易点
             strategy_name: tea_radical_nature
             label_name: 
-                filter1: 多级别交易点合并，校验交易后日线级别涨跌幅、40个bar内趋势
-                filter2：单级别校验各自涨跌幅、40个bar内趋势
-                filter3：单级别校验各自MACD、DIF是否维持趋势
-                filter4：单级别校验各自MACD、DIF+40个bar内趋势
+                label1: 多级别交易点合并，校验交易后日线级别涨跌幅、40个bar内趋势
+                label2：单级别校验各自涨跌幅、40个bar内趋势
+                label3：单级别校验各自MACD、DIF是否维持趋势
+                label4：单级别校验各自MACD、DIF+40个bar内趋势
         """
         # RMQLabel.label(assetList, "tea_radical_nature", "filter1")
 
@@ -74,31 +74,48 @@ def pre_handle():
         画K线买卖点图
             method_name:
                 mix: 自己在函数里自定义，用什么级别组合自己改，不需要flag
-                multi_concat：多级别点位合并图，此时flag只会是 _concat 或 _concat_filter1
+                multi_concat：多级别点位合并图，此时flag只会是 _concat 或 _concat_label1
                 single：单级别图，会用到不同过滤方式，因此flag有2种，
                         原始交易点："_" + asset.barEntity.timeLevel  此时flag是 None
-                        各级别标注交易点："_" + asset.barEntity.timeLevel + "_filter3"  此时flag是 _filter2 _filter3 _filter4
+                        各级别标注交易点："_" + asset.barEntity.timeLevel + "_label3"  此时flag是 _label2 _label3 _label4
         """
-        # RMQDraw_Pyecharts.show(assetList, "single", "_filter3")
+        # RMQDraw_Pyecharts.show(assetList, "single", "_label3")
 
         """
         计算收益率
-            is_concat: True 计算合并交易点的收益率  此时flag只会是 _concat 或 _concat_filter1
+            is_concat: True 计算合并交易点的收益率  此时flag只会是 _concat 或 _concat_label1
                        False 计算各个级别，此时flag有2种，
                         原始交易点："_" + asset.barEntity.timeLevel  此时flag是 None
-                        各级别标注交易点："_" + asset.barEntity.timeLevel + "_filter3"  此时flag是 _filter2 _filter3 _filter4
+                        各级别标注交易点："_" + asset.barEntity.timeLevel + "_label3"  此时flag是 _label2 _label3 _label4
         """
-        # RMQEvaluate.return_rate(assetList, False, "_filter3", "tea_radical_nature")
+        # RMQEvaluate.return_rate(assetList, False, "_label3", "tea_radical_nature")
 
     """
     标注完成，准备训练数据
+    由于两个数据集都要做，因此写俩方法串行，别删
         按照原始标注方法，_TRAIN 最多24.6万  _TEST 最多14.6万
         limit_length==0 代表不截断，全数据
+        flag: _TRAIN 训练集截前500个股票，  _TEST 测试集截后300个  截之前按固定随机数乱序了
+        name: 给ts文件命名，跟limit_length对应，这文件有多少条数据
+        time_point_step: 截取的时间步，最长500，最少得是8以上，因为很多时序模型需要得序列长度最少是8
+        limit_length：限制长度是为了方便debug时调试，数据太多加载太慢
+        handle_uneven_samples: macd策略样本不均，其他策略不一定有这个问题，所以这里控制要不要处理
+        strategy_name: 为了读回测点文件，tea_radical_nature
+        feature_plan_name: 不同特征组织方案
+                feature1 日线、小时线、指数日线
+                feature2 macd5分钟、15分钟、30分钟
+        p2t_name: 针对不同特征，截不同得训练集数据
+                point_to_ts1 针对feature1截收盘价和成交量
+                point_to_ts2 针对feature2截MACD、KDJ、close
+        label_name: 合并标注交易点的  此时flag只会是 _concat_label1
+                    各级别标注交易点  "_" + asset.barEntity.timeLevel + "_label3"  此时flag是 _label2 _label3 _label4
     """
     RMQDataset.prepare_dataset("_TRAIN", "2w", 250, 20000, True,
-                               "tea_radical_nature", "point_to_ts2")
+                               "tea_radical_nature", "feature1", "point_to_ts2",
+                               "_label3")
     RMQDataset.prepare_dataset("_TEST", "2w", 250, 10000, True,
-                               "tea_radical_nature", "point_to_ts2")
+                               "tea_radical_nature", "feature1", "point_to_ts2",
+                               "_label3")
 
 
 def run_experiment():

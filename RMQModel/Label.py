@@ -5,7 +5,7 @@ from RMQTool import Tools as RMTTools
 import RMQData.Indicator as RMQIndicator
 
 
-def tea_radical_nature_filter1(assetList, strategy_name):
+def tea_radical_nature_label1(assetList, strategy_name):
     """
     对数收益计算：
         对 buy 和 sell 信号，分别计算第20天、第30天和第40天的对数收益。
@@ -155,12 +155,12 @@ def tea_radical_nature_filter1(assetList, strategy_name):
     signal_df.to_csv((RMTTools.read_config("RMQData", item)
                       + assetList[0].assetsMarket
                       + "_"
-                      + assetList[0].assetsCode + "_concat_filter1.csv"))
+                      + assetList[0].assetsCode + "_concat_label1.csv"))
 
     print(assetList[0].assetsCode + "标注完成")
 
 
-def tea_radical_nature_filter2(asset, strategy_name):
+def tea_radical_nature_label2(asset, strategy_name):
     """ """
     """
     单级别各自标记
@@ -288,10 +288,10 @@ def tea_radical_nature_filter2(asset, strategy_name):
                       + asset.assetsCode
                       + "_"
                       + asset.barEntity.timeLevel
-                      + "_filter2.csv"))
+                      + "_label2.csv"))
 
 
-def tea_radical_nature_filter3(asset, strategy_name):
+def tea_radical_nature_label3(asset, strategy_name):
     """ """
     """
     MACD指标标记
@@ -414,10 +414,10 @@ def tea_radical_nature_filter3(asset, strategy_name):
                       + asset.assetsCode
                       + "_"
                       + asset.barEntity.timeLevel
-                      + "_filter3.csv"))
+                      + "_label3.csv"))
 
 
-def tea_radical_nature_filter4(asset, strategy_name):
+def tea_radical_nature_label4(asset, strategy_name):
     """ """
     """
     MACD指标标记 + 价格过滤
@@ -561,24 +561,24 @@ def tea_radical_nature_filter4(asset, strategy_name):
                       + asset.assetsCode
                       + "_"
                       + asset.barEntity.timeLevel
-                      + "_filter4.csv"))
+                      + "_label4.csv"))
 
 
-def fuzzy_filter1(assetList, strategy_name):
+def fuzzy_label1(assetList, strategy_name):
     pass
 
 
 def label(assetList, strategy_name, label_name):
-    if label_name == "filter1":
-        tea_radical_nature_filter1(assetList, strategy_name)
-    elif label_name == "filter2":
+    if label_name == "label1":
+        tea_radical_nature_label1(assetList, strategy_name)
+    elif label_name == "label2":
         for asset in assetList:
-            tea_radical_nature_filter2(asset, strategy_name)
-    elif label_name == "filter3":
+            tea_radical_nature_label2(asset, strategy_name)
+    elif label_name == "label3":
         for asset in assetList:
-            tea_radical_nature_filter3(asset, strategy_name)
-    elif label_name == "filter4":
+            tea_radical_nature_label3(asset, strategy_name)
+    elif label_name == "label4":
         for asset in assetList:
-            tea_radical_nature_filter4(asset, strategy_name)
+            tea_radical_nature_label4(asset, strategy_name)
 
     print(assetList[0].assetsCode + "标注完成")
