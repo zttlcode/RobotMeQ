@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-
+import os
 from RMQTool import Tools as RMTTools
 import RMQData.Indicator as RMQIndicator
 
@@ -181,6 +181,8 @@ def tea_radical_nature_label2(asset, strategy_name):
                           + "_"
                           + asset.barEntity.timeLevel
                           + ".csv")
+    if not os.path.exists(signal_df_filepath):
+        return None
     # 读取 backtest.csv读取日线数据 和 signal.csv 为 DataFrame
     backtest_df = pd.read_csv(backtest_df_filePath, encoding='utf-8', parse_dates=['time'], index_col="time")
     signal_df = pd.read_csv(signal_df_filepath, parse_dates=["time"], index_col="time")
@@ -312,9 +314,12 @@ def tea_radical_nature_label3(asset, strategy_name):
                           + "_"
                           + asset.barEntity.timeLevel
                           + ".csv")
+    if not os.path.exists(signal_df_filepath):
+        return None
     # 读取 backtest.csv读取日线数据 和 signal.csv 为 DataFrame
     backtest_df = pd.read_csv(backtest_df_filePath, encoding='utf-8', parse_dates=['time'], index_col="time")
     signal_df = pd.read_csv(signal_df_filepath, parse_dates=["time"], index_col="time")
+
     # 创建一个新列 'label'，用于标注信号数据
     signal_df["label"] = np.nan
 
@@ -438,6 +443,8 @@ def tea_radical_nature_label4(asset, strategy_name):
                           + "_"
                           + asset.barEntity.timeLevel
                           + ".csv")
+    if not os.path.exists(signal_df_filepath):
+        return None
     # 读取 backtest.csv读取日线数据 和 signal.csv 为 DataFrame
     backtest_df = pd.read_csv(backtest_df_filePath, encoding='utf-8', parse_dates=['time'], index_col="time")
     signal_df = pd.read_csv(signal_df_filepath, parse_dates=["time"], index_col="time")

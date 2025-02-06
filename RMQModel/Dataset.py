@@ -507,7 +507,6 @@ def tea_radical_nature_feature2(flag, name, time_point_step, limit_length, handl
 
     if flag == "_TRAIN":
         df_dataset = allStockCode_shuffled.iloc[:500]
-        df_dataset = allStockCode
     else:
         df_dataset = allStockCode_shuffled.iloc[500:]
 
@@ -537,7 +536,6 @@ def tea_radical_nature_feature2(flag, name, time_point_step, limit_length, handl
             pass
         elif len(temp_label_list) >= limit_length:  # 只要部分数据
             break
-        break
     # 循环结束后，字典转为DataFrame
     result_df = pd.DataFrame(temp_data_dict)
     # 将列表转换成 Series

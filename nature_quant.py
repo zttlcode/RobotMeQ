@@ -42,7 +42,7 @@ def pre_handle():
                 均线等，看是否比单纯指标有收益率提升
                 （第三种方法、提前5天，直接抽特征自己发信号，不用判断当前信号是否有效）
     """
-    allStockCode = pd.read_csv("./QuantData/a800_wait_handle_stocks.csv")
+    allStockCode = pd.read_csv("./QuantData/a800_stocks.csv")
     # 回测，并行 需要手动改里面的策略名
     # Run.parallel_backTest(allStockCode)
     for index, row in allStockCode.iterrows():
@@ -90,7 +90,6 @@ def pre_handle():
                         各级别标注交易点："_" + asset.barEntity.timeLevel + "_label3"  此时flag是 _label2 _label3 _label4
         """
         # RMQEvaluate.return_rate(assetList, False, "_label3", "tea_radical_nature")
-        break
 
     """
     标注完成，准备训练数据
@@ -112,12 +111,12 @@ def pre_handle():
         label_name: 合并标注交易点的  此时flag只会是 _concat_label1
                     各级别标注交易点  "_" + asset.barEntity.timeLevel + "_label3"  此时flag是 _label2 _label3 _label4
     """
-    RMQDataset.prepare_dataset("_TRAIN", "1w", 200, 1000, False,
+    RMQDataset.prepare_dataset("_TRAIN", "2wFalse", 180, 20000, False,
                                "tea_radical_nature", "feature2", "point_to_ts2",
                                "_label3")
-    # RMQDataset.prepare_dataset("_TEST", "2w", 250, 5000, True,
-    #                            "tea_radical_nature", "feature2", "point_to_ts2",
-    #                            "_label3")
+    RMQDataset.prepare_dataset("_TEST", "2wFalse", 180, 10000, False,
+                               "tea_radical_nature", "feature2", "point_to_ts2",
+                               "_label3")
 
 
 
