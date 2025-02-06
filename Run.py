@@ -116,7 +116,9 @@ def run_back_test_no_tick(assetList, strategy_name):
             df_tpl = pd.DataFrame(asset.positionEntity.trade_point_list)
             df_tpl.columns = ['time', 'price', 'signal']
             item = 'trade_point_backtest_' + strategy_name
-            df_tpl.to_csv(RMTTools.read_config("RMQData", item)
+            directory = RMTTools.read_config("RMQData", item)
+            os.makedirs(directory, exist_ok=True)
+            df_tpl.to_csv(directory
                           + asset.assetsMarket
                           + "_"
                           + asset.indicatorEntity.IE_assetsCode
@@ -147,12 +149,12 @@ def run_backTest_multip(data_chunk):
                                              ['5', '15', '30', '60', 'd'],
                                              'stock',
                                              1, 'A')
-        run_back_test_no_tick(assetList, "tea_radical_nature")  # 0:02:29.502122 新回测，不转tick
+        run_back_test_no_tick(assetList, "fuzzy_nature")  # 0:02:29.502122 新回测，不转tick
 
 
 def parallel_backTest(allStockCode):
     # 多个并行
-    num_processes = 15  # 确定进程数量和数据块
+    num_processes = 30  # 确定进程数量和数据块
     data_chunks = chunk_dataframe(allStockCode, num_processes)  # 把300个股票分给20个进程并行处理
     # 使用 multiprocessing 开启进程池
     with Pool(num_processes) as pool:

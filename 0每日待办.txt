@@ -43,6 +43,9 @@ accuracy:0.690192574945404  TimesNet
 
 这说明指标做特征确实有用
 
+2025 0206 换模糊策略，6特征
+accuracy:0.5362391282615215  ClassCNN
+accuracy:0.5109467159852045  TimesNet
 
 
 换策略：

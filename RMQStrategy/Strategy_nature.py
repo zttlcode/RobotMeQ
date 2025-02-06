@@ -94,50 +94,52 @@ def strategy_fuzzy(positionEntity,
                    windowDF_calIndic,
                    bar_num,
                    strategy_result):
-    if 0 != len(positionEntity.currentOrders):  # 满仓，判断止损
-        RMQPosition.stopLoss(positionEntity, indicatorEntity, strategy_result)
+    # if 0 != len(positionEntity.currentOrders):  # 满仓，判断止损
+    #     RMQPosition.stopLoss(positionEntity, indicatorEntity, strategy_result)
 
-    current_min = int(indicatorEntity.tick_time.strftime('%M'))
-    if current_min % 5 == 0:  # 判断时间被5整除，如果是，说明bar刚更新，计算指标，否则不算指标；'%Y-%m-%d %H:%M'
-        if current_min != indicatorEntity.last_cal_time:  # 说明bar刚更新，计算一次指标
-            indicatorEntity.last_cal_time = current_min  # 更新锁
+    # current_min = int(indicatorEntity.tick_time.strftime('%M'))
+    # if current_min % 5 == 0:  # 判断时间被5整除，如果是，说明bar刚更新，计算指标，否则不算指标；'%Y-%m-%d %H:%M'
+    #     if current_min != indicatorEntity.last_cal_time:  # 说明bar刚更新，计算一次指标
+    #         indicatorEntity.last_cal_time = current_min  # 更新锁
 
-            n1, n2, aa = RMQSFuzzy.strategy_fuzzy(windowDF_calIndic, bar_num)
-            # bar_num为了算过去的指标，250-1，所以n2是249,最后一位下标248，没值，243~247有值，
-            mood = aa[1, 0, n2 - 6:n2 - 1] - aa[0, 0, n2 - 6:n2 - 1]  # a7-a6的值，正：可以买
-            avmood = np.mean(mood)
+    n1, n2, aa = RMQSFuzzy.fuzzy(windowDF_calIndic, bar_num)
+    # bar_num为了算过去的指标，250-1，所以n2是249,最后一位下标248，没值，243~247有值，
+    mood = aa[1, 0, n2 - 6:n2 - 1] - aa[0, 0, n2 - 6:n2 - 1]  # a7-a6的值，正：可以买
+    avmood = np.mean(mood)
 
-            # 空仓，且大买家占优则买
-            if 0 == len(positionEntity.currentOrders) and avmood > 0:  # 空仓时买
-                # 记录策略所有买卖点  格式 [["2021-04-26", 47, "buy"], ["2021-06-15", 55.1, "sell"]]
-                trade_point = [indicatorEntity.tick_time.strftime('%Y-%m-%d %H'),
-                               round(indicatorEntity.tick_close, 3),
-                               "buy"]
-                positionEntity.trade_point_list.append(trade_point)
-                # 推送消息
-                strategy_result.send_msg(indicatorEntity.IE_assetsName
-                                         + "-"
-                                         + indicatorEntity.IE_assetsCode,
-                                         indicatorEntity,
-                                         None,
-                                         "buy" + str(round(avmood, 3)))
+    # 空仓，且大买家占优则买
+    if 0 == len(positionEntity.currentOrders) and avmood > 0:  # 空仓时买
+        # 记录策略所有买卖点  格式 [["2021-04-26", 47, "buy"], ["2021-06-15", 55.1, "sell"]]
+        trade_point = [indicatorEntity.tick_time.strftime('%Y-%m-%d %H:%M:%S'),
+                       round(indicatorEntity.tick_close, 3),
+                       "buy"]
 
-                volume = int(positionEntity.money / indicatorEntity.tick_close / 100) * 100
-                # 全仓买,1万本金除以股价，算出能买多少股，# 再除以100算出能买多少手，再乘100算出要买多少股
-                RMQPosition.buy(positionEntity, indicatorEntity, indicatorEntity.tick_close, volume)
-            # 满仓
-            if 0 != len(positionEntity.currentOrders) and avmood < 0:
-                # 记录策略所有买卖点  格式 [["2021-04-26", 47, "buy"], ["2021-06-15", 55.1, "sell"]]
-                trade_point = [indicatorEntity.tick_time.strftime('%Y-%m-%d %H'),
-                               round(indicatorEntity.tick_close, 3),
-                               "sell"]
-                positionEntity.trade_point_list.append(trade_point)
-                # 设置推送消息
-                strategy_result.send_msg(indicatorEntity.IE_assetsName
-                                         + "-"
-                                         + indicatorEntity.IE_assetsCode,
-                                         indicatorEntity,
-                                         None,
-                                         "sell" + str(round(avmood, 3)))
-                # 卖
-                RMQPosition.sell(positionEntity, indicatorEntity)
+        positionEntity.trade_point_list.append(trade_point)
+        # # 推送消息
+        # strategy_result.send_msg(indicatorEntity.IE_assetsName
+        #                          + "-"
+        #                          + indicatorEntity.IE_assetsCode,
+        #                          indicatorEntity,
+        #                          None,
+        #                          "buy" + str(round(avmood, 3)))
+
+        volume = int(positionEntity.money / indicatorEntity.tick_close / 100) * 100
+        # 全仓买,1万本金除以股价，算出能买多少股，# 再除以100算出能买多少手，再乘100算出要买多少股
+        RMQPosition.buy(positionEntity, indicatorEntity, indicatorEntity.tick_close, volume)
+    # 满仓
+    if 0 != len(positionEntity.currentOrders) and avmood < 0:
+        # 记录策略所有买卖点  格式 [["2021-04-26", 47, "buy"], ["2021-06-15", 55.1, "sell"]]
+        trade_point = [indicatorEntity.tick_time.strftime('%Y-%m-%d %H:%M:%S'),
+                       round(indicatorEntity.tick_close, 3),
+                       "sell"]
+
+        positionEntity.trade_point_list.append(trade_point)
+        # # 设置推送消息
+        # strategy_result.send_msg(indicatorEntity.IE_assetsName
+        #                          + "-"
+        #                          + indicatorEntity.IE_assetsCode,
+        #                          indicatorEntity,
+        #                          None,
+        #                          "sell" + str(round(avmood, 3)))
+        # 卖
+        RMQPosition.sell(positionEntity, indicatorEntity)

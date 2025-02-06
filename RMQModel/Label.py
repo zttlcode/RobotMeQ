@@ -571,13 +571,72 @@ def tea_radical_nature_label4(asset, strategy_name):
                       + "_label4.csv"))
 
 
-def fuzzy_label1(assetList, strategy_name):
-    pass
+def fuzzy_nature_label1(asset, strategy_name):
+    """ """
+    """
+    单级别各自标记
+    """
+    item = 'trade_point_backtest_' + strategy_name
+    signal_df_filepath = (RMTTools.read_config("RMQData", item)
+                          + asset.assetsMarket
+                          + "_"
+                          + asset.assetsCode
+                          + "_"
+                          + asset.barEntity.timeLevel
+                          + ".csv")
+    if not os.path.exists(signal_df_filepath):
+        return None
+    # 读取 signal.csv 为 DataFrame
+    signal_df = pd.read_csv(signal_df_filepath, parse_dates=["time"], index_col="time")
+
+    # 创建一个新列 'label'，用于标注信号数据
+    signal_df["label"] = np.nan
+
+    # 遍历信号点，查找 buy-sell 配对
+    buy_price = None
+    buy_index = None
+
+    # 遍历 signal_df，按时间对比 backtest_df
+    for signal_index, signal_row in signal_df.iterrows():
+        signal = signal_row["signal"]
+        price = signal_row["price"]
+
+        if signal == "buy":
+            buy_price = price
+            buy_index = signal_index  # 记录买入索引
+
+        elif signal == "sell" and buy_price is not None:
+            sell_price = price
+            profit_ratio = (sell_price - buy_price) / buy_price  # 计算收益率
+
+            if profit_ratio > 0.05:  # 盈利超过5%
+                signal_df.at[buy_index, "label"] = 1  # 有效买入点
+                signal_df.at[signal_index, "label"] = 3  # 有效卖出点
+            else:
+                signal_df.at[buy_index, "label"] = 2  # 无效买入点
+                signal_df.at[signal_index, "label"] = 4  # 无效卖出点
+
+            # 重置买入信息，等待下一个 buy-sell 组合
+            buy_price = None
+            buy_index = None
+
+    # 保存结果到新的 CSV 文件
+    signal_df.to_csv((RMTTools.read_config("RMQData", item)
+                      + asset.assetsMarket
+                      + "_"
+                      + asset.assetsCode
+                      + "_"
+                      + asset.barEntity.timeLevel
+                      + "_label1.csv"))
 
 
 def label(assetList, strategy_name, label_name):
     if label_name == "label1":
-        tea_radical_nature_label1(assetList, strategy_name)
+        if strategy_name == "tea_radical_nature":
+            tea_radical_nature_label1(assetList, strategy_name)
+        elif strategy_name == "fuzzy_nature":
+            for asset in assetList:
+                fuzzy_nature_label1(asset, strategy_name)
     elif label_name == "label2":
         for asset in assetList:
             tea_radical_nature_label2(asset, strategy_name)

@@ -1,6 +1,7 @@
 import pandas as pd
 from sktime.datasets import write_dataframe_to_tsfile
-
+import numpy as np
+import os
 from RMQTool import Tools as RMTTools
 import RMQData.Asset as RMQAsset
 import RMQData.Indicator as RMQIndicator
@@ -78,6 +79,63 @@ def tea_radical_nature_handling_uneven_samples1(labeled):
     # 输出结果
     final_data = final_data.drop(columns=['group'])  # 删除辅助列
     return final_data
+
+
+def fuzzy_nature_handling_uneven_samples1(labeled):
+    """ 平衡 label 使其各类别数量相等，并均匀删除 """
+    df = labeled
+
+    # 统计 label 数量
+    label_counts = df['label'].value_counts()
+    min_count = label_counts.min()  # 找到最少的 label 数
+
+    # 确保 1-3 和 2-4 交易对完整
+    group_13 = df[df['label'].isin([1, 3])]
+    group_24 = df[df['label'].isin([2, 4])]
+
+    # 计算需要删除的行数
+    excess_13 = len(group_13) // 2 - min_count
+    excess_24 = len(group_24) // 2 - min_count
+
+    def remove_evenly(group, excess_count):
+        """ 在整个 group 中均匀删除成对数据 """
+        if excess_count <= 0:
+            return group  # 无需删除
+        total_pairs = len(group) // 2  # 计算交易对数量
+        step = total_pairs / excess_count  # 计算均匀删除步长
+        remove_indices = np.round(np.arange(0, total_pairs, step)).astype(int)  # 均匀选择要删除的索引
+        mask = np.ones(len(group), dtype=bool)
+        for idx in remove_indices:
+            mask[idx * 2: idx * 2 + 2] = False  # 确保成对删除
+        return group[mask]
+
+    # 均匀删除多余的 1-3 和 2-4
+    balanced_13 = remove_evenly(group_13, excess_13)
+    balanced_24 = remove_evenly(group_24, excess_24)
+
+    # 合并数据并按时间排序
+    balanced_df = pd.concat([balanced_13, balanced_24]).sort_values(by="time")
+
+    def is_valid_trade_sequence(dfv):
+        """检查数据是否符合交易对 buy-sell 规则"""
+        if dfv.iloc[0]["signal"] != "buy" or dfv.iloc[-1]["signal"] != "sell":
+            print("数据不符合 buy 开头、sell 结尾的规则！")
+            return False
+
+        # 检查相邻交易对
+        signals = dfv["signal"].values
+        for i in range(0, len(signals) - 1, 2):  # 2步长遍历
+            if signals[i] != "buy" or signals[i + 1] != "sell":
+                print(f"数据不符合交易对规则，在索引 {i}-{i + 1} 处发现异常！")
+                return False
+        return True
+
+    # **增加交易对校验**
+    if not is_valid_trade_sequence(balanced_df):
+        print(f"错误！交易对结构被破坏，请检查算法！")
+        return
+
+    return balanced_df
 
 
 def tea_radical_nature_point_to_ts1(assetList, temp_data_dict, temp_label_list, time_point_step, handle_uneven_samples,
@@ -240,7 +298,8 @@ def tea_radical_nature_point_to_ts2(assetList, temp_data_dict, temp_label_list, 
             matched_0_row_index = data_0.index.get_loc(matched_0_index)
             if matched_0_row_index >= time_point_step:
                 # 时间索引用完了，跟tea_radical_nature_label3一样删掉它，不然计算指标会报错
-                data_0_tmp = data_0.iloc[matched_0_row_index - time_point_step: matched_0_row_index].reset_index(drop=True)
+                data_0_tmp = data_0.iloc[matched_0_row_index - time_point_step: matched_0_row_index].reset_index(
+                    drop=True)
                 data_0_tmp = RMQIndicator.calMACD(data_0_tmp)
                 data_0_tmp = RMQIndicator.calKDJ(data_0_tmp)
 
@@ -361,6 +420,168 @@ def tea_radical_nature_point_to_ts2(assetList, temp_data_dict, temp_label_list, 
         temp_data_dict['K_2'].append(K_2)
         temp_data_dict['D_2'].append(D_2)
         temp_data_dict['J_2'].append(J_2)
+        temp_data_dict['close_2'].append(close_2)
+
+        temp_label_list.append(labeled_row['label'])
+
+    print(assetList[0].assetsCode, "结束", len(temp_label_list))
+
+
+def fuzzy_nature_point_to_ts1(assetList, temp_data_dict, temp_label_list, time_point_step, handle_uneven_samples,
+                              strategy_name, label_name):
+    # 加载数据
+    item = 'trade_point_backtest_' + strategy_name
+    labeled_filePath = (RMTTools.read_config("RMQData", item)
+                        + assetList[0].assetsMarket
+                        + "_"
+                        + assetList[0].assetsCode
+                        + "_"
+                        + assetList[0].barEntity.timeLevel
+                        + str(label_name)
+                        + ".csv")
+
+    if not os.path.exists(labeled_filePath):
+        return None
+
+    data_0_filepath = (RMTTools.read_config("RMQData", "backtest_bar")
+                       + "bar_"
+                       + assetList[0].assetsMarket
+                       + "_"
+                       + assetList[0].assetsCode
+                       + "_"
+                       + assetList[0].barEntity.timeLevel
+                       + ".csv")
+    data_1_filePath = (RMTTools.read_config("RMQData", "backtest_bar")
+                       + "bar_"
+                       + assetList[1].assetsMarket
+                       + "_"
+                       + assetList[1].assetsCode
+                       + "_"
+                       + assetList[1].barEntity.timeLevel
+                       + ".csv")
+    data_2_filePath = (RMTTools.read_config("RMQData", "backtest_bar")
+                       + "bar_"
+                       + assetList[2].assetsMarket
+                       + "_"
+                       + assetList[2].assetsCode
+                       + "_"
+                       + assetList[2].barEntity.timeLevel
+                       + ".csv")
+
+    labeled = pd.read_csv(labeled_filePath, index_col="time", parse_dates=True)
+    data_0 = pd.read_csv(data_0_filepath, index_col="time", parse_dates=True)
+    data_1 = pd.read_csv(data_1_filePath, index_col="time", parse_dates=True)
+    data_2 = pd.read_csv(data_2_filePath, index_col="time", parse_dates=True)
+    # data_1 = pd.read_csv(data_1_filePath, parse_dates=["time"])
+    # data_2 = pd.read_csv(data_2_filePath, parse_dates=["time"])
+
+    # 是否处理样本不均
+    if handle_uneven_samples:
+        labeled = fuzzy_nature_handling_uneven_samples1(labeled)
+        # print(assetList[0].assetsCode, "样本", concat_labeled['label'].value_counts())
+
+    # 遍历 labeled 数据
+    for labeled_time, labeled_row in labeled.iterrows():
+        labeled_date = labeled_time.date()
+        labeled_hour = labeled_time.hour
+        """1、寻找本级别匹配行 此为30分钟级别"""
+        data_0_filter = (data_0.index == labeled_time)
+        matched_0 = data_0[data_0_filter]
+        if len(matched_0) > 0:
+            matched_0_index = matched_0.index[-1]
+            matched_0_row_index = data_0.index.get_loc(matched_0_index)
+            if matched_0_row_index >= (time_point_step+60):
+                # 时间索引用完了，跟tea_radical_nature_label3一样删掉它，不然计算指标会报错
+                data_0_tmp = data_0.iloc[matched_0_row_index - (time_point_step+60): matched_0_row_index].reset_index(
+                    drop=True)
+                data_0_tmp = RMQIndicator.calMACD(data_0_tmp)
+                data_0_tmp = RMQIndicator.calMA(data_0_tmp)
+
+                MACD_0 = data_0_tmp["MACD"][59:]
+                DIF_0 = data_0_tmp["DIF"][59:]
+                MA_5_0 = data_0_tmp["MA_5"][59:]
+                MA_10_0 = data_0_tmp["MA_10"][59:]
+                MA_60_0 = data_0_tmp["MA_60"][59:]
+                close_0 = data_0_tmp["close"][59:]
+
+                if (MACD_0.isna().any() or DIF_0.isna().any() or MA_5_0.isna().any()
+                        or MA_10_0.isna().any() or MA_60_0.isna().any() or close_0.isna().any()):
+                    continue  # 数据NaN，跳过
+            else:
+                continue  # backtest_bar 越界，跳过
+        else:
+            continue  # 无匹配日期，跳过
+
+        """2、寻找上级匹配行 在 60.csv 中寻找同一日且同一小时的数据"""
+        if labeled_hour == 9 or labeled_hour == 13:
+            # 这俩匹配不上，只能改一下时间
+            labeled_hour += 1
+        day_hour_filter = (data_1.index.date == labeled_date) & (data_1.index.hour == labeled_hour)
+        matched_60 = data_1[day_hour_filter]
+        if len(matched_60) > 0:
+            matched_60_index = matched_60.index[-1]
+            data_1_row_index = data_1.index.get_loc(matched_60_index)
+            if data_1_row_index >= (time_point_step+60):
+                data_1_tmp = data_1.iloc[data_1_row_index - (time_point_step+60): data_1_row_index].reset_index(drop=True)
+                data_1_tmp = RMQIndicator.calMACD(data_1_tmp)
+                data_1_tmp = RMQIndicator.calMA(data_1_tmp)
+
+                MACD_1 = data_1_tmp["MACD"][59:]
+                DIF_1 = data_1_tmp["DIF"][59:]
+                MA_5_1 = data_1_tmp["MA_5"][59:]
+                MA_10_1 = data_1_tmp["MA_10"][59:]
+                MA_60_1 = data_1_tmp["MA_60"][59:]
+                close_1 = data_1_tmp["close"][59:]
+
+                if (MACD_1.isna().any() or DIF_1.isna().any() or MA_5_1.isna().any()
+                        or MA_10_1.isna().any() or MA_60_1.isna().any() or close_1.isna().any()):
+                    continue  # 数据NaN，跳过
+            else:
+                continue  # d.csv 越界，跳过
+        else:
+            continue  # 无匹配日期，跳过
+
+        """3、寻找上级匹配行 在 d.csv 中寻找同一日的数据"""
+        if pd.Timestamp(labeled_date) in data_2.index:
+            data_2_row_index = data_2.index.get_loc(pd.Timestamp(labeled_date))
+            if data_2_row_index >= (time_point_step+60):
+                data_2_tmp = data_2.iloc[data_2_row_index - (time_point_step+60): data_2_row_index].reset_index(drop=True)
+                data_2_tmp = RMQIndicator.calMACD(data_2_tmp)
+                data_2_tmp = RMQIndicator.calMA(data_2_tmp)
+
+                MACD_2 = data_2_tmp["MACD"][59:]
+                DIF_2 = data_2_tmp["DIF"][59:]
+                MA_5_2 = data_2_tmp["MA_5"][59:]
+                MA_10_2 = data_2_tmp["MA_10"][59:]
+                MA_60_2 = data_2_tmp["MA_60"][59:]
+                close_2 = data_2_tmp["close"][59:]
+
+                if (MACD_2.isna().any() or DIF_2.isna().any() or MA_5_2.isna().any()
+                        or MA_10_2.isna().any() or MA_60_2.isna().any() or close_2.isna().any()):
+                    continue  # 数据NaN，跳过
+            else:
+                continue  # 60.csv 越界，跳过
+        else:
+            continue  # 无匹配日期或小时，跳过
+
+        # # 如果通过所有越界检查，将数据存入字典  标签存入列表
+        temp_data_dict['MACD_0'].append(MACD_0)
+        temp_data_dict['DIF_0'].append(DIF_0)
+        temp_data_dict['MA_5_0'].append(MA_5_0)
+        temp_data_dict['MA_10_0'].append(MA_10_0)
+        temp_data_dict['MA_60_0'].append(MA_60_0)
+        temp_data_dict['close_0'].append(close_0)
+        temp_data_dict['MACD_1'].append(MACD_1)
+        temp_data_dict['DIF_1'].append(DIF_1)
+        temp_data_dict['MA_5_1'].append(MA_5_1)
+        temp_data_dict['MA_10_1'].append(MA_10_1)
+        temp_data_dict['MA_60_1'].append(MA_60_1)
+        temp_data_dict['close_1'].append(close_1)
+        temp_data_dict['MACD_2'].append(MACD_2)
+        temp_data_dict['DIF_2'].append(DIF_2)
+        temp_data_dict['MA_5_2'].append(MA_5_2)
+        temp_data_dict['MA_10_2'].append(MA_10_2)
+        temp_data_dict['MA_60_2'].append(MA_60_2)
         temp_data_dict['close_2'].append(close_2)
 
         temp_label_list.append(labeled_row['label'])
@@ -559,11 +780,72 @@ def tea_radical_nature_feature2(flag, name, time_point_step, limit_length, handl
     )
 
 
+def fuzzy_nature_feature1(flag, name, time_point_step, limit_length, handle_uneven_samples, strategy_name,
+                          p2t_name, label_name):
+    allStockCode = pd.read_csv("./QuantData/a800_stocks.csv")
+
+    allStockCode_shuffled = allStockCode.sample(frac=1, random_state=42).reset_index(drop=True)
+
+    if flag == "_TRAIN":
+        df_dataset = allStockCode_shuffled.iloc[:500]
+    else:
+        df_dataset = allStockCode_shuffled.iloc[500:]
+
+    # 创建一个字典来存储匹配的结果
+    temp_data_dict = {'MACD_0': [], 'DIF_0': [], 'MA_5_0': [], 'MA_10_0': [], 'MA_60_0': [], 'close_0': [],
+                      'MACD_1': [], 'DIF_1': [], 'MA_5_1': [], 'MA_10_1': [], 'MA_60_1': [], 'close_1': [],
+                      'MACD_2': [], 'DIF_2': [], 'MA_5_2': [], 'MA_10_2': [], 'MA_60_2': [], 'close_2': []
+                      }
+    temp_label_list = []
+
+    for index, row in df_dataset.iterrows():
+        assetList = RMQAsset.asset_generator(row['code'][3:],
+                                             row['code_name'],
+                                             ['30', '60', 'd'],
+                                             'stock',
+                                             1, 'A')
+        # 准备训练数据
+        if p2t_name == "point_to_ts1":
+            fuzzy_nature_point_to_ts1(assetList, temp_data_dict, temp_label_list, time_point_step,
+                                      handle_uneven_samples,
+                                      strategy_name, label_name)
+
+        if limit_length == 0:  # 全数据
+            pass
+        elif len(temp_label_list) >= limit_length:  # 只要部分数据
+            break
+    # 循环结束后，字典转为DataFrame
+    result_df = pd.DataFrame(temp_data_dict)
+    # 将列表转换成 Series
+    result_series = pd.Series(temp_label_list)
+    """
+    # 创建一个符合要求的 DataFrame
+    data = {
+        "feature1": [pd.Series([1, 2, 3, 4]), pd.Series([5, 6, 7, 8])],
+        "feature2": [pd.Series([4, 5, 6, 7]), pd.Series([1, 2, 3, 4])]
+    }
+    """
+    # 写入 ts 文件
+    write_dataframe_to_tsfile(
+        data=result_df,
+        path="./QuantData/trade_point_backTest_ts",  # 保存文件的路径
+        problem_name="a800_" + str(time_point_step) + "step_" + name + "limit",  # 问题名称
+        class_label=["1", "2", "3", "4"],  # 是否有 class_label
+        class_value_list=result_series,  # 是否有 class_label
+        equal_length=True,
+        fold=flag
+    )
+
+
 def prepare_dataset(flag, name, time_point_step, limit_length, handle_uneven_samples, strategy_name, feature_plan_name,
                     p2t_name, label_name):
     if feature_plan_name == 'feature1':
-        tea_radical_nature_feature1(flag, name, time_point_step, limit_length, handle_uneven_samples, strategy_name,
-                                    p2t_name, label_name)
+        if strategy_name == 'tea_radical_nature':
+            tea_radical_nature_feature1(flag, name, time_point_step, limit_length, handle_uneven_samples, strategy_name,
+                                        p2t_name, label_name)
+        elif strategy_name == 'fuzzy_nature':
+            fuzzy_nature_feature1(flag, name, time_point_step, limit_length, handle_uneven_samples, strategy_name,
+                                  p2t_name, label_name)
     elif feature_plan_name == 'feature2':
         tea_radical_nature_feature2(flag, name, time_point_step, limit_length, handle_uneven_samples, strategy_name,
                                     p2t_name, label_name)

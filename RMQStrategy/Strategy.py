@@ -153,5 +153,14 @@ def strategy(asset, strategy_result, IEMultiLevel, strategy_name):
                                  windowDF_calIndic,
                                  barEntity.bar_num - 1,  # 减了个实时价格，250变249，所以这里长度也跟着变成249
                                  strategy_result)
+    elif strategy_name == "fuzzy_nature":
+        # ride-mood策略
+        # 2%移动止损
+        # 增强版趋势跟随策略，反指率高达90%，经常小亏，偶尔大赚
+        RMQSNature.strategy_fuzzy(positionEntity,
+                                  indicatorEntity,
+                                  windowDF_calIndic,
+                                  barEntity.bar_num - 1,  # 减了个实时价格，250变249，所以这里长度也跟着变成249
+                                  strategy_result)
     else:
         print("未指定策略")

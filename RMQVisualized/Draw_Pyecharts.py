@@ -362,7 +362,7 @@ def draw_pyecharts(dataFrame, tplList, code, time_level):
                           "_" + str(time_level) + ".html")
 
 
-def show_mix(assetList):
+def show_mix(assetList, strategy_name):
     # 读取价格数据
     filePath = (RMTTools.read_config("RMQData", "backtest_bar")
                 + "bar_"
@@ -376,7 +376,7 @@ def show_mix(assetList):
     """
     自己挑想要的级别
     """
-    item = 'trade_point_backtest_' + "tea_radical_nature"
+    item = 'trade_point_backtest_' + strategy_name
     tpl_filepath = RMTTools.read_config("RMQData", item)
     df_tpl_5 = pd.read_csv(tpl_filepath + assetList[0].assetsMarket + '_' + assetList[0].assetsCode + "_" +
                            assetList[0].barEntity.timeLevel + ".csv")
@@ -424,7 +424,7 @@ def show_mix(assetList):
     draw_pyecharts(df, tpl_list, assetList[0].assetsCode, "15")
 
 
-def show_multi_concat(assetList, flag):
+def show_multi_concat(assetList, strategy_name, flag):
     # 读取日线数据
     filePath = (RMTTools.read_config("RMQData", "backtest_bar")
                 + "bar_"
@@ -438,7 +438,7 @@ def show_multi_concat(assetList, flag):
     多级别合并绘画，改用这个时，改59行判断时间代码
     """
     # 使用nature_quant过滤交易点后，再次可视化交易点位
-    item = 'trade_point_backtest_' + "tea_radical_nature"
+    item = 'trade_point_backtest_' + strategy_name
     df_labeled = pd.read_csv((RMTTools.read_config("RMQData", item)
                               + assetList[0].assetsMarket
                               + '_'
@@ -465,8 +465,8 @@ def show_multi_concat(assetList, flag):
     draw_pyecharts(df_price, tpl_list, assetList[0].assetsCode, flag)
 
 
-def show_single(asset, flag):
-    # 读取日线数据
+def show_single(asset, strategy_name, flag):
+    # 读取数据
     filePath = (RMTTools.read_config("RMQData", "backtest_bar")
                 + "bar_"
                 + asset.assetsMarket
@@ -479,7 +479,7 @@ def show_single(asset, flag):
     """
     各级别但单独绘画，改用这个时，改59行判断时间代码
     """
-    item = 'trade_point_backtest_' + "tea_radical_nature"
+    item = 'trade_point_backtest_' + strategy_name
     tpl_filepath = RMTTools.read_config("RMQData", item)
     df_tpl = pd.read_csv(tpl_filepath + asset.assetsMarket + '_' + asset.assetsCode + str(flag) + ".csv")
     # 后面split_data_part函数画交易点位时，是对比交易点日期和 df的日期，同一天几个信号只会比较一次，因此交易点只保留第一个日期。下面是去重
@@ -501,17 +501,17 @@ def show_single(asset, flag):
     draw_pyecharts(df_price, tpl_list, asset.assetsCode, str(flag))
 
 
-def show(assetList, method_name, flag):
+def show(assetList, method_name, strategy_name, flag):
     if method_name == "mix":
-        show_mix(assetList)
+        show_mix(assetList, strategy_name)
     elif method_name == "multi_concat":
-        show_multi_concat(assetList, flag)
+        show_multi_concat(assetList, strategy_name, flag)
     elif method_name == "single":
         for asset in assetList:
             if flag:  # flag不是None
-                show_single(asset, "_" + asset.barEntity.timeLevel + str(flag))
+                show_single(asset, strategy_name, "_" + asset.barEntity.timeLevel + str(flag))
             else:
-                show_single(asset, "_" + asset.barEntity.timeLevel)
+                show_single(asset, strategy_name, "_" + asset.barEntity.timeLevel)
 
     print(assetList[0].assetsCode + "绘图完成")
 
