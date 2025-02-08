@@ -73,7 +73,7 @@ def pre_handle():
                 label3：单级别校验各自MACD、DIF是否维持趋势
                 label4：单级别校验各自MACD、DIF+40个bar内趋势
         """
-        # RMQLabel.label(assetList, "fuzzy_nature", "label1")
+        # RMQLabel.label(assetList, "tea_radical_nature", "label1")
 
         """
         画K线买卖点图
@@ -120,12 +120,12 @@ def pre_handle():
                     各级别标注交易点  "_" + asset.barEntity.timeLevel + "_label3"  此时flag是 _label2 _label3 _label4
                     fuzzy的各级别flag也有 _label1
     """
-    RMQDataset.prepare_dataset("_TRAIN", "2wTrueFuzzy", 200, 20000, True,
-                               "fuzzy_nature", "feature1", "point_to_ts1",
-                               "_label1")
-    RMQDataset.prepare_dataset("_TEST", "2wTrueFuzzy", 200, 10000, True,
-                               "fuzzy_nature", "feature1", "point_to_ts1",
-                               "_label1")
+    RMQDataset.prepare_dataset("_TRAIN", "2wTeafeature4label3_30", 200, 20000, True,
+                               "tea_radical_nature", "feature4", "point_to_ts2",
+                               "_label3")
+    RMQDataset.prepare_dataset("_TEST", "2wTeafeature4label3_30", 200, 10000, True,
+                               "tea_radical_nature", "feature4", "point_to_ts2",
+                               "_label3")
 
 
 
