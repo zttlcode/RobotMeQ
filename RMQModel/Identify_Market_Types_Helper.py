@@ -13,6 +13,7 @@ def calculate_ema(df):
     # 计算基础EMA
     df['ema20'] = df['close'].ewm(span=20, adjust=False).mean()
     df['ema50'] = df['close'].ewm(span=50, adjust=False).mean()
+    df['ema200'] = df['close'].ewm(span=200, adjust=False).mean()
 
     # 计算动态周期EMA
     volatility = df['close'].pct_change().std() * np.sqrt(252)  # 年化波动率
@@ -175,169 +176,13 @@ def calculate_volume_ma(df, periods=5):
 # ----------------- 指标计算函数 end -----------------
 
 
-# ----------------- 形态检测函数 start -----------------
-
-def find_key_points(prices, mode='peaks',
-                    min_height_ratio=0.03, min_distance=5):
-    """
-    使用科学方法检测关键峰谷点
-    :param prices: 价格序列
-    :param mode: 'peaks'检测高点，'valleys'检测低点
-    :param min_height_ratio: 最小高度比例（相对于价格范围）
-    :param min_distance: 峰谷间最小间隔
-    :return: 峰/谷索引数组
-    """
-    # 计算动态高度阈值
-    price_range = np.ptp(prices)
-    height = price_range * min_height_ratio
-
-    # 检测峰谷
-    if mode == 'peaks':
-        peaks, _ = signal.find_peaks(prices, height=height, distance=min_distance)
-        return peaks
-    else:
-        valleys, _ = signal.find_peaks(-prices, height=height, distance=min_distance)
-        return valleys
-
-
-def is_double_top(prices):
-    """简化版双顶形态检测"""
-    """检测双顶形态"""
-    peaks = find_key_points(prices, mode='peaks')
-    if len(peaks) < 2:
-        return False
-    # 第二个顶不高于第一个顶的3%
-    return abs(prices[peaks[1]] - prices[peaks[0]]) < prices[peaks[0]] * 0.03
-
-
-def is_double_bottom(prices):
-    """检测双底形态"""
-    valleys = find_key_points(prices, mode='valleys')
-    if len(valleys) < 2:
-        return False
-    # 第二个底不低于第一个底的3%
-    return abs(prices[valleys[1]] - prices[valleys[0]]) < prices[valleys[0]] * 0.03
-
-
-def is_head_shoulder(prices, is_top=True):
-    """
-    改进版头肩形态检测（支持顶/底）
-    :param prices: 价格序列（高点序列检测顶，低点序列检测底）
-    :param is_top: 是否为顶部形态
-    :return: 是否形成头肩形态
-    """
-    # 动态检测关键点
-    key_points = find_key_points(prices,
-                                       mode='peaks' if is_top else 'valleys')
-
-    if len(key_points) < 3:
-        return False
-
-    # 确定头肩位置
-    main_idx = np.argmax(prices[key_points]) if is_top else np.argmin(prices[key_points])
-    left_points = key_points[key_points < key_points[main_idx]]
-    right_points = key_points[key_points > key_points[main_idx]]
-
-    if len(left_points) < 1 or len(right_points) < 1:
-        return False
-
-    # 验证形态条件
-    left_shoulder = left_points[-1]
-    right_shoulder = right_points[0]
-    head = key_points[main_idx]
-
-    # 头部必须显著高于/低于肩部
-    if is_top:
-        valid = (prices[head] > prices[left_shoulder] * 1.03 and
-                 prices[head] > prices[right_shoulder] * 1.03)
-    else:
-        valid = (prices[head] < prices[left_shoulder] * 0.97 and
-                 prices[head] < prices[right_shoulder] * 0.97)
-
-    return valid
-
-
-def calculate_neckline(highs, lows, is_top=True):
-    """通用颈线计算（支持顶/底）"""
-    if is_top:
-        # 头肩顶：左右肩低点连线
-        left_idx = 1  # 左肩低点
-        right_idx = -2  # 右肩低点
-        y_values = lows
-    else:
-        # 头肩底：左右肩高点连线
-        left_idx = 1
-        right_idx = -2
-        y_values = highs
-
-    x = np.array([left_idx, right_idx])
-    y = np.array([y_values[left_idx], y_values[right_idx]])
-
-    # 线性回归计算颈线
-    slope, intercept = np.polyfit(x, y, 1)
-    return {
-        'slope': slope,
-        'intercept': intercept,
-        'current': slope * (len(highs) - 1) + intercept  # 当前K线位置
-    }
-
-
-def detect_price_patterns(df):
-    """动态检测所有价格形态"""
-    # 初始化与df长度相同的patterns列表
-    patterns = [None] * len(df)
-    highs = df['high'].values
-    lows = df['low'].values
-
-    # 检测顶部形态
-    high_peaks = find_key_points(highs, mode='peaks')
-    for i in range(1, len(high_peaks)):
-        window = slice(high_peaks[i - 1], high_peaks[i] + 1)
-        if is_double_top(highs[window]):
-            patterns[high_peaks[i]] = {
-                'type': 'double_top',
-                'points': high_peaks[i - 1:i + 1],
-                'neckline': calculate_neckline(highs[window], lows[window], is_top=True)
-            }
-        elif is_head_shoulder(highs[window], is_top=True):
-            patterns[high_peaks[i]] = {
-                'type': 'head_shoulder_top',
-                'points': high_peaks[i - 1:i + 1],
-                'neckline': calculate_neckline(highs[window], lows[window], is_top=True)
-            }
-
-    # 检测底部形态
-    low_valleys = find_key_points(lows, mode='valleys')
-    for i in range(1, len(low_valleys)):
-        window = slice(low_valleys[i - 1], low_valleys[i] + 1)
-        if is_double_bottom(lows[window]):
-            patterns[low_valleys[i]] = {
-                'type': 'double_bottom',
-                'points': low_valleys[i - 1:i + 1],
-                'neckline': calculate_neckline(highs[window], lows[window], is_top=False)
-            }
-        elif is_head_shoulder(lows[window], is_top=False):
-            patterns[low_valleys[i]] = {
-                'type': 'head_shoulder_bottom',
-                'points': low_valleys[i - 1:i + 1],
-                'neckline': calculate_neckline(highs[window], lows[window], is_top=False)
-            }
-
-    # 将patterns列表转换为Series
-    df['patterns'] = pd.Series(patterns, index=df.index)
-    return df
-
-# ----------------- 形态检测函数 end -----------------
-
-
 # ----------------- 趋势辅助函数 start -----------------
-def get_weekly_ema50_direction(df):
+def get_weekly_ema5_direction(df):
     """获取周线EMA50方向（需输入周线数据）"""
     # 此处需要周线级别数据，假设有weekly_df变量
-    if 'weekly_ema50' not in df.columns:
-        weekly_df = df.resample('W').last()  # 将时间序列数据 df 按照每周进行分组。对每个周分组，提取该分组中的最后一行数据。
-        weekly_df['ema50'] = weekly_df['close'].ewm(span=50).mean()
-    return 1 if weekly_df['ema50'].iloc[-1] > weekly_df['ema50'].iloc[-2] else -1
+    weekly_df = df.resample('W').last()  # 将时间序列数据 df 按照每周进行分组。对每个周分组，提取该分组中的最后一行数据。
+    weekly_df['ema5'] = weekly_df['close'].ewm(span=5).mean()
+    return 1 if weekly_df['ema5'].iloc[-1] > weekly_df['ema5'].iloc[-2] else -1
 
 
 def get_h4_fib_level(df):
@@ -351,7 +196,7 @@ def get_h4_fib_level(df):
 
 def is_valid_uptrend(highs, lows):
     """检查是否形成更高的高点和低点"""
-    for i in range(2, len(highs)):
+    for i in range(1, len(highs)):
         if not (highs[i] > highs[i - 1] and lows[i] > lows[i - 1]):
             return False
     return True
@@ -359,7 +204,7 @@ def is_valid_uptrend(highs, lows):
 
 def is_valid_downtrend(highs, lows):
     """检查是否形成更低的高点和低点"""
-    for i in range(2, len(highs)):
+    for i in range(1, len(highs)):
         if not (highs[i] < highs[i - 1] and lows[i] < lows[i - 1]):
             return False
     return True
@@ -507,13 +352,20 @@ def check_divergence(df, lookback=20):
 def check_extreme_sentiment(df):
     """检测市场情绪极端（RSI超买/超卖）"""
     rsi = df['rsi'].iloc[-1]
-    mfi = df['mfi'].iloc[-1]
+    # mfi = df['mfi'].iloc[-1]
 
     # 顶部反转条件
-    if (rsi > 70) and (mfi > 80):
+    # if (rsi > 70) and (mfi > 80):
+    #     return True
+    # # 底部反转条件
+    # elif (rsi < 30) and (mfi < 20):
+    #     return True
+
+    # 顶部反转条件
+    if rsi > 70:
         return True
     # 底部反转条件
-    elif (rsi < 30) and (mfi < 20):
+    elif rsi < 30:
         return True
     return False
 
@@ -545,6 +397,157 @@ def check_stop_loss_risk(df, stop_percent):
         risk = (current_price - pattern_low * (1 - stop_percent)) / current_price
     return risk > 0.1  # 止损空间过大时触发风险控制
 
+
+def find_key_points(prices, mode='peaks',
+                    min_height_ratio=0.03, min_distance=5):
+    """
+    使用科学方法检测关键峰谷点
+    :param prices: 价格序列
+    :param mode: 'peaks'检测高点，'valleys'检测低点
+    :param min_height_ratio: 最小高度比例（相对于价格范围）
+    :param min_distance: 峰谷间最小间隔
+    :return: 峰/谷索引数组
+    """
+    # 计算动态高度阈值
+    price_range = np.ptp(prices)
+    height = price_range * min_height_ratio
+
+    # 检测峰谷
+    if mode == 'peaks':
+        peaks, _ = signal.find_peaks(prices, height=height, distance=min_distance)
+        return peaks
+    else:
+        valleys, _ = signal.find_peaks(-prices, height=height, distance=min_distance)
+        return valleys
+
+
+def is_double_top(prices):
+    """简化版双顶形态检测"""
+    """检测双顶形态"""
+    peaks = find_key_points(prices, mode='peaks')
+    if len(peaks) < 2:
+        return False
+    # 第二个顶不高于第一个顶的3%
+    # return abs(prices[peaks[1]] - prices[peaks[0]]) < prices[peaks[0]] * 0.05
+    return prices[peaks[1]] < prices[peaks[0]] * 1.08
+
+
+def is_double_bottom(prices):
+    """检测双底形态"""
+    valleys = find_key_points(prices, mode='valleys')
+    if len(valleys) < 2:
+        return False
+    # 第二个底不低于第一个底的3%
+    return abs(prices[valleys[1]] - prices[valleys[0]]) < prices[valleys[0]] * 0.05
+
+
+def is_head_shoulder(prices, is_top=True):
+    """
+    改进版头肩形态检测（支持顶/底）
+    :param prices: 价格序列（高点序列检测顶，低点序列检测底）
+    :param is_top: 是否为顶部形态
+    :return: 是否形成头肩形态
+    """
+    # 动态检测关键点
+    key_points = find_key_points(prices,
+                                       mode='peaks' if is_top else 'valleys')
+
+    if len(key_points) < 3:
+        return False
+
+    # 确定头肩位置
+    main_idx = np.argmax(prices[key_points]) if is_top else np.argmin(prices[key_points])
+    left_points = key_points[key_points < key_points[main_idx]]
+    right_points = key_points[key_points > key_points[main_idx]]
+
+    if len(left_points) < 1 or len(right_points) < 1:
+        return False
+
+    # 验证形态条件
+    left_shoulder = left_points[-1]
+    right_shoulder = right_points[0]
+    head = key_points[main_idx]
+
+    # 头部必须显著高于/低于肩部
+    if is_top:
+        valid = (prices[head] > prices[left_shoulder] * 1.03 and
+                 prices[head] > prices[right_shoulder] * 1.03)
+    else:
+        valid = (prices[head] < prices[left_shoulder] * 0.97 and
+                 prices[head] < prices[right_shoulder] * 0.97)
+
+    return valid
+
+
+def calculate_neckline(highs, lows, is_top=True):
+    """通用颈线计算（支持顶/底）"""
+    if is_top:
+        # 头肩顶：左右肩低点连线
+        left_idx = 1  # 左肩低点
+        right_idx = -2  # 右肩低点
+        y_values = lows
+    else:
+        # 头肩底：左右肩高点连线
+        left_idx = 1
+        right_idx = -2
+        y_values = highs
+
+    x = np.array([left_idx, right_idx])
+    y = np.array([y_values[left_idx], y_values[right_idx]])
+
+    # 线性回归计算颈线
+    slope, intercept = np.polyfit(x, y, 1)
+    return {
+        'slope': slope,
+        'intercept': intercept,
+        'current': slope * (len(lows if is_top else highs) - 1) + intercept  # 当前K线位置
+    }
+
+
+def detect_price_patterns(df):
+    """动态检测所有价格形态"""
+    # 初始化与df长度相同的patterns列表
+    patterns = [None] * len(df)
+    highs = df['high'].values
+    lows = df['low'].values
+
+    # 检测顶部形态
+    high_peaks = find_key_points(highs, mode='peaks')
+    for i in range(1, len(high_peaks)):
+        window = slice(high_peaks[i - 1], high_peaks[i] + 1)
+        if is_double_top(highs[window]):
+            patterns[high_peaks[i]] = {
+                'type': 'double_top',
+                'points': high_peaks[i - 1:i + 1],
+                'neckline': calculate_neckline(highs[window], lows[window], is_top=True)
+            }
+        elif is_head_shoulder(highs[window], is_top=True):
+            patterns[high_peaks[i]] = {
+                'type': 'head_shoulder_top',
+                'points': high_peaks[i - 1:i + 1],
+                'neckline': calculate_neckline(highs[window], lows[window], is_top=True)
+            }
+
+    # 检测底部形态
+    low_valleys = find_key_points(lows, mode='valleys')
+    for i in range(1, len(low_valleys)):
+        window = slice(low_valleys[i - 1], low_valleys[i] + 1)
+        if is_double_bottom(lows[window]):
+            patterns[low_valleys[i]] = {
+                'type': 'double_bottom',
+                'points': low_valleys[i - 1:i + 1],
+                'neckline': calculate_neckline(highs[window], lows[window], is_top=False)
+            }
+        elif is_head_shoulder(lows[window], is_top=False):
+            patterns[low_valleys[i]] = {
+                'type': 'head_shoulder_bottom',
+                'points': low_valleys[i - 1:i + 1],
+                'neckline': calculate_neckline(highs[window], lows[window], is_top=False)
+            }
+
+    # 将patterns列表转换为Series
+    df['patterns'] = pd.Series(patterns, index=df.index)
+    return df
 
 # ----------------- 反转辅助函数 end -----------------
 
