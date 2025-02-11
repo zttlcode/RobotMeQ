@@ -5,9 +5,6 @@ from RMQTool import Tools as RMTTools
 
 
 def label_market_condition(df):
-    # 计算所有指标
-    df = IMTHelper.calculate_indicators(df)
-
     # 计算原始概率
     raw_trend_tmp = calculate_trend_probability(df)
     raw_range = calculate_range_probability(df)
@@ -42,7 +39,7 @@ def label_market_condition(df):
     weights = {
         'trend': 1,
         'range': 1,
-        'reversal': 0.7,  # 固定权重
+        'reversal': 1,  # 固定权重
         'breakout': 1
     }
 
@@ -103,9 +100,9 @@ def calculate_trend_probability(df):
     adx = df['adx'].iloc[-1]
     plus_di = df['plus_di'].iloc[-1]
     minus_di = df['minus_di'].iloc[-1]
+    ema10 = df['ema10'].iloc[-1]
     ema20 = df['ema20'].iloc[-1]
-    ema50 = df['ema50'].iloc[-1]
-    ema200 = df['ema200'].iloc[-1]
+    ema60 = df['ema60'].iloc[-1]
     price = df['close'].iloc[-1]
     highs = df['high'].values[-3:]  # 30 我改成3了
     lows = df['low'].values[-3:]  # 30 我改成3了
@@ -118,7 +115,7 @@ def calculate_trend_probability(df):
     up_adx_condition = adx > adx_threshold and plus_di > minus_di
 
     # 条件2：均线多头排列
-    up_ma_condition = (ema200 < ema50 < ema20 < price)
+    up_ma_condition = (ema60 < ema20 < ema10 < price)
 
     # 条件3：价格结构有效性
     up_price_structure = IMTHelper.is_valid_uptrend(highs, lows) if up_ma_condition else False
@@ -137,7 +134,7 @@ def calculate_trend_probability(df):
     down_adx_condition = adx > adx_threshold and minus_di > plus_di
 
     # 条件2：均线空头排列
-    down_ma_condition = (ema200 > ema50 > ema20 > price)
+    down_ma_condition = (ema60 > ema20 > ema10 > price)
 
     # 条件3：价格结构有效性
     down_price_structure = IMTHelper.is_valid_downtrend(highs, lows) if down_ma_condition else False
@@ -272,8 +269,13 @@ def calculate_range_probability(df):
     obv_condition = abs(obv_slope) < 0.01  # OBV变动斜率小于1%
 
     # 条件6：成交量稳定
-    volume_ma_ratio = df['volume'].iloc[-5:].mean() / df['volume'].rolling(20).mean().iloc[-1]
-    volume_condition = 0.8 < volume_ma_ratio < 1.2
+    v5 = df['volume'].iloc[-5:].mean()
+    v20 = df['volume'].rolling(20).mean().iloc[-1]
+    if v5 != 0 and v20 != 0:
+        volume_ma_ratio = v5 / v20
+        volume_condition = 0.8 < volume_ma_ratio < 1.2
+    else:
+        volume_condition = False
 
     # ================== 概率综合计算 ==================
     # 基础得分
@@ -322,12 +324,13 @@ def calculate_reversal_probability(df):
     """
     # 基础参数
     reversal_prob = 0.0
-    volume_multiplier = 2.0  # 成交量激增倍数
+    volume_multiplier = 1.5  # 成交量激增倍数
     stop_loss_percent = 0.015  # 止损位偏移1.5%
 
     # ================== 三重验证核心条件 ==================
     # 条件1：形态突破验证
-    # pattern_break = IMTHelper.check_pattern_break(df)  双顶/底 头肩顶/底 太少见，放弃了，下面相关的都注释掉
+    pattern_break = IMTHelper.check_pattern_break(df)
+    # 双顶/底 头肩顶/底 太少见，放弃了，下面相关的都注释掉  后来把指标计算放在循环标注之前,效果好很多,就放开了注释,沿用之前的
 
     # 条件2：量价背离验证
     divergence = IMTHelper.check_divergence(df)
@@ -347,14 +350,14 @@ def calculate_reversal_probability(df):
 
     # ================== 概率综合计算 ==================
     # 三重验证基础分（必须同时满足）
-    # if pattern_break['confirmed'] and divergence and sentiment:
-    #     reversal_prob += 0.6
-    # elif pattern_break['confirmed'] and (divergence or sentiment):
-    #     reversal_prob += 0.4
-    if divergence and sentiment:
+    if pattern_break['confirmed'] and divergence and sentiment:
         reversal_prob += 0.6
-    elif divergence or sentiment:
+    elif pattern_break['confirmed'] and (divergence or sentiment):
         reversal_prob += 0.4
+    # if divergence and sentiment:
+    #     reversal_prob += 0.6
+    # elif divergence or sentiment:
+    #     reversal_prob += 0.4
 
     # 辅助条件加分
     condition_weights = {
@@ -370,15 +373,15 @@ def calculate_reversal_probability(df):
         reversal_prob += condition_weights['volatility']
 
     # 形态强度调整
-    # if pattern_break['confirmed']:
-    #     pattern_score = {
-    #         'head_shoulder_top': 1.0,
-    #         'head_shoulder_bottom': 1.0,
-    #         'double_top': 0.8,
-    #         'double_bottom': 0.8,
-    #         'wedge': 0.7
-    #     }.get(pattern_break['pattern_type'], 0.5)
-    #     reversal_prob *= pattern_score
+    if pattern_break['confirmed']:
+        pattern_score = {
+            'head_shoulder_top': 1.0,
+            'head_shoulder_bottom': 1.0,
+            'double_top': 0.8,
+            'double_bottom': 0.8,
+            'wedge': 0.7
+        }.get(pattern_break['pattern_type'], 0.5)
+        reversal_prob *= pattern_score
 
     # 止损空间惩罚项
     # if IMTHelper.check_stop_loss_risk(df, stop_loss_percent):
@@ -493,31 +496,6 @@ def calculate_breakout_probability(df):
     }
 
 
-def detect_market_condition(df):
-    df = IMTHelper.calculate_indicators(df)
-    """ 识别市场类型 """
-    latest = df.iloc[-1]  # 取最新数据
-    trend_strength = latest['adx']
-
-    # 1️⃣ 趋势行情（ADX > 25 且 MACD 强势）
-    if trend_strength > 25 and latest['macd'] > latest['signal']:
-        return "trend"
-
-    # 2️⃣ 震荡行情（ADX < 20 且 RSI 介于 30-70）
-    elif trend_strength < 20 and 30 < latest['rsi'] < 70:
-        return "range"
-
-    # 3️⃣ 突破行情（价格突破布林带上轨或下轨，成交量放大）
-    elif latest['close'] > latest['boll_upper'] or latest['close'] < latest['boll_lower']:
-        return "breakout"
-
-    # 4️⃣ 反转行情（MACD 死叉/金叉，ADX 下降）
-    elif latest['macd'] < latest['signal'] and df.iloc[-2]['adx'] > latest['adx']:
-        return "reversal"
-
-    # 默认震荡
-    return "range"
-
 if __name__ == '__main__':
     allStockCode = pd.read_csv("../QuantData/a800_stocks.csv")
     for index, row in allStockCode.iterrows():
@@ -537,18 +515,20 @@ if __name__ == '__main__':
                                     + asset.barEntity.timeLevel
                                     + '.csv')
             df = pd.read_csv(backtest_df_filePath, encoding='utf-8', parse_dates=['time'], index_col="time")
+            # 计算所有指标
+            df = IMTHelper.calculate_indicators(df)
             # 标注每一段行情
             labels = []
             # for i in range(len(df) - 250 + 1):
-            for i in range(0, len(df) - 250 + 1, 3):
-                window_df = df.iloc[i:i + 250].copy()
-                # label = label_market_condition(window_df)
-                # max_key = max(label, key=label.get)
-                # max_value = label[max_key]
-                # print(f"最大键: {max_key}, {max_value}, {window_df['close'].iloc[-1]}")
-                print(detect_market_condition(window_df), window_df['close'].iloc[-1])
-                # break
+            for i in range(0, len(df) - 160 + 1, 1):
+                window_df = df.iloc[i:i + 160].copy()
+                label = label_market_condition(window_df)
+                max_key = max(label, key=label.get)
+                max_value = label[max_key]
+                print(f"最大键: {max_key}, {max_value}, {window_df['close'].iloc[-1]}")
+                #
                 #labels.append(label)
         print(assetList[0].assetsCode, "结束")
+        break
     # 将标注结果添加到DataFrame
     #df['label'] = pd.Series(labels, index=df.index[149:])

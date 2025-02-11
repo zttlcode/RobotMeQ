@@ -30,6 +30,7 @@
 
         如果符合 反转 的标准（如：MACD 死叉/金叉，价格触及支撑位反转），标注为“反转”。
 """
+
 def select_trading_strategy(market_condition):
     """ 根据市场行情选择交易策略 """
     if market_condition == "trend":

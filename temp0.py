@@ -133,4 +133,11 @@
 # delete_unmatched_files(backtest_folder, valid_codes)
 
 
+import warnings
+warnings.simplefilter('error', RuntimeWarning)
 
+try:
+    ...
+except RuntimeWarning as e:
+    print(111)
+    print(f"Caught warning: {e}")

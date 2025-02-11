@@ -11,9 +11,9 @@ def calculate_ema(df):
     包含EMA20、EMA50及动态周期EMA
     """
     # 计算基础EMA
+    df['ema10'] = df['close'].ewm(span=10, adjust=False).mean()
     df['ema20'] = df['close'].ewm(span=20, adjust=False).mean()
-    df['ema50'] = df['close'].ewm(span=50, adjust=False).mean()
-    df['ema200'] = df['close'].ewm(span=200, adjust=False).mean()
+    df['ema60'] = df['close'].ewm(span=60, adjust=False).mean()
 
     # 计算动态周期EMA
     volatility = df['close'].pct_change().std() * np.sqrt(252)  # 年化波动率
@@ -216,10 +216,10 @@ def check_pullback_trend(df, trend_dir, fib_threshold, atr_threshold):
     recent_low = df['low'].iloc[-5:].min()
 
     if trend_dir == 1:  # 上涨趋势中的回调
-        pullback_size = (recent_high - df['low'].iloc[-1]) / (recent_high - recent_low)
+        pullback_size = (recent_high - df['low'].iloc[-1]) / (recent_high - recent_low + 1e-8)    # 防止除零
         return pullback_size < fib_threshold and (recent_high - df['low'].iloc[-1]) < atr_threshold
     else:  # 下跌趋势中的反弹
-        rebound_size = (df['high'].iloc[-1] - recent_low) / (recent_high - recent_low)
+        rebound_size = (df['high'].iloc[-1] - recent_low) / (recent_high - recent_low + 1e-8)    # 防止除零
         return rebound_size < fib_threshold and (df['high'].iloc[-1] - recent_low) < atr_threshold
 
 
@@ -373,12 +373,12 @@ def check_extreme_sentiment(df):
 def check_ma_crossover(df):
     """检测均线交叉（趋势反转信号）"""
     ema20 = df['ema20'].iloc[-1]
-    ema50 = df['ema50'].iloc[-1]
+    ema60 = df['ema60'].iloc[-1]
     # 死亡交叉（顶部反转）
-    if df['close'].iloc[-5:].max() > ema20 and ema20 < ema50:
+    if df['close'].iloc[-5:].max() > ema20 and ema20 < ema60:
         return True
     # 黄金交叉（底部反转）
-    elif df['close'].iloc[-5:].min() < ema20 and ema20 > ema50:
+    elif df['close'].iloc[-5:].min() < ema20 and ema20 > ema60:
         return True
     return False
 
@@ -600,11 +600,11 @@ def calculate_indicators(df):
 def dynamic_ma_period(volatility):
     """动态调整均线周期"""
     if volatility < 0.1:
-        return 20
+        return 10
     elif volatility < 0.3:
-        return 50
+        return 20
     else:
-        return 200
+        return 60
 
 
 def sigmoid(x, center=0.5, steepness=10):
