@@ -16,9 +16,9 @@ def calculate_ema(df):
     df['ema60'] = df['close'].ewm(span=60, adjust=False).mean()
 
     # 计算动态周期EMA
-    volatility = df['close'].pct_change().std() * np.sqrt(252)  # 年化波动率
-    dynamic_period = dynamic_ma_period(volatility)
-    df[f'ema{dynamic_period}'] = df['close'].ewm(span=dynamic_period, adjust=False).mean()
+    # volatility = df['close'].pct_change().std() * np.sqrt(252)  # 年化波动率
+    # dynamic_period = dynamic_ma_period(volatility)
+    # df[f'ema{dynamic_period}'] = df['close'].ewm(span=dynamic_period, adjust=False).mean()
 
     return df
 
@@ -171,6 +171,16 @@ def calculate_mfi(df, period=14):
 def calculate_volume_ma(df, periods=5):
     """计算成交量移动平均"""
     df[f'volume_ma{periods}'] = df['volume'].rolling(periods).mean()
+    return df
+
+
+def calculate_kdj(df, n=9, m1=3, m2=3):
+    low_list = df['low'].rolling(n).min()
+    high_list = df['high'].rolling(n).max()
+    rsv = (df['close'] - low_list) / (high_list - low_list) * 100
+    df['k'] = rsv.ewm(alpha=1 / m1).mean()
+    df['d'] = df['k'].ewm(alpha=1 / m2).mean()
+    df['j'] = 3 * df['k'] - 2 * df['d']
     return df
 
 # ----------------- 指标计算函数 end -----------------

@@ -520,8 +520,8 @@ if __name__ == '__main__':
             # 标注每一段行情
             labels = []
             # for i in range(len(df) - 250 + 1):
-            for i in range(0, len(df) - 160 + 1, 1):
-                window_df = df.iloc[i:i + 160].copy()
+            for i in range(0, len(df) - 120 + 1, 1):
+                window_df = df.iloc[i:i + 120].copy()
                 label = label_market_condition(window_df)
                 max_key = max(label, key=label.get)
                 max_value = label[max_key]
@@ -531,4 +531,9 @@ if __name__ == '__main__':
         print(assetList[0].assetsCode, "结束")
         break
     # 将标注结果添加到DataFrame
-    #df['label'] = pd.Series(labels, index=df.index[149:])
+    # df['label'] = pd.Series(labels, index=df.index[149:])
+    """
+    行情转换逻辑检验：
+        禁止出现「趋势→趋势」连续标注（需有中间状态）
+        突破后必须跟随趋势或反转
+    """
