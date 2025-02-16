@@ -59,7 +59,7 @@ def pre_handle():
         strategy_name : tea_radical_nature  fuzzy_nature
         """
         # Run.run_back_test(assetList, "tea_radical_nature")  # 0:18:27.437876 旧回测，转tick，运行时长
-        # Run.run_back_test_no_tick(assetList, "fuzzy_nature")  # 0:02:29.502122 新回测，不转tick
+        Run.run_back_test_no_tick(assetList, "fuzzy_nature")  # 0:02:29.502122 新回测，不转tick
 
         # 各级别交易点拼接在一起
         # concat_trade_point(assetList, "tea_radical_nature")

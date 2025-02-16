@@ -1,4 +1,5 @@
 import pandas as pd
+import os
 import Identify_Market_Types_Helper as IMTHelper
 import RMQData.Asset as RMQAsset
 from RMQTool import Tools as RMTTools
@@ -52,7 +53,7 @@ def label_market_condition(df):
     }
 
     # 风险控制检查（新增）
-    IMTHelper.risk_control_check(weighted_probs)
+    # IMTHelper.risk_control_check(weighted_probs)
     # 归一化处理
     total = sum(weighted_probs.values()) + 1e-8  # 防止除零
     # 最终归一化概率
@@ -517,19 +518,37 @@ if __name__ == '__main__':
             df = pd.read_csv(backtest_df_filePath, encoding='utf-8', parse_dates=['time'], index_col="time")
             # 计算所有指标
             df = IMTHelper.calculate_indicators(df)
-            # 标注每一段行情
-            labels = []
+
+            market_condition_list = []
             # for i in range(len(df) - 250 + 1):
             for i in range(0, len(df) - 120 + 1, 1):
                 window_df = df.iloc[i:i + 120].copy()
                 label = label_market_condition(window_df)
                 max_key = max(label, key=label.get)
                 max_value = label[max_key]
-                print(f"最大键: {max_key}, {max_value}, {window_df['close'].iloc[-1]}")
-                #
-                #labels.append(label)
+                # print(f"最大键: {max_key}, {max_value}, {window_df['close'].iloc[-1]}")
+
+                # 回测所有行情分类
+                market_condition = [window_df.index[-1].strftime('%Y-%m-%d'),
+                                    window_df['close'].iloc[-1],
+                                    max_key, label[max_key]]
+                market_condition_list.append(market_condition)
+
+            if market_condition_list:  # 不为空，则保存
+                df_mcl = pd.DataFrame(market_condition_list)
+                df_mcl.columns = ['time', 'price', 'market_condition', 'probability']
+                item = 'market_condition_backtest'
+                directory = RMTTools.read_config("RMQData", item)
+                os.makedirs(directory, exist_ok=True)
+                df_mcl.to_csv(directory
+                              + asset.assetsMarket
+                              + "_"
+                              + asset.indicatorEntity.IE_assetsCode
+                              + "_"
+                              + asset.indicatorEntity.IE_timeLevel
+                              + ".csv", index=False)
+
         print(assetList[0].assetsCode, "结束")
-        break
     # 将标注结果添加到DataFrame
     # df['label'] = pd.Series(labels, index=df.index[149:])
     """
