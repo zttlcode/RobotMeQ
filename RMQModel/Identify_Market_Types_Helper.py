@@ -604,6 +604,7 @@ def calculate_indicators(df):
     df = calculate_mfi(df)
     df = calculate_volume_ma(df, periods=5)
     df = detect_price_patterns(df)
+
     return df
 
 

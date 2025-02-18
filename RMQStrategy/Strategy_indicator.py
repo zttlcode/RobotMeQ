@@ -111,6 +111,19 @@ class TradingStrategies:
             print(f"[反转卖出] {last_row.name} | 价格: {last_row['close']:.2f} | OBV: {last_row['obv'] / 1e6:.2f}M")
 
 
+def calculate_indicators(df):
+    """整合所有指标计算"""
+    df = IMTHelper.calculate_ema(df)
+    df = IMTHelper.calculate_macd(df)
+    df = IMTHelper.calculate_atr(df)
+    df = IMTHelper.calculate_bollinger_bands(df)
+    df = IMTHelper.calculate_rsi(df)
+    df = IMTHelper.calculate_obv(df)
+    df = IMTHelper.calculate_kdj(df)
+
+    return df
+
+
 def plot_strategy(df):
     plt.figure(figsize=(16, 8))
     plt.plot(df['close'], label='Price')
@@ -128,7 +141,7 @@ if __name__ == "__main__":
     for index, row in allStockCode.iterrows():
         assetList = RMQAsset.asset_generator(row['code'][3:],
                                              row['code_name'],
-                                             ['30'],
+                                             ['60'],
                                              'stock',
                                              1, 'A')
         for asset in assetList:
@@ -143,13 +156,7 @@ if __name__ == "__main__":
                                     + '.csv')
             df = pd.read_csv(backtest_df_filePath, encoding='utf-8', parse_dates=['time'], index_col="time")
 
-            df = IMTHelper.calculate_ema(df)
-            df = IMTHelper.calculate_macd(df)
-            df = IMTHelper.calculate_atr(df)
-            df = IMTHelper.calculate_bollinger_bands(df)
-            df = IMTHelper.calculate_rsi(df)
-            df = IMTHelper.calculate_obv(df)
-            df = IMTHelper.calculate_kdj(df)
+            df = calculate_indicators(df)
 
             for i in range(0, len(df) - 120 + 1, 1):
                 window_df = df.iloc[i:i + 120].copy()
@@ -159,8 +166,8 @@ if __name__ == "__main__":
 
                 # 执行不同策略（根据实际行情类型调用）
                 # strategies.trend_strategy()
-                # strategies.oscillation_strategy()
+                strategies.oscillation_strategy()
                 # strategies.breakout_strategy()
-                strategies.reversal_strategy()
+                # strategies.reversal_strategy()
 
             break

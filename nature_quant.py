@@ -47,7 +47,7 @@ def pre_handle():
     """
     allStockCode = pd.read_csv("./QuantData/a800_stocks.csv")
     # 回测，并行 需要手动改里面的策略名
-    Run.parallel_backTest(allStockCode)
+    # Run.parallel_backTest(allStockCode)
     for index, row in allStockCode.iterrows():
         assetList = RMQAsset.asset_generator(row['code'][3:],
                                              row['code_name'],
@@ -58,6 +58,11 @@ def pre_handle():
         回测，保存交易点
         加tick会细化价格导致操作提前，但实盘是bar结束了算指标，所以不影响
         strategy_name : tea_radical_nature  fuzzy_nature
+            c4_trend_nature
+            c4_oscillation_boll_nature
+            c4_oscillation_kdj_nature
+            c4_breakout_nature
+            c4_reversal_nature
         """
         # Run.run_back_test(assetList, "tea_radical_nature")  # 0:18:27.437876 旧回测，转tick，运行时长
         # Run.run_back_test_no_tick(assetList, "fuzzy_nature")  # 0:02:29.502122 新回测，不转tick
@@ -69,13 +74,18 @@ def pre_handle():
         """
         过滤交易点
             strategy_name: tea_radical_nature  fuzzy_nature  identify_Market_Types
+                            c4_trend_nature
+                            c4_oscillation_boll_nature
+                            c4_oscillation_kdj_nature
+                            c4_breakout_nature
+                            c4_reversal_nature
             label_name: 
                 label1: 多级别交易点合并，校验交易后日线级别涨跌幅、40个bar内趋势
                 label2：单级别校验各自涨跌幅、40个bar内趋势
                 label3：单级别校验各自MACD、DIF是否维持趋势
                 label4：单级别校验各自MACD、DIF+40个bar内趋势
         """
-        # RMQLabel.label(assetList, "identify_Market_Types", "label1")
+        # RMQLabel.label(assetList, "c4_reversal_nature", "label1")
 
         """
         画K线买卖点图
@@ -112,9 +122,19 @@ def pre_handle():
         limit_length：限制长度是为了方便debug时调试，数据太多加载太慢
         handle_uneven_samples: macd策略样本不均，其他策略不一定有这个问题，所以这里控制要不要处理
         strategy_name: 为了读回测点文件，tea_radical_nature  fuzzy_nature  identify_Market_Types
+                            c4_trend_nature
+                            c4_oscillation_boll_nature
+                            c4_oscillation_kdj_nature
+                            c4_breakout_nature
+                            c4_reversal_nature
         feature_plan_name: 不同特征组织方案
                 feature1 日线、小时线、指数日线
                 feature2 macd5分钟、15分钟、30分钟
+                feature_c4_trend
+                feature_c4_oscillation_boll
+                feature_c4_oscillation_kdj
+                feature_c4_breakout
+                feature_c4_reversal
         p2t_name: 针对不同特征，截不同得训练集数据
                 point_to_ts1 针对feature1截收盘价和成交量
                 point_to_ts2 针对feature2截MACD、KDJ、close
@@ -122,12 +142,12 @@ def pre_handle():
                     各级别标注交易点  "_" + asset.barEntity.timeLevel + "_label3"  此时flag是 _label2 _label3 _label4
                     fuzzy的各级别flag也有 _label1
     """
-    # RMQDataset.prepare_dataset("_TRAIN", "2w_identify_Market_Types_20", 20, 200000, False,
-    #                            "identify_Market_Types", "feature5", "point_to_ts1",
-    #                            "_label1")
-    # RMQDataset.prepare_dataset("_TEST", "2w_identify_Market_Types_20", 20, 100000, False,
-    #                            "identify_Market_Types", "feature5", "point_to_ts1",
-    #                            "_label1")
+    RMQDataset.prepare_dataset("_TRAIN", "2w_c4_oscillation_boll_nature_20", 20, 30000, True,
+                               "c4_oscillation_boll_nature", "feature_c4_oscillation_boll", "point_to_ts1",
+                               "_label1")
+    RMQDataset.prepare_dataset("_TEST", "2w_c4_oscillation_boll_nature_20", 20, 20000, True,
+                               "c4_oscillation_boll_nature", "feature_c4_oscillation_boll", "point_to_ts1",
+                               "_label1")
 
 
 

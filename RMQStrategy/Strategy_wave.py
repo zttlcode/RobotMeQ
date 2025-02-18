@@ -125,7 +125,8 @@ class WavePhaseAnalyzer:
         """获取当前所处的子浪阶段"""
         #last_index = self.df.index[-1]
         last_index = len(self.df) - 1
-
+        """生成基于波浪理论的交易信号"""
+        signals = []
         # 优先检查未完成的波浪
         for label in reversed(self.wave_labels):
             wave_type, points, is_complete = label
@@ -135,10 +136,26 @@ class WavePhaseAnalyzer:
             if start <= last_index <= end:
                 # 推动浪阶段判断
                 if wave_type == 'Impulse':
+
+                    # 推动浪第二浪结束信号
+                    if len(points) >= 2 and is_complete:
+                        wave2_end = points[1]
+                        # retrace = self._fib_retracement(points[0], points[1], points[2])
+                        # if 0.382 <= retrace <= 0.618:
+                        signals.append({
+                            'type': 'BUY',
+                            'description': 'Wave 2 Pullback Completion',
+                            'index': wave2_end,
+                            'time': self.df['close'].iloc[wave2_end+5],
+                            'price': self.df['close'].iloc[wave2_end]
+                        })
+                        print(signals)
+
                     subwaves = self._detect_subwaves(points)
                     current_sub = self._find_current_subwave(subwaves, last_index)
                     if current_sub:
-                        return f"Impulse-Wave {current_sub}{' (Developing)' if not is_complete else ''}"
+                        # return f"Impulse-Wave {current_sub}{' (Developing)' if not is_complete else ''}"
+                        return current_sub if not is_complete else ''
                     else:
                         return None
 
@@ -164,27 +181,6 @@ class WavePhaseAnalyzer:
             else:
                 subwaves.append((start, end, 'Corrective'))
         return subwaves
-
-    def get_trading_signals(self):
-        """生成基于波浪理论的交易信号"""
-        signals = []
-        for label in self.wave_labels:
-            wave_type, points, is_complete = label
-
-            # 推动浪第二浪结束信号
-            if wave_type == 'Impulse' and len(points) >= 2 and is_complete:
-                wave2_end = points[1]
-                # 验证回撤幅度（38.2%-61.8%）
-                retrace = self._fib_retracement(points[0], points[1], points[2])
-                if 0.382 <= retrace <= 0.618:
-                    signals.append({
-                        'type': 'BUY',
-                        'description': 'Wave 2 Pullback Completion',
-                        'index': wave2_end,
-                        'price': self.df['low'].iloc[wave2_end]
-                    })
-
-        return signals
 
     def _check_price_overlap(self, wave1_start, wave1_end, wave4_start, wave4_end):
         """检查两段价格区间是否重叠"""
@@ -242,7 +238,7 @@ class WavePhaseAnalyzer:
         if len(points) >= 2:
             retrace = self._fib_retracement(points[0], points[1], points[2])
             if retrace > 1.0:
-                print("浪2完全回撤浪1")
+                # print("浪2完全回撤浪1")
                 return False
         return True
 
@@ -252,7 +248,7 @@ class WavePhaseAnalyzer:
         if len(points) >= 2:
             price_change = self.df['close'].iloc[points[1]] - self.df['close'].iloc[points[0]]
             if abs(price_change) < self.df['atr'].iloc[-1] * 0.2:
-                print("调整浪幅度不足")
+                # print("调整浪幅度不足")
                 return False
         return True
 
@@ -354,7 +350,8 @@ if __name__ == "__main__":
                 window_df = df.iloc[i:i + 120].copy()
 
                 analyzer = WavePhaseAnalyzer(window_df)
-                print("当前波浪阶段:", analyzer.get_current_phase())
+                if analyzer.get_current_phase() == 2:
+                    print(111)
 
                 # plt_wave_labels(analyzer)
 

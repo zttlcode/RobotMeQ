@@ -42,4 +42,37 @@
 # cc: 688469, count: 4
 # """
 
+import os
+import pandas as pd
+
+# 文件夹路径
+folder_path = "./QuantData/trade_point_backtest_c4_trend_nature/"
+output_file = "./QuantData/trade_point_backtest_c4_trend_nature/signal_count_summary.csv"  # 结果文件
+
+# 用于存储每个 CSV 文件的统计结果
+all_results = []
+
+# 遍历所有 CSV 文件
+for filename in os.listdir(folder_path):
+    if filename.endswith(".csv"):
+        file_path = os.path.join(folder_path, filename)
+
+        # 读取 CSV
+        df = pd.read_csv(file_path, index_col=False)
+
+        # 统计 signal 列的值分布
+        signal_counts = df["signal"].value_counts().to_dict()
+
+        # 将结果转换为 DataFrame 格式，方便后续合并
+        result = {"filename": filename}
+        result.update(signal_counts)  # 把统计结果添加到字典
+        all_results.append(result)  # 存入结果列表
+
+# 汇总所有结果
+summary_df = pd.DataFrame(all_results).fillna(0)  # NaN 填充为 0
+
+# 保存到 CSV
+summary_df.to_csv(output_file, index=False)
+
+print(f"统计完成，结果已保存到 {output_file}")
 

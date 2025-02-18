@@ -5,6 +5,7 @@ import RMQStrategy.Strategy_fuzzy as RMQSFuzzy
 import RMQStrategy.Strategy_tea as RMQSTea
 import RMQStrategy.Strategy_nature as RMQSNature
 from RMQTool import Message
+from RMQModel import Identify_Market_Types_Helper as IMTHelper
 
 
 class StrategyResultEntity:
@@ -114,6 +115,14 @@ def strategy(asset, strategy_result, IEMultiLevel, strategy_name):
     # 耗时样例：end 0:00:00.015624 1449  耗时不随规模增长，一直保持在15毫秒，时间复杂度为O（1）
     # print("end", datetime.now()-start, len(barEntity.bar_DataFrame), len(windowDF))
     # 每个tick都要重新算，特别耗时  时间窗口对性能提升很大 用windowDF，不要用上面的 indicatorEntity.bar_DataFrame
+    if strategy_name.startswith("c4_"):
+        windowDF_calIndic = IMTHelper.calculate_ema(windowDF_calIndic)
+        windowDF_calIndic = IMTHelper.calculate_macd(windowDF_calIndic)
+        windowDF_calIndic = IMTHelper.calculate_atr(windowDF_calIndic)
+        windowDF_calIndic = IMTHelper.calculate_bollinger_bands(windowDF_calIndic)
+        windowDF_calIndic = IMTHelper.calculate_rsi(windowDF_calIndic)
+        windowDF_calIndic = IMTHelper.calculate_obv(windowDF_calIndic)
+        windowDF_calIndic = IMTHelper.calculate_kdj(windowDF_calIndic)
     # -----------------------------------------------------------------------------------------------
 
     if strategy_name == "tea_conservative":
@@ -162,5 +171,15 @@ def strategy(asset, strategy_result, IEMultiLevel, strategy_name):
                                   windowDF_calIndic,
                                   barEntity.bar_num - 1,  # 减了个实时价格，250变249，所以这里长度也跟着变成249
                                   strategy_result)
+    elif strategy_name == "c4_trend_nature":
+        RMQSNature.strategy_c4_trend(positionEntity, indicatorEntity, windowDF_calIndic)
+    elif strategy_name == "c4_oscillation_boll_nature":
+        RMQSNature.strategy_c4_oscillation_boll(positionEntity, indicatorEntity, windowDF_calIndic)
+    elif strategy_name == "c4_oscillation_kdj_nature":
+        RMQSNature.strategy_c4_oscillation_kdj(positionEntity, indicatorEntity, windowDF_calIndic)
+    elif strategy_name == "c4_breakout_nature":
+        RMQSNature.strategy_c4_breakout(positionEntity, indicatorEntity, windowDF_calIndic)
+    elif strategy_name == "c4_reversal_nature":
+        RMQSNature.strategy_c4_reversal(positionEntity, indicatorEntity, windowDF_calIndic)
     else:
         print("未指定策略")
