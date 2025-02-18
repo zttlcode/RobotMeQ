@@ -133,11 +133,32 @@
 # delete_unmatched_files(backtest_folder, valid_codes)
 
 
-import warnings
-warnings.simplefilter('error', RuntimeWarning)
+import os
+import pandas as pd
 
-try:
-    ...
-except RuntimeWarning as e:
-    print(111)
-    print(f"Caught warning: {e}")
+# 文件夹路径
+folder_path = "./QuantData/market_condition_backtest/"
+
+# 遍历文件夹中的所有 CSV 文件
+summary = {}
+
+for filename in os.listdir(folder_path):
+    if filename.endswith("_60.csv"):
+        file_path = os.path.join(folder_path, filename)
+
+        # 读取 CSV 文件
+        df = pd.read_csv(file_path)
+
+        # 统计 market_condition 各取值的数量
+        condition_counts = df["market_condition"].value_counts().to_dict()
+
+        # 存入结果字典
+        summary[filename] = condition_counts
+
+# 输出统计结果
+for file, counts in summary.items():
+    print(f"File: {file}")
+    for condition, count in counts.items():
+        print(f"  {condition}: {count}")
+    print()
+

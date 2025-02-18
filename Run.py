@@ -8,6 +8,8 @@ import RMQData.Indicator as RMQIndicator
 import RMQData.Asset as RMQAsset
 import RMQVisualized.Draw_Matplotlib as RMQDrawPlot
 from RMQTool import Tools as RMTTools
+from RMQModel import Identify_Market_Types as RMQM_Identify_Market_Types
+
 
 # import sys
 # 在cmd窗口python xxx.py 运行脚本时，自己写的from quant找不到quant，必须这样自定义一下python的系统变量，让python能找到
@@ -146,10 +148,11 @@ def run_backTest_multip(data_chunk):
         print(f"Process {process_name} (PID {process_id}) is processing: {row['code'][3:]}")
         assetList = RMQAsset.asset_generator(row['code'][3:],
                                              row['code_name'],
-                                             ['5', '15', '30', '60', 'd'],
+                                             ['5', '15', '30', '60', 'd'],  # '5', '15', '30', '60', 'd'
                                              'stock',
                                              1, 'A')
         run_back_test_no_tick(assetList, "fuzzy_nature")  # 0:02:29.502122 新回测，不转tick
+        # RMQM_Identify_Market_Types.run_backTest_label_market_condition(assetList)  # 回测标注日线级别行情类型 该上面时间级别为d
 
 
 def parallel_backTest(allStockCode):

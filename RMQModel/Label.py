@@ -352,7 +352,8 @@ def tea_radical_nature_label3(asset, strategy_name):
                     continue
                 else:
                     # 获取从当前行开始顺延 40 行数据
-                    window_100_bar = backtest_df.iloc[backtest_position - 40: backtest_position + 60].reset_index(drop=True)
+                    window_100_bar = backtest_df.iloc[backtest_position - 40: backtest_position + 60].reset_index(
+                        drop=True)
                     window_100_bar = RMQIndicator.calMACD(window_100_bar)
                     trade_MACD = window_100_bar.iloc[40]["MACD"]
                     trade_DIF = window_100_bar.iloc[40]["DIF"]
@@ -480,7 +481,8 @@ def tea_radical_nature_label4(asset, strategy_name):
                     continue
                 else:
                     # 获取从当前行开始顺延 40 行数据
-                    window_100_bar = backtest_df.iloc[backtest_position - 40: backtest_position + 60].reset_index(drop=True)
+                    window_100_bar = backtest_df.iloc[backtest_position - 40: backtest_position + 60].reset_index(
+                        drop=True)
                     window_100_bar = RMQIndicator.calMACD(window_100_bar)
                     trade_MACD = window_100_bar.iloc[40]["MACD"]
                     trade_DIF = window_100_bar.iloc[40]["DIF"]
@@ -630,6 +632,84 @@ def fuzzy_nature_label1(asset, strategy_name):
                       + "_label1.csv"))
 
 
+def market_condition_label1(asset, strategy_name):
+    """
+    时间窗口，震荡5天，趋势12天 这算有效数据
+    在label里把回测数据的连续5震荡挑出，连续12趋势挑出前5，分类为1趋势向上，2趋势向下，3震荡
+
+    步长10，滑5次   这是逻辑上的滑，实际上把5行数据都放在label文件了，dataset会找每行数据的前step行组特征
+        在dataset里找到每个日期的前5天，组特征。再试前5天
+    """
+    item = 'market_condition_backtest'
+    signal_df_filepath = (RMTTools.read_config("RMQData", item)
+                          + asset.assetsMarket
+                          + "_"
+                          + asset.assetsCode
+                          + "_"
+                          + asset.barEntity.timeLevel
+                          + ".csv")
+    if not os.path.exists(signal_df_filepath):
+        return None
+    # df = pd.read_csv(signal_df_filepath, parse_dates=["time"], index_col="time")
+    df = pd.read_csv(signal_df_filepath)
+
+    time_label_records = []  # 记录满足条件的 time 和 label
+
+    streak = 0
+    current_condition = None
+    start_index = None  # 记录连续段的起点
+
+    for i in range(len(df)):
+        condition = df.loc[i, "market_condition"]
+
+        if condition == current_condition:
+            streak += 1
+        else:
+            # 处理上一个连续段
+            if current_condition is not None:
+                if (current_condition == "trend_up" and streak > 12) or \
+                        (current_condition == "trend_down" and streak > 12) or \
+                        (current_condition == "range" and streak > 5):
+
+                    # 计算 label
+                    label = 1 if current_condition == "trend_up" else \
+                        2 if current_condition == "trend_down" else \
+                            3
+
+                    # 取连续段前5行的 time
+                    for j in range(min(5, streak)):
+                        time_label_records.append([df.loc[start_index + j, "time"], label])
+
+            # 重新初始化 streak 计算
+            current_condition = condition
+            streak = 1
+            start_index = i  # 记录新连续段的起点
+
+    # 处理最后一个连续段（避免遗漏）
+    if current_condition is not None and (
+            (current_condition == "trend_up" and streak > 12) or
+            (current_condition == "trend_down" and streak > 12) or
+            (current_condition == "range" and streak > 5)
+    ):
+        label = 1 if current_condition == "trend_up" else \
+            2 if current_condition == "trend_down" else \
+                3
+        for j in range(min(5, streak)):
+            time_label_records.append([df.loc[start_index + j, "time"], label])
+
+    # 转换为 DataFrame 并保存
+    result_df = pd.DataFrame(time_label_records, columns=["time", "label"])
+
+    # 保存结果到新的 CSV 文件
+    result_df.to_csv((RMTTools.read_config("RMQData", item)
+                      + asset.assetsMarket
+                      + "_"
+                      + asset.assetsCode
+                      + "_"
+                      + asset.barEntity.timeLevel
+                      + "_label1.csv"), index=False)
+
+
 def label(assetList, strategy_name, label_name):
     if label_name == "label1":
         if strategy_name == "tea_radical_nature":
@@ -637,6 +717,9 @@ def label(assetList, strategy_name, label_name):
         elif strategy_name == "fuzzy_nature":
             for asset in assetList:
                 fuzzy_nature_label1(asset, strategy_name)
+        elif strategy_name == "identify_Market_Types":
+            for asset in assetList:
+                market_condition_label1(asset, strategy_name)
     elif label_name == "label2":
         for asset in assetList:
             tea_radical_nature_label2(asset, strategy_name)

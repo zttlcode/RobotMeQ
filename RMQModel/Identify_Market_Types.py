@@ -1,6 +1,6 @@
 import pandas as pd
 import os
-import Identify_Market_Types_Helper as IMTHelper
+from RMQModel import Identify_Market_Types_Helper as IMTHelper
 import RMQData.Asset as RMQAsset
 from RMQTool import Tools as RMTTools
 
@@ -497,62 +497,53 @@ def calculate_breakout_probability(df):
     }
 
 
-if __name__ == '__main__':
-    allStockCode = pd.read_csv("../QuantData/a800_stocks.csv")
-    for index, row in allStockCode.iterrows():
-        assetList = RMQAsset.asset_generator(row['code'][3:],
-                                             row['code_name'],
-                                             ['d'],
-                                             'stock',
-                                             1, 'A')
-        for asset in assetList:
-            # 读取CSV文件
-            backtest_df_filePath = (RMTTools.read_config("RMQData", "backtest_bar")
-                                    + "bar_"
-                                    + asset.assetsMarket
-                                    + "_"
-                                    + asset.assetsCode
-                                    + "_"
-                                    + asset.barEntity.timeLevel
-                                    + '.csv')
-            df = pd.read_csv(backtest_df_filePath, encoding='utf-8', parse_dates=['time'], index_col="time")
-            # 计算所有指标
-            df = IMTHelper.calculate_indicators(df)
-
-            market_condition_list = []
-            # for i in range(len(df) - 250 + 1):
-            for i in range(0, len(df) - 120 + 1, 1):
-                window_df = df.iloc[i:i + 120].copy()
-                label = label_market_condition(window_df)
-                max_key = max(label, key=label.get)
-                max_value = label[max_key]
-                # print(f"最大键: {max_key}, {max_value}, {window_df['close'].iloc[-1]}")
-
-                # 回测所有行情分类
-                market_condition = [window_df.index[-1].strftime('%Y-%m-%d'),
-                                    window_df['close'].iloc[-1],
-                                    max_key, label[max_key]]
-                market_condition_list.append(market_condition)
-
-            if market_condition_list:  # 不为空，则保存
-                df_mcl = pd.DataFrame(market_condition_list)
-                df_mcl.columns = ['time', 'price', 'market_condition', 'probability']
-                item = 'market_condition_backtest'
-                directory = RMTTools.read_config("RMQData", item)
-                os.makedirs(directory, exist_ok=True)
-                df_mcl.to_csv(directory
-                              + asset.assetsMarket
-                              + "_"
-                              + asset.indicatorEntity.IE_assetsCode
-                              + "_"
-                              + asset.indicatorEntity.IE_timeLevel
-                              + ".csv", index=False)
-
-        print(assetList[0].assetsCode, "结束")
-    # 将标注结果添加到DataFrame
-    # df['label'] = pd.Series(labels, index=df.index[149:])
+def run_backTest_label_market_condition(assetList):
     """
     行情转换逻辑检验：
         禁止出现「趋势→趋势」连续标注（需有中间状态）
         突破后必须跟随趋势或反转
     """
+    for asset in assetList:
+        # 读取CSV文件
+        backtest_df_filePath = (RMTTools.read_config("RMQData", "backtest_bar")
+                                + "bar_"
+                                + asset.assetsMarket
+                                + "_"
+                                + asset.assetsCode
+                                + "_"
+                                + asset.barEntity.timeLevel
+                                + '.csv')
+        df = pd.read_csv(backtest_df_filePath, encoding='utf-8', parse_dates=['time'], index_col="time")
+        # 计算所有指标
+        df = IMTHelper.calculate_indicators(df)
+
+        market_condition_list = []
+        # for i in range(len(df) - 250 + 1):
+        for i in range(0, len(df) - 120 + 1, 1):
+            window_df = df.iloc[i:i + 120].copy()
+            label = label_market_condition(window_df)
+            max_key = max(label, key=label.get)
+            max_value = label[max_key]
+            # print(f"最大键: {max_key}, {max_value}, {window_df['close'].iloc[-1]}")
+
+            # 回测所有行情分类
+            market_condition = [window_df.index[-1].strftime('%Y-%m-%d'),
+                                window_df['close'].iloc[-1],
+                                max_key, label[max_key]]
+            market_condition_list.append(market_condition)
+
+        if market_condition_list:  # 不为空，则保存
+            df_mcl = pd.DataFrame(market_condition_list)
+            df_mcl.columns = ['time', 'price', 'market_condition', 'probability']
+            item = 'market_condition_backtest'
+            directory = RMTTools.read_config("RMQData", item)
+            os.makedirs(directory, exist_ok=True)
+            df_mcl.to_csv(directory
+                          + asset.assetsMarket
+                          + "_"
+                          + asset.indicatorEntity.IE_assetsCode
+                          + "_"
+                          + asset.indicatorEntity.IE_timeLevel
+                          + ".csv", index=False)
+
+    print(assetList[0].assetsCode, "结束")

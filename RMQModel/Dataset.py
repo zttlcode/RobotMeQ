@@ -5,6 +5,7 @@ import os
 from RMQTool import Tools as RMTTools
 import RMQData.Asset as RMQAsset
 import RMQData.Indicator as RMQIndicator
+from RMQModel import Identify_Market_Types_Helper as IMTHelper
 
 
 def tea_radical_nature_handling_uneven_samples1(labeled):
@@ -738,6 +739,195 @@ def fuzzy_nature_point_to_ts1(assetList, temp_data_dict, temp_label_list, time_p
     print(assetList[0].assetsCode, "结束", len(temp_label_list))
 
 
+def identify_market_types_to_ts1(assetList, temp_data_dict, temp_label_list, time_point_step, handle_uneven_samples,
+                                 strategy_name, label_name, feature_plan_name):
+    # 加载数据
+    item = 'market_condition_backtest'
+    labeled_filePath = (RMTTools.read_config("RMQData", item)
+                        + assetList[4].assetsMarket
+                        + "_"
+                        + assetList[4].assetsCode
+                        + "_"
+                        + assetList[4].barEntity.timeLevel
+                        + str(label_name)
+                        + ".csv")
+
+    if not os.path.exists(labeled_filePath):
+        return None
+
+    # data_0_filepath = (RMTTools.read_config("RMQData", "backtest_bar")
+    #                    + "bar_"
+    #                    + assetList[2].assetsMarket
+    #                    + "_"
+    #                    + assetList[2].assetsCode
+    #                    + "_"
+    #                    + assetList[2].barEntity.timeLevel
+    #                    + ".csv")
+    # data_1_filePath = (RMTTools.read_config("RMQData", "backtest_bar")
+    #                    + "bar_"
+    #                    + assetList[3].assetsMarket
+    #                    + "_"
+    #                    + assetList[3].assetsCode
+    #                    + "_"
+    #                    + assetList[3].barEntity.timeLevel
+    #                    + ".csv")
+
+    data_2_filePath = (RMTTools.read_config("RMQData", "backtest_bar")
+                       + "bar_"
+                       + assetList[4].assetsMarket
+                       + "_"
+                       + assetList[4].assetsCode
+                       + "_"
+                       + assetList[4].barEntity.timeLevel
+                       + ".csv")
+
+    labeled = pd.read_csv(labeled_filePath, index_col="time", parse_dates=True)
+    # data_0 = pd.read_csv(data_0_filepath, index_col="time", parse_dates=True)
+    # data_1 = pd.read_csv(data_1_filePath, index_col="time", parse_dates=True)
+    data_2_raw = pd.read_csv(data_2_filePath, index_col="time", parse_dates=True)
+
+    # 计算所有指标
+    data_2 = IMTHelper.calculate_indicators(data_2_raw)
+
+    # 是否处理样本不均
+    if handle_uneven_samples:
+        labeled = fuzzy_nature_handling_uneven_samples1(labeled)
+
+    # 遍历 labeled 数据
+    for labeled_time, labeled_row in labeled.iterrows():
+        # """1、寻找本级别匹配行 此为30分钟级别"""
+        # data_0_filter = (data_0.index == labeled_time)
+        # matched_0 = data_0[data_0_filter]
+        # if len(matched_0) > 0:
+        #     matched_0_index = matched_0.index[-1]
+        #     matched_0_row_index = data_0.index.get_loc(matched_0_index)
+        #     if matched_0_row_index >= (time_point_step + 60):
+        #         # 时间索引用完了，跟tea_radical_nature_label3一样删掉它，不然计算指标会报错
+        #         data_0_tmp = data_0.iloc[matched_0_row_index - (time_point_step + 60): matched_0_row_index].reset_index(
+        #             drop=True)
+        #         data_0_tmp = RMQIndicator.calMACD(data_0_tmp)
+        #         data_0_tmp = RMQIndicator.calMA(data_0_tmp)
+        #
+        #         MACD_0 = data_0_tmp["MACD"][59:]
+        #         DIF_0 = data_0_tmp["DIF"][59:]
+        #         MA_5_0 = data_0_tmp["MA_5"][59:]
+        #         MA_10_0 = data_0_tmp["MA_10"][59:]
+        #         MA_60_0 = data_0_tmp["MA_60"][59:]
+        #         close_0 = data_0_tmp["close"][59:]
+        #
+        #         if (MACD_0.isna().any() or DIF_0.isna().any() or MA_5_0.isna().any()
+        #                 or MA_10_0.isna().any() or MA_60_0.isna().any() or close_0.isna().any()):
+        #             continue  # 数据NaN，跳过
+        #     else:
+        #         continue  # backtest_bar 越界，跳过
+        # else:
+        #     continue  # 无匹配日期，跳过
+
+        # """2、寻找上级匹配行 在 60.csv 中寻找同一日且同一小时的数据"""
+        labeled_date = labeled_time.date()
+        # labeled_hour = labeled_time.hour
+        #
+        # if labeled_hour == 9 or labeled_hour == 13:
+        #     labeled_hour += 1  # 这俩匹配不上，只能改一下时间
+        # day_hour_filter = (data_1.index.date == labeled_date) & (data_1.index.hour == labeled_hour)
+        # matched_60 = data_1[day_hour_filter]
+        # if len(matched_60) > 0:
+        #     matched_60_index = matched_60.index[-1]
+        #     data_1_row_index = data_1.index.get_loc(matched_60_index)
+        #     if data_1_row_index >= (time_point_step + 60):
+        #         data_1_tmp = data_1.iloc[data_1_row_index - (time_point_step + 60): data_1_row_index].reset_index(
+        #             drop=True)
+        #         data_1_tmp = RMQIndicator.calMACD(data_1_tmp)
+        #         data_1_tmp = RMQIndicator.calMA(data_1_tmp)
+        #
+        #         MACD_1 = data_1_tmp["MACD"][59:]
+        #         DIF_1 = data_1_tmp["DIF"][59:]
+        #         MA_5_1 = data_1_tmp["MA_5"][59:]
+        #         MA_10_1 = data_1_tmp["MA_10"][59:]
+        #         MA_60_1 = data_1_tmp["MA_60"][59:]
+        #         close_1 = data_1_tmp["close"][59:]
+        #
+        #         if (MACD_1.isna().any() or DIF_1.isna().any() or MA_5_1.isna().any()
+        #                 or MA_10_1.isna().any() or MA_60_1.isna().any() or close_1.isna().any()):
+        #             continue  # 数据NaN，跳过
+        #     else:
+        #         continue  # d.csv 越界，跳过
+        # else:
+        #     continue  # 无匹配日期，跳过
+
+        """3、寻找上级匹配行 在 d.csv 中寻找同一日的数据"""
+        if pd.Timestamp(labeled_date) in data_2.index:
+            data_2_row_index = data_2.index.get_loc(pd.Timestamp(labeled_date))
+            if data_2_row_index >= time_point_step:
+                data_2_tmp = data_2.iloc[data_2_row_index - time_point_step: data_2_row_index].reset_index(
+                    drop=True)
+
+                ema10 = data_2_tmp["ema10"]
+                ema20 = data_2_tmp["ema20"]
+                ema60 = data_2_tmp["ema60"]
+                macd = data_2_tmp["macd"]
+                signal = data_2_tmp["signal"]
+                adx = data_2_tmp["adx"]
+                plus_di = data_2_tmp["plus_di"]
+                minus_di = data_2_tmp["minus_di"]
+                atr = data_2_tmp["atr"]
+                boll_mid = data_2_tmp["boll_mid"]
+                boll_upper = data_2_tmp["boll_upper"]
+                boll_lower = data_2_tmp["boll_lower"]
+                rsi = data_2_tmp["rsi"]
+                obv = data_2_tmp["obv"]
+                volume_ma5 = data_2_tmp["volume_ma5"]
+                close = data_2_tmp["close"]
+                volume = data_2_tmp["volume"]
+
+                if (ema10.isna().any() or ema20.isna().any() or ema60.isna().any()
+                        or macd.isna().any() or signal.isna().any() or adx.isna().any()
+                        or plus_di.isna().any() or minus_di.isna().any() or atr.isna().any()
+                        or boll_mid.isna().any() or boll_upper.isna().any() or boll_lower.isna().any()
+                        or rsi.isna().any() or obv.isna().any() or volume_ma5.isna().any()
+                        or close.isna().any() or volume.isna().any()):
+                    continue  # 数据NaN，跳过
+            else:
+                continue  # 60.csv 越界，跳过
+        else:
+            continue  # 无匹配日期或小时，跳过
+
+        # # 如果通过所有越界检查，将数据存入字典  标签存入列表
+        # temp_data_dict['MACD_0'].append(MACD_0)
+        # temp_data_dict['DIF_0'].append(DIF_0)
+        # temp_data_dict['MA_5_0'].append(MA_5_0)
+        # temp_data_dict['MA_10_0'].append(MA_10_0)
+        # temp_data_dict['MA_60_0'].append(MA_60_0)
+        # temp_data_dict['close_0'].append(close_0)
+        # temp_data_dict['MACD_1'].append(MACD_1)
+        # temp_data_dict['DIF_1'].append(DIF_1)
+        # temp_data_dict['MA_5_1'].append(MA_5_1)
+        # temp_data_dict['MA_10_1'].append(MA_10_1)
+        # temp_data_dict['MA_60_1'].append(MA_60_1)
+        # temp_data_dict['close_1'].append(close_1)
+        temp_data_dict['ema10'].append(ema10)
+        temp_data_dict['ema20'].append(ema20)
+        temp_data_dict['ema60'].append(ema60)
+        temp_data_dict['macd'].append(macd)
+        temp_data_dict['signal'].append(signal)
+        temp_data_dict['adx'].append(adx)
+        temp_data_dict['plus_di'].append(plus_di)
+        temp_data_dict['minus_di'].append(minus_di)
+        temp_data_dict['atr'].append(atr)
+        temp_data_dict['boll_mid'].append(boll_mid)
+        temp_data_dict['boll_upper'].append(boll_upper)
+        temp_data_dict['boll_lower'].append(boll_lower)
+        temp_data_dict['rsi'].append(rsi)
+        temp_data_dict['obv'].append(obv)
+        temp_data_dict['volume_ma5'].append(volume_ma5)
+        temp_data_dict['close'].append(close)
+        temp_data_dict['volume'].append(volume)
+
+        temp_label_list.append(labeled_row['label'])
+
+    print(assetList[0].assetsCode, "结束", len(temp_label_list))
+
+
 def prepare_dataset(flag, name, time_point_step, limit_length, handle_uneven_samples, strategy_name,
                     feature_plan_name, p2t_name, label_name):
     allStockCode = pd.read_csv("./QuantData/a800_stocks.csv")
@@ -765,6 +955,11 @@ def prepare_dataset(flag, name, time_point_step, limit_length, handle_uneven_sam
                           }
     elif feature_plan_name == 'feature4':
         temp_data_dict = {'MACD_0': [], 'DIF_0': [], 'DEA_0': [], 'K_0': [], 'D_0': [], 'J_0': [], 'close_0': []
+                          }
+    elif feature_plan_name == 'feature5':
+        temp_data_dict = {'ema10': [], 'ema20': [], 'ema60': [], 'macd': [], 'signal': [],
+                          'adx': [], 'plus_di': [], 'minus_di': [], 'atr': [], 'boll_mid': [], 'boll_upper': [],
+                          'boll_lower': [], 'rsi': [], 'obv': [], 'volume_ma5': [], 'close': [], 'volume': []
                           }
     else:
         print("未指定feature_plan_name")
@@ -871,6 +1066,11 @@ def prepare_dataset(flag, name, time_point_step, limit_length, handle_uneven_sam
             fuzzy_nature_point_to_ts1(assetList, temp_data_dict, temp_label_list, time_point_step,
                                       handle_uneven_samples,
                                       strategy_name, label_name, feature_plan_name)
+        elif strategy_name == 'identify_Market_Types' and p2t_name == "point_to_ts1":
+            # d标注，d造数
+            identify_market_types_to_ts1(assetList, temp_data_dict, temp_label_list, time_point_step,
+                                         handle_uneven_samples,
+                                         strategy_name, label_name, feature_plan_name)
         if limit_length == 0:  # 全数据
             pass
         elif len(temp_label_list) >= limit_length:  # 只要部分数据

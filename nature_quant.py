@@ -21,6 +21,7 @@ from RMQModel import Dataset as RMQDataset
 from RMQModel import Evaluate as RMQEvaluate
 from RMQVisualized import Draw_Pyecharts as RMQDraw_Pyecharts
 from RMQModel import Label as RMQLabel
+from RMQModel import Identify_Market_Types as RMQM_Identify_Market_Types
 import Run as Run
 
 
@@ -46,11 +47,11 @@ def pre_handle():
     """
     allStockCode = pd.read_csv("./QuantData/a800_stocks.csv")
     # 回测，并行 需要手动改里面的策略名
-    # Run.parallel_backTest(allStockCode)
+    Run.parallel_backTest(allStockCode)
     for index, row in allStockCode.iterrows():
         assetList = RMQAsset.asset_generator(row['code'][3:],
                                              row['code_name'],
-                                             ['30', '60', 'd'],
+                                             ['d'],
                                              'stock',
                                              1, 'A')
         """
@@ -59,21 +60,22 @@ def pre_handle():
         strategy_name : tea_radical_nature  fuzzy_nature
         """
         # Run.run_back_test(assetList, "tea_radical_nature")  # 0:18:27.437876 旧回测，转tick，运行时长
-        Run.run_back_test_no_tick(assetList, "fuzzy_nature")  # 0:02:29.502122 新回测，不转tick
+        # Run.run_back_test_no_tick(assetList, "fuzzy_nature")  # 0:02:29.502122 新回测，不转tick
+        # RMQM_Identify_Market_Types.run_backTest_label_market_condition(assetList)  # 回测标注日线级别行情类型 该上面时间级别为d
 
         # 各级别交易点拼接在一起
         # concat_trade_point(assetList, "tea_radical_nature")
 
         """
         过滤交易点
-            strategy_name: tea_radical_nature  fuzzy_nature
+            strategy_name: tea_radical_nature  fuzzy_nature  identify_Market_Types
             label_name: 
                 label1: 多级别交易点合并，校验交易后日线级别涨跌幅、40个bar内趋势
                 label2：单级别校验各自涨跌幅、40个bar内趋势
                 label3：单级别校验各自MACD、DIF是否维持趋势
                 label4：单级别校验各自MACD、DIF+40个bar内趋势
         """
-        # RMQLabel.label(assetList, "tea_radical_nature", "label1")
+        # RMQLabel.label(assetList, "identify_Market_Types", "label1")
 
         """
         画K线买卖点图
@@ -109,7 +111,7 @@ def pre_handle():
         time_point_step: 截取的时间步，最长500，最少得是8以上，因为很多时序模型需要得序列长度最少是8
         limit_length：限制长度是为了方便debug时调试，数据太多加载太慢
         handle_uneven_samples: macd策略样本不均，其他策略不一定有这个问题，所以这里控制要不要处理
-        strategy_name: 为了读回测点文件，tea_radical_nature  fuzzy_nature
+        strategy_name: 为了读回测点文件，tea_radical_nature  fuzzy_nature  identify_Market_Types
         feature_plan_name: 不同特征组织方案
                 feature1 日线、小时线、指数日线
                 feature2 macd5分钟、15分钟、30分钟
@@ -120,12 +122,12 @@ def pre_handle():
                     各级别标注交易点  "_" + asset.barEntity.timeLevel + "_label3"  此时flag是 _label2 _label3 _label4
                     fuzzy的各级别flag也有 _label1
     """
-    RMQDataset.prepare_dataset("_TRAIN", "2wTeafeature4label3_30", 200, 20000, True,
-                               "tea_radical_nature", "feature4", "point_to_ts2",
-                               "_label3")
-    RMQDataset.prepare_dataset("_TEST", "2wTeafeature4label3_30", 200, 10000, True,
-                               "tea_radical_nature", "feature4", "point_to_ts2",
-                               "_label3")
+    # RMQDataset.prepare_dataset("_TRAIN", "2w_identify_Market_Types_20", 20, 200000, False,
+    #                            "identify_Market_Types", "feature5", "point_to_ts1",
+    #                            "_label1")
+    # RMQDataset.prepare_dataset("_TEST", "2w_identify_Market_Types_20", 20, 100000, False,
+    #                            "identify_Market_Types", "feature5", "point_to_ts1",
+    #                            "_label1")
 
 
 
