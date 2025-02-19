@@ -193,7 +193,6 @@ accuracy:0.8332816826783697  步长10 CNN
 accuracy:0.839511096046099   步长20
 accuracy:0.8465395888580942  步长20 LSTM
 趋势策略 accuracy:0.5495541401273886  步长80 CNN
-
 ValueError: Expected input batch_size (1) to match target batch_size (0). 这个报错是数据量运气不好，随便改一下数据量就好了
 Boll accuracy:0.5240805820917686  步长20 CNN
 KDJ accuracy:0.6899009900990098  步长20 CNN
