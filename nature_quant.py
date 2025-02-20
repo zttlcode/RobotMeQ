@@ -30,18 +30,11 @@ def pre_handle():
     数据预处理
     A股、港股、美股、数字币。 每个市场风格不同，混合训练会降低特色，
         目前只用A股数据，沪深300+中证500=A股前800家上市公司
-        涉及代码：HistoryData.py新增query_hs300_stocks、query_hs500_stocks，获取股票代码，
-                get_ipo_date_for_stock、query_ipo_date 找出股票代码对应发行日期
-                get_stock_from_code_csv 通过股票代码、发行日期，获取股票各级别历史行情
         待实验市场：港股、美股标普500、数字币市值前10
         数据来自证券宝，每个股票5种数据：日线、60m、30m、15m、5m。日线从该股发行日到2025年1月9日，分钟级最早为2019年1月2日。前复权，数据已压缩备份
     所有数据进行单级别回测，保留策略交易点，多进程运行
-        目前策略：MACD+KDJ  （回归）
-        涉及代码：旧代码在Run.py，5分钟bar转tick，给多级别同时用，回测一个股票5年要3小时。
-                为提高效率，单级别运行，启动10线程，2台电脑，预计2、3天跑完4000个行情
-        待实验策略：王立新ride-moon （趋势）  
-                布林
-                均线等，看是否比单纯指标有收益率提升
+        为提高效率，单级别运行，启动10线程，2台电脑，预计2、3天跑完4000个行情
+
     a800_stocks
     a800_wait_handle_stocks
     """
@@ -70,7 +63,6 @@ def pre_handle():
 
         # 各级别交易点拼接在一起
         # concat_trade_point(assetList, "tea_radical_nature")
-
         """
         过滤交易点
             strategy_name: tea_radical_nature  fuzzy_nature  identify_Market_Types
@@ -86,7 +78,6 @@ def pre_handle():
                 label4：单级别校验各自MACD、DIF+40个bar内趋势
         """
         # RMQLabel.label(assetList, "c4_reversal_nature", "label1")
-
         """
         画K线买卖点图
             method_name:
@@ -99,7 +90,6 @@ def pre_handle():
             strategy_name: tea_radical_nature  fuzzy_nature
         """
         # RMQDraw_Pyecharts.show(assetList, "single", "fuzzy_nature", "_label1")
-
         """
         计算收益率
             is_concat: True 计算合并交易点的收益率  此时flag只会是 _concat 或 _concat_label1
@@ -108,9 +98,17 @@ def pre_handle():
                         各级别标注交易点："_" + asset.barEntity.timeLevel + "_label3"  此时flag是 _label2 _label3 _label4
                         fuzzy的各级别flag也有 _label1
             strategy_name : tea_radical_nature  fuzzy_nature
+                            c4_trend_nature
+                            c4_oscillation_boll_nature
+                            c4_oscillation_kdj_nature
+                            c4_breakout_nature
+                            c4_reversal_nature
         """
-        # RMQEvaluate.return_rate(assetList, False, "_label1", "fuzzy_nature")
+        # RMQEvaluate.return_rate(assetList, False, "_label1", "c4_oscillation_boll_nature", False)
 
+
+def run_experiment():
+    """"""
     """
     标注完成，准备训练数据
     由于两个数据集都要做，因此写俩方法串行，别删
@@ -142,36 +140,36 @@ def pre_handle():
                     各级别标注交易点  "_" + asset.barEntity.timeLevel + "_label3"  此时flag是 _label2 _label3 _label4
                     fuzzy的各级别flag也有 _label1
     """
-    RMQDataset.prepare_dataset("_TRAIN", "2w_c4_oscillation_boll_nature_20", 20, 30000, True,
-                               "c4_oscillation_boll_nature", "feature_c4_oscillation_boll", "point_to_ts1",
-                               "_label1")
-    RMQDataset.prepare_dataset("_TEST", "2w_c4_oscillation_boll_nature_20", 20, 20000, True,
-                               "c4_oscillation_boll_nature", "feature_c4_oscillation_boll", "point_to_ts1",
-                               "_label1")
-
-
-
-def run_experiment():
-    """模型训练"""
-    # 1、构建弱学习器模型
-    """
-    建立model包，建个CNN.py
-    先拿5分钟训练，数据进来，所有级别一起训练
-    其他高级别训练放试验里
-    """
-
-    # 2、构建集成学习模型
-    """实验"""
-    # 1、策略不变，过滤方式变
-    # 2、策略不变，过滤方式不变，超参变
-    # 3、策略变等等
+    RMQDataset.prepare_dataset("_TRAIN", "2w_c4_trend_nature_20", 20,
+                               30000, False, "c4_trend_nature",
+                               "feature_c4_trend", "point_to_ts1", "_label1")
+    RMQDataset.prepare_dataset("_TEST", "2w_c4_trend_nature_20", 20,
+                               20000, False, "c4_trend_nature",
+                               "feature_c4_trend", "point_to_ts1", "_label1")
 
 
 def run_live():
-    pass
+    # RMQDataset.prepare_dataset_single("_TEST", "2w_c4_trend_nature_20", 20,
+    #                                   20000, False,
+    #                                   "c4_trend_nature", "feature_c4_trend",
+    #                                   "point_to_ts1", "_label1", 5)
+    """
+603737 结束 32
+603786 结束 26
+603826 结束 8
+603858 结束 13
+    """
+    assetList = RMQAsset.asset_generator('603858',
+                                         '',
+                                         ['d'],
+                                         'stock',
+                                         1, 'A')
+    RMQEvaluate.return_rate(assetList, False, "_label1", "c4_trend_nature", False)
+    # 读取CSV文件
+    RMQEvaluate.return_rate(assetList, False, "_label1", "c4_trend_nature", True)
 
 
 if __name__ == '__main__':
-    pre_handle()  # 数据预处理
-    # run_experiment()  # 实验回测
-    # run_live()  # 实盘
+    #pre_handle()  # 数据预处理
+    # run_experiment()  # 所有股票组成训练集
+    run_live()  # 单独推理一个股票

@@ -175,8 +175,17 @@ def tea_radical_nature_point_to_ts1(assetList, temp_data_dict, temp_label_list, 
 
     # 是否处理样本不均
     if handle_uneven_samples:
-        concat_labeled = tea_radical_nature_handling_uneven_samples1(concat_labeled)
-        # print(assetList[0].assetsCode, "样本", concat_labeled['label'].value_counts())
+        handled_uneven_filepath = (RMTTools.read_config("RMQData", item)
+                                   + assetList[0].assetsMarket
+                                   + "_"
+                                   + assetList[0].assetsCode + str(label_name)
+                                   + "_handled_uneven" + ".csv")
+        if not os.path.exists(handled_uneven_filepath):
+            concat_labeled = tea_radical_nature_handling_uneven_samples1(concat_labeled)
+            concat_labeled.to_csv(handled_uneven_filepath, index=True)
+        else:
+            concat_labeled = pd.read_csv(handled_uneven_filepath, index_col="time", parse_dates=True)
+            # print(assetList[0].assetsCode, "样本", concat_labeled['label'].value_counts())
 
     # 遍历 concat_labeled 数据
     for labeled_time, labeled_row in concat_labeled.iterrows():
@@ -367,7 +376,19 @@ def tea_radical_nature_point_to_ts2(assetList, temp_data_dict, temp_label_list, 
 
     # 是否处理样本不均
     if handle_uneven_samples:
-        labeled = tea_radical_nature_handling_uneven_samples1(labeled)
+        handled_uneven_filepath = (RMTTools.read_config("RMQData", item)
+                                   + assetList[0].assetsMarket
+                                   + "_"
+                                   + assetList[0].assetsCode
+                                   + "_"
+                                   + assetList[0].barEntity.timeLevel
+                                   + str(label_name)
+                                   + "_handled_uneven" + ".csv")
+        if not os.path.exists(handled_uneven_filepath):
+            labeled = tea_radical_nature_handling_uneven_samples1(labeled)
+            labeled.to_csv(handled_uneven_filepath, index=True)
+        else:
+            labeled = pd.read_csv(handled_uneven_filepath, index_col="time", parse_dates=True)
         # print(assetList[0].assetsCode, "样本", concat_labeled['label'].value_counts())
 
     # 遍历 concat_labeled 数据
@@ -534,7 +555,19 @@ def tea_radical_nature_point_to_ts3(assetList, temp_data_dict, temp_label_list, 
 
     # 是否处理样本不均
     if handle_uneven_samples:
-        labeled = tea_radical_nature_handling_uneven_samples1(labeled)
+        handled_uneven_filepath = (RMTTools.read_config("RMQData", item)
+                                   + assetList[0].assetsMarket
+                                   + "_"
+                                   + assetList[0].assetsCode
+                                   + "_"
+                                   + assetList[0].barEntity.timeLevel
+                                   + str(label_name)
+                                   + "_handled_uneven" + ".csv")
+        if not os.path.exists(handled_uneven_filepath):
+            labeled = tea_radical_nature_handling_uneven_samples1(labeled)
+            labeled.to_csv(handled_uneven_filepath, index=True)
+        else:
+            labeled = pd.read_csv(handled_uneven_filepath, index_col="time", parse_dates=True)
 
     # 遍历 concat_labeled 数据
     for labeled_time, labeled_row in labeled.iterrows():
@@ -629,7 +662,19 @@ def fuzzy_nature_point_to_ts1(assetList, temp_data_dict, temp_label_list, time_p
 
     # 是否处理样本不均
     if handle_uneven_samples:
-        labeled = fuzzy_nature_handling_uneven_samples1(labeled)
+        handled_uneven_filepath = (RMTTools.read_config("RMQData", item)
+                                   + assetList[2].assetsMarket
+                                   + "_"
+                                   + assetList[2].assetsCode
+                                   + "_"
+                                   + assetList[2].barEntity.timeLevel
+                                   + str(label_name)
+                                   + "_handled_uneven" + ".csv")
+        if not os.path.exists(handled_uneven_filepath):
+            labeled = fuzzy_nature_handling_uneven_samples1(labeled)
+            labeled.to_csv(handled_uneven_filepath, index=True)
+        else:
+            labeled = pd.read_csv(handled_uneven_filepath, index_col="time", parse_dates=True)
 
     # 遍历 labeled 数据
     for labeled_time, labeled_row in labeled.iterrows():
@@ -961,10 +1006,22 @@ def c4_trend_nature_point_to_ts1(assetList, temp_data_dict, temp_label_list, tim
 
     # 是否处理样本不均
     if handle_uneven_samples:
-        labeled = tea_radical_nature_handling_uneven_samples1(labeled)
-        if labeled.empty:
-            print(assetList[0].assetsCode, "处理样本不均终止")
-            return None
+        handled_uneven_filepath = (RMTTools.read_config("RMQData", item)
+                                   + assetList[4].assetsMarket
+                                   + "_"
+                                   + assetList[4].assetsCode
+                                   + "_"
+                                   + assetList[4].barEntity.timeLevel
+                                   + str(label_name)
+                                   + "_handled_uneven" + ".csv")
+        if not os.path.exists(handled_uneven_filepath):
+            labeled = tea_radical_nature_handling_uneven_samples1(labeled)
+            if labeled.empty:
+                print(assetList[0].assetsCode, "处理样本不均终止")
+                return None
+            labeled.to_csv(handled_uneven_filepath, index=True)
+        else:
+            labeled = pd.read_csv(handled_uneven_filepath, index_col="time", parse_dates=True)
 
     # 遍历 concat_labeled 数据
     for labeled_time, labeled_row in labeled.iterrows():
@@ -1037,10 +1094,22 @@ def c4_oscillation_boll_nature_point_to_ts1(assetList, temp_data_dict, temp_labe
 
     # 是否处理样本不均
     if handle_uneven_samples:
-        labeled = tea_radical_nature_handling_uneven_samples1(labeled)
-        if labeled.empty:
-            print(assetList[0].assetsCode, "处理样本不均终止")
-            return None
+        handled_uneven_filepath = (RMTTools.read_config("RMQData", item)
+                                   + assetList[4].assetsMarket
+                                   + "_"
+                                   + assetList[4].assetsCode
+                                   + "_"
+                                   + assetList[4].barEntity.timeLevel
+                                   + str(label_name)
+                                   + "_handled_uneven" + ".csv")
+        if not os.path.exists(handled_uneven_filepath):
+            labeled = tea_radical_nature_handling_uneven_samples1(labeled)
+            if labeled.empty:
+                print(assetList[0].assetsCode, "处理样本不均终止")
+                return None
+            labeled.to_csv(handled_uneven_filepath, index=True)
+        else:
+            labeled = pd.read_csv(handled_uneven_filepath, index_col="time", parse_dates=True)
 
     # 遍历 concat_labeled 数据
     for labeled_time, labeled_row in labeled.iterrows():
@@ -1109,7 +1178,19 @@ def c4_oscillation_kdj_nature_point_to_ts1(assetList, temp_data_dict, temp_label
     data_0 = RMQStrategyIndicator.calculate_indicators(data_0_raw)
     # 是否处理样本不均
     if handle_uneven_samples:
-        labeled = fuzzy_nature_handling_uneven_samples1(labeled)
+        handled_uneven_filepath = (RMTTools.read_config("RMQData", item)
+                                   + assetList[4].assetsMarket
+                                   + "_"
+                                   + assetList[4].assetsCode
+                                   + "_"
+                                   + assetList[4].barEntity.timeLevel
+                                   + str(label_name)
+                                   + "_handled_uneven" + ".csv")
+        if not os.path.exists(handled_uneven_filepath):
+            labeled = fuzzy_nature_handling_uneven_samples1(labeled)
+            labeled.to_csv(handled_uneven_filepath, index=True)
+        else:
+            labeled = pd.read_csv(handled_uneven_filepath, index_col="time", parse_dates=True)
 
     # 遍历 concat_labeled 数据
     for labeled_time, labeled_row in labeled.iterrows():
@@ -1175,10 +1256,22 @@ def c4_breakout_nature_point_to_ts1(assetList, temp_data_dict, temp_label_list, 
     data_0 = RMQStrategyIndicator.calculate_indicators(data_0_raw)
     # 是否处理样本不均
     if handle_uneven_samples:
-        labeled = tea_radical_nature_handling_uneven_samples1(labeled)
-        if labeled.empty:
-            print(assetList[0].assetsCode, "处理样本不均终止")
-            return None
+        handled_uneven_filepath = (RMTTools.read_config("RMQData", item)
+                                   + assetList[4].assetsMarket
+                                   + "_"
+                                   + assetList[4].assetsCode
+                                   + "_"
+                                   + assetList[4].barEntity.timeLevel
+                                   + str(label_name)
+                                   + "_handled_uneven" + ".csv")
+        if not os.path.exists(handled_uneven_filepath):
+            labeled = tea_radical_nature_handling_uneven_samples1(labeled)
+            if labeled.empty:
+                print(assetList[0].assetsCode, "处理样本不均终止")
+                return None
+            labeled.to_csv(handled_uneven_filepath, index=True)
+        else:
+            labeled = pd.read_csv(handled_uneven_filepath, index_col="time", parse_dates=True)
 
     # 遍历 concat_labeled 数据
     for labeled_time, labeled_row in labeled.iterrows():
@@ -1249,10 +1342,22 @@ def c4_reversal_nature_point_to_ts1(assetList, temp_data_dict, temp_label_list, 
     data_0 = RMQStrategyIndicator.calculate_indicators(data_0_raw)
     # 是否处理样本不均
     if handle_uneven_samples:
-        labeled = tea_radical_nature_handling_uneven_samples1(labeled)
-        if labeled.empty:
-            print(assetList[0].assetsCode, "处理样本不均终止")
-            return None
+        handled_uneven_filepath = (RMTTools.read_config("RMQData", item)
+                                   + assetList[4].assetsMarket
+                                   + "_"
+                                   + assetList[4].assetsCode
+                                   + "_"
+                                   + assetList[4].barEntity.timeLevel
+                                   + str(label_name)
+                                   + "_handled_uneven" + ".csv")
+        if not os.path.exists(handled_uneven_filepath):
+            labeled = tea_radical_nature_handling_uneven_samples1(labeled)
+            if labeled.empty:
+                print(assetList[0].assetsCode, "处理样本不均终止")
+                return None
+            labeled.to_csv(handled_uneven_filepath, index=True)
+        else:
+            labeled = pd.read_csv(handled_uneven_filepath, index_col="time", parse_dates=True)
 
     # 遍历 concat_labeled 数据
     for labeled_time, labeled_row in labeled.iterrows():
@@ -1456,14 +1561,16 @@ def prepare_dataset(flag, name, time_point_step, limit_length, handle_uneven_sam
                 continue
         elif strategy_name == 'c4_oscillation_boll_nature' and p2t_name == "point_to_ts1":
             # 单级别标注，单级别造数
-            res = c4_oscillation_boll_nature_point_to_ts1(assetList, temp_data_dict, temp_label_list, time_point_step,
+            res = c4_oscillation_boll_nature_point_to_ts1(assetList, temp_data_dict, temp_label_list,
+                                                          time_point_step,
                                                           handle_uneven_samples,
                                                           strategy_name, label_name, feature_plan_name)
             if not res:
                 continue
         elif strategy_name == 'c4_oscillation_kdj_nature' and p2t_name == "point_to_ts1":
             # 单级别标注，单级别造数
-            res = c4_oscillation_kdj_nature_point_to_ts1(assetList, temp_data_dict, temp_label_list, time_point_step,
+            res = c4_oscillation_kdj_nature_point_to_ts1(assetList, temp_data_dict, temp_label_list,
+                                                         time_point_step,
                                                          handle_uneven_samples,
                                                          strategy_name, label_name, feature_plan_name)
             if not res:
@@ -1507,6 +1614,155 @@ def prepare_dataset(flag, name, time_point_step, limit_length, handle_uneven_sam
         equal_length=True,
         fold=flag
     )
+
+
+def prepare_dataset_single(flag, name, time_point_step, limit_length, handle_uneven_samples, strategy_name,
+                           feature_plan_name, p2t_name, label_name, count):
+    allStockCode = pd.read_csv("./QuantData/a800_stocks.csv")
+    df_dataset = allStockCode.iloc[500:]
+    n = 1
+    for index, row in df_dataset.iterrows():
+        # 创建一个字典来存储匹配的结果
+        if feature_plan_name == 'feature1':
+            temp_data_dict = {'index_d_close': [], 'index_d_volume': [], 'd_close': [], 'd_volume': [], 'close_60': [],
+                              'volume_60': []}
+        elif feature_plan_name == 'feature2':
+            temp_data_dict = {'MACD_0': [], 'DIF_0': [], 'DEA_0': [], 'K_0': [], 'D_0': [], 'J_0': [], 'close_0': [],
+                              'MACD_1': [], 'DIF_1': [], 'DEA_1': [], 'K_1': [], 'D_1': [], 'J_1': [], 'close_1': [],
+                              'MACD_2': [], 'DIF_2': [], 'DEA_2': [], 'K_2': [], 'D_2': [], 'J_2': [], 'close_2': []
+                              }
+        elif feature_plan_name == 'feature3':
+            temp_data_dict = {'MACD_0': [], 'DIF_0': [], 'MA_5_0': [], 'MA_10_0': [], 'MA_60_0': [], 'close_0': [],
+                              'MACD_1': [], 'DIF_1': [], 'MA_5_1': [], 'MA_10_1': [], 'MA_60_1': [], 'close_1': [],
+                              'MACD_2': [], 'DIF_2': [], 'MA_5_2': [], 'MA_10_2': [], 'MA_60_2': [], 'close_2': []
+                              }
+        elif feature_plan_name == 'feature4':
+            temp_data_dict = {'MACD_0': [], 'DIF_0': [], 'DEA_0': [], 'K_0': [], 'D_0': [], 'J_0': [], 'close_0': []
+                              }
+        elif feature_plan_name == 'feature5':
+            temp_data_dict = {'ema10': [], 'ema20': [], 'ema60': [], 'macd': [], 'signal': [],
+                              'adx': [], 'plus_di': [], 'minus_di': [], 'atr': [], 'boll_mid': [], 'boll_upper': [],
+                              'boll_lower': [], 'rsi': [], 'obv': [], 'volume_ma5': [], 'close': [], 'volume': []
+                              }
+        elif feature_plan_name == 'feature_c4_trend':
+            temp_data_dict = {'ema60': [], 'close': [], 'macd': [], 'signal': [], 'rsi': []}
+        elif feature_plan_name == 'feature_c4_oscillation_boll':
+            temp_data_dict = {'close': [], 'boll_upper': [], 'boll_lower': [], 'rsi': []}
+        elif feature_plan_name == 'feature_c4_oscillation_kdj':
+            temp_data_dict = {'k': [], 'd': [], 'close': []}
+        elif feature_plan_name == 'feature_c4_breakout':
+            temp_data_dict = {'atr': [], 'close': [], 'boll_upper': [], 'boll_lower': [], 'volume': []}
+        elif feature_plan_name == 'feature_c4_reversal':
+            temp_data_dict = {'histogram': [], 'obv': [], 'ema10': [], 'ema60': [], 'close': []}
+        else:
+            print("未指定feature_plan_name")
+            return None
+        temp_label_list = []
+
+        assetList = RMQAsset.asset_generator(row['code'][3:],
+                                             row['code_name'],
+                                             ['5', '15', '30', '60', 'd'],
+                                             'stock',
+                                             1, 'A')
+        # 准备训练数据
+        if strategy_name == 'tea_radical_nature' and p2t_name == "point_to_ts1":
+            # 拼接所有点，60、d、index_d造数
+            tea_radical_nature_point_to_ts1(assetList, temp_data_dict, temp_label_list, time_point_step,
+                                            handle_uneven_samples,
+                                            strategy_name, label_name, feature_plan_name)
+        elif strategy_name == 'tea_radical_nature' and p2t_name == "point_to_ts2":
+            # 5标注，5、15、30造数
+            tea_radical_nature_point_to_ts2(assetList, temp_data_dict, temp_label_list, time_point_step,
+                                            handle_uneven_samples,
+                                            strategy_name, label_name, feature_plan_name)
+        elif strategy_name == 'tea_radical_nature' and p2t_name == "point_to_ts3":
+            # 单级别标注，单级别造数
+            tea_radical_nature_point_to_ts3(assetList, temp_data_dict, temp_label_list, time_point_step,
+                                            handle_uneven_samples,
+                                            strategy_name, label_name, feature_plan_name)
+        elif strategy_name == 'fuzzy_nature' and p2t_name == "point_to_ts1":
+            # 30标注，30、60、d造数
+            fuzzy_nature_point_to_ts1(assetList, temp_data_dict, temp_label_list, time_point_step,
+                                      handle_uneven_samples,
+                                      strategy_name, label_name, feature_plan_name)
+        elif strategy_name == 'identify_Market_Types' and p2t_name == "point_to_ts1":
+            # d标注，d造数
+            identify_market_types_to_ts1(assetList, temp_data_dict, temp_label_list, time_point_step,
+                                         handle_uneven_samples,
+                                         strategy_name, label_name, feature_plan_name)
+        elif strategy_name == 'c4_trend_nature' and p2t_name == "point_to_ts1":
+            # 单级别标注，单级别造数
+            res = c4_trend_nature_point_to_ts1(assetList, temp_data_dict, temp_label_list, time_point_step,
+                                               handle_uneven_samples,
+                                               strategy_name, label_name, feature_plan_name)
+            if not res:
+                continue
+        elif strategy_name == 'c4_oscillation_boll_nature' and p2t_name == "point_to_ts1":
+            # 单级别标注，单级别造数
+            res = c4_oscillation_boll_nature_point_to_ts1(assetList, temp_data_dict, temp_label_list,
+                                                          time_point_step,
+                                                          handle_uneven_samples,
+                                                          strategy_name, label_name, feature_plan_name)
+            if not res:
+                continue
+        elif strategy_name == 'c4_oscillation_kdj_nature' and p2t_name == "point_to_ts1":
+            # 单级别标注，单级别造数
+            res = c4_oscillation_kdj_nature_point_to_ts1(assetList, temp_data_dict, temp_label_list,
+                                                         time_point_step,
+                                                         handle_uneven_samples,
+                                                         strategy_name, label_name, feature_plan_name)
+            if not res:
+                continue
+        elif strategy_name == 'c4_breakout_nature' and p2t_name == "point_to_ts1":
+            # 单级别标注，单级别造数
+            res = c4_breakout_nature_point_to_ts1(assetList, temp_data_dict, temp_label_list, time_point_step,
+                                                  handle_uneven_samples,
+                                                  strategy_name, label_name, feature_plan_name)
+            if not res:
+                continue
+        elif strategy_name == 'c4_reversal_nature' and p2t_name == "point_to_ts1":
+            # 单级别标注，单级别造数
+            res = c4_reversal_nature_point_to_ts1(assetList, temp_data_dict, temp_label_list, time_point_step,
+                                                  handle_uneven_samples,
+                                                  strategy_name, label_name, feature_plan_name)
+            if not res:
+                continue
+        # 循环结束后，字典转为DataFrame
+        result_df = pd.DataFrame(temp_data_dict)
+        # 将列表转换成 Series
+        result_series = pd.Series(temp_label_list)
+
+        # 写入 ts 文件
+        write_dataframe_to_tsfile(
+            data=result_df,
+            path="./QuantData/trade_point_backTest_ts",  # 保存文件的路径
+            problem_name="a800_" + str(time_point_step) + assetList[4].assetsMarket
+                         + "_"
+                         + assetList[4].assetsCode
+                         + "_"
+                         + assetList[4].barEntity.timeLevel + "step_" + name + "limit",  # 问题名称
+            class_label=["1", "2", "3", "4"],  # 是否有 class_label
+            class_value_list=result_series,  # 是否有 class_label
+            equal_length=True,
+            fold=flag
+        )
+        # 写入 ts 文件
+        write_dataframe_to_tsfile(
+            data=result_df,
+            path="./QuantData/trade_point_backTest_ts",  # 保存文件的路径
+            problem_name="a800_" + str(time_point_step) + assetList[4].assetsMarket
+                         + "_"
+                         + assetList[4].assetsCode
+                         + "_"
+                         + assetList[4].barEntity.timeLevel + "step_" + name + "limit",  # 问题名称
+            class_label=["1", "2", "3", "4"],  # 是否有 class_label
+            class_value_list=result_series,  # 是否有 class_label
+            equal_length=True,
+            fold="_TRAIN"
+        )
+        n += 1
+        if n >= count:
+            break
 
 
 def concat_trade_point(assetList, strategy_name):

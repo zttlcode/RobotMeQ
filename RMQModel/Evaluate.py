@@ -1,10 +1,10 @@
 import pandas as pd
-
+import os
 from RMQTool import Tools as RMTTools
 import RMQData.Asset as RMQAsset
 
 
-def cal_return_rate(asset, flag, strategy_name):
+def cal_return_rate(asset, flag, strategy_name, pred):
     # 加载数据
     item = 'trade_point_backtest_' + strategy_name
     df_filePath = (RMTTools.read_config("RMQData", item)
@@ -12,9 +12,17 @@ def cal_return_rate(asset, flag, strategy_name):
                    + "_"
                    + asset.assetsCode
                    + str(flag) + ".csv")
-
+    if not os.path.exists(df_filePath):
+        return None
     # 读取CSV文件
     df = pd.read_csv(df_filePath)
+    if pred:
+        df_prd_true_filePath = "D:/github/Time-Series-Library-Quant/results/" + asset.assetsCode + "_prd_result.csv"
+        if not os.path.exists(df_prd_true_filePath):
+            print(asset.assetsCode + "预测结果文件不存在")
+            return None
+        df_prd_true = pd.read_csv(df_prd_true_filePath)
+        df['label'] = df_prd_true['predictions']
     # 如果有 4 列，是标注后数据，过滤有效交易点
     if df.shape[1] == 4:
         dataframe = df[df['label'].isin([1, 3])].drop(columns=['label'])
@@ -91,15 +99,15 @@ def cal_return_rate(asset, flag, strategy_name):
     # return round(final_return_rate, 4)
 
 
-def return_rate(assetList, is_concat, flag, strategy_name):
+def return_rate(assetList, is_concat, flag, strategy_name, pred):
     if is_concat:
-        cal_return_rate(assetList[0], flag, strategy_name)
+        cal_return_rate(assetList[0], flag, strategy_name, pred)
     else:
         for asset in assetList:
             if flag:  # flag不是None
-                cal_return_rate(asset, "_" + asset.barEntity.timeLevel + str(flag), strategy_name)
+                cal_return_rate(asset, "_" + asset.barEntity.timeLevel + str(flag), strategy_name, pred)
             else:
-                cal_return_rate(asset, "_" + asset.barEntity.timeLevel, strategy_name)
+                cal_return_rate(asset, "_" + asset.barEntity.timeLevel, strategy_name, pred)
 
     print(assetList[0].assetsCode + "收益率计算完成")
 

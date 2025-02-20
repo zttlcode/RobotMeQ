@@ -40,7 +40,7 @@ def process_fuzzy_trade_point_csv():
 
 
 def count_label_distribution():
-    folder_path = "../QuantData/trade_point_backtest_c4_oscillation_boll_nature/"
+    folder_path = "../QuantData/trade_point_backtest_c4_reversal_nature/"
     """ 遍历目标文件夹，统计每个CSV文件中 label 列的分布情况 """
     # 获取所有以 label1 结尾的 CSV 文件
     csv_files = glob.glob(os.path.join(folder_path, "*label1.csv"))
