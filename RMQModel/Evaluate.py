@@ -4,7 +4,7 @@ from RMQTool import Tools as RMTTools
 import RMQData.Asset as RMQAsset
 
 
-def cal_return_rate(asset, flag, strategy_name, pred):
+def cal_return_rate(asset, flag, strategy_name, pred, handled_uneven):
     # 加载数据
     item = 'trade_point_backtest_' + strategy_name
     df_filePath = (RMTTools.read_config("RMQData", item)
@@ -14,6 +14,19 @@ def cal_return_rate(asset, flag, strategy_name, pred):
                    + str(flag) + ".csv")
     if not os.path.exists(df_filePath):
         return None
+
+    if handled_uneven:
+        handled_uneven_filepath = (RMTTools.read_config("RMQData", item)
+                                   + asset.assetsMarket
+                                   + "_"
+                                   + asset.assetsCode
+                                   + str(flag)
+                                   + "_handled_uneven" + ".csv")
+        if not os.path.exists(handled_uneven_filepath):
+            print(asset.assetsCode + "样本不均处理文件不存在")
+            return None
+        df_filePath = handled_uneven_filepath
+
     # 读取CSV文件
     df = pd.read_csv(df_filePath)
     if pred:
@@ -99,15 +112,15 @@ def cal_return_rate(asset, flag, strategy_name, pred):
     # return round(final_return_rate, 4)
 
 
-def return_rate(assetList, is_concat, flag, strategy_name, pred):
+def return_rate(assetList, is_concat, flag, strategy_name, pred, handled_uneven):
     if is_concat:
-        cal_return_rate(assetList[0], flag, strategy_name, pred)
+        cal_return_rate(assetList[0], flag, strategy_name, pred, handled_uneven)
     else:
         for asset in assetList:
             if flag:  # flag不是None
-                cal_return_rate(asset, "_" + asset.barEntity.timeLevel + str(flag), strategy_name, pred)
+                cal_return_rate(asset, "_" + asset.barEntity.timeLevel + str(flag), strategy_name, pred, handled_uneven)
             else:
-                cal_return_rate(asset, "_" + asset.barEntity.timeLevel, strategy_name, pred)
+                cal_return_rate(asset, "_" + asset.barEntity.timeLevel, strategy_name, pred, handled_uneven)
 
     print(assetList[0].assetsCode + "收益率计算完成")
 

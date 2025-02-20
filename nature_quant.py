@@ -104,7 +104,7 @@ def pre_handle():
                             c4_breakout_nature
                             c4_reversal_nature
         """
-        # RMQEvaluate.return_rate(assetList, False, "_label1", "c4_oscillation_boll_nature", False)
+        # RMQEvaluate.return_rate(assetList, False, "_label1", "c4_oscillation_boll_nature", False, True)
 
 
 def run_experiment():
@@ -140,36 +140,38 @@ def run_experiment():
                     各级别标注交易点  "_" + asset.barEntity.timeLevel + "_label3"  此时flag是 _label2 _label3 _label4
                     fuzzy的各级别flag也有 _label1
     """
-    RMQDataset.prepare_dataset("_TRAIN", "2w_c4_trend_nature_20", 20,
-                               30000, False, "c4_trend_nature",
-                               "feature_c4_trend", "point_to_ts1", "_label1")
-    RMQDataset.prepare_dataset("_TEST", "2w_c4_trend_nature_20", 20,
-                               20000, False, "c4_trend_nature",
-                               "feature_c4_trend", "point_to_ts1", "_label1")
+    RMQDataset.prepare_dataset("_TRAIN", "2w_c4_oscillation_kdj_nature_20", 20,
+                               30000, True,
+                               "c4_oscillation_kdj_nature", "feature_c4_oscillation_kdj",
+                               "point_to_ts1", "_label1")
+    RMQDataset.prepare_dataset("_TEST", "2w_c4_oscillation_kdj_nature_20", 20,
+                               20000, True,
+                               "c4_oscillation_kdj_nature", "feature_c4_oscillation_kdj",
+                               "point_to_ts1", "_label1")
 
 
 def run_live():
-    # RMQDataset.prepare_dataset_single("_TEST", "2w_c4_trend_nature_20", 20,
-    #                                   20000, False,
-    #                                   "c4_trend_nature", "feature_c4_trend",
-    #                                   "point_to_ts1", "_label1", 5)
+    # RMQDataset.prepare_dataset_single("_TEST", "2w_c4_oscillation_kdj_nature_20", 20,
+    #                                   20000, True,
+    #                                   "c4_oscillation_kdj_nature", "feature_c4_oscillation_kdj",
+    #                                   "point_to_ts1", "_label1", 3)
     """
-603737 结束 32
-603786 结束 26
-603826 结束 8
-603858 结束 13
+603737 结束 310
+603786 结束 170
     """
-    assetList = RMQAsset.asset_generator('603858',
+    assetList = RMQAsset.asset_generator('603786',
                                          '',
                                          ['d'],
                                          'stock',
                                          1, 'A')
-    RMQEvaluate.return_rate(assetList, False, "_label1", "c4_trend_nature", False)
+    RMQEvaluate.return_rate(assetList, False, "_label1", "c4_oscillation_kdj_nature",
+                            False, True)
     # 读取CSV文件
-    RMQEvaluate.return_rate(assetList, False, "_label1", "c4_trend_nature", True)
+    RMQEvaluate.return_rate(assetList, False, "_label1", "c4_oscillation_kdj_nature",
+                            True, True)
 
 
 if __name__ == '__main__':
     #pre_handle()  # 数据预处理
-    # run_experiment()  # 所有股票组成训练集
+    #run_experiment()  # 所有股票组成训练集
     run_live()  # 单独推理一个股票
