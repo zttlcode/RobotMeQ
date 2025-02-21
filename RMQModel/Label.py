@@ -1288,6 +1288,9 @@ def label(assetList, strategy_name, label_name):
         elif strategy_name == "fuzzy_nature":
             for asset in assetList:
                 fuzzy_nature_label1(asset, strategy_name)
+        elif strategy_name == "extremum":
+            for asset in assetList:
+                fuzzy_nature_label1(asset, strategy_name)
         elif strategy_name == "identify_Market_Types":
             for asset in assetList:
                 market_condition_label1(asset, strategy_name)

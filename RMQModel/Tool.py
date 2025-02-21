@@ -35,12 +35,12 @@ def process_fuzzy_trade_point_csv():
             process_csv(file)
 
     # 使用示例
-    folder_path = '../QuantData/trade_point_backtest_c4_oscillation_kdj_nature/'  # 替换为你的文件夹路径
+    folder_path = '../QuantData/trade_point_backtest_extremum/'  # 替换为你的文件夹路径
     process_folder(folder_path)
 
 
 def count_label_distribution():
-    folder_path = "../QuantData/trade_point_backtest_c4_reversal_nature/"
+    folder_path = "../QuantData/trade_point_backtest_extremum/"
     """ 遍历目标文件夹，统计每个CSV文件中 label 列的分布情况 """
     # 获取所有以 label1 结尾的 CSV 文件
     csv_files = glob.glob(os.path.join(folder_path, "*label1.csv"))
@@ -92,6 +92,6 @@ def handle_800_wait():
 
 
 if __name__ == '__main__':
-    # process_fuzzy_trade_point_csv()
-    count_label_distribution()  # 执行统计
+    process_fuzzy_trade_point_csv()
+    # count_label_distribution()  # 执行统计
     # handle_800_wait()  # 并行回测时，处理剩余数据

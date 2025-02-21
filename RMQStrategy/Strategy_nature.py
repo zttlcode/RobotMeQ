@@ -3,13 +3,18 @@ import RMQData.Position as RMQPosition
 import RMQData.Indicator as RMQIndicator
 import RMQStrategy.Strategy_fuzzy as RMQSFuzzy
 
+"""
+    1、趋势 fuzzy，利用模糊理论，基于均线，判断当前是买方强势还是卖方强势，跟随强者操作。
+    2、趋势 MACD（带signal）+ RSI + EMA60 + 收盘价：适合趋势市和中长期趋势，适合中长线交易者。
+    3、趋势 MACD + KDJ + 收盘价：适合震荡市和短期趋势，适合短线交易者。
+    4、震荡 boll + RSI + 收盘价：震荡策略。
+    5、震荡 KDJ：震荡策略。
+    6、突破 震荡转趋势 boll + ATR + 成交量 + 收盘价。
+    7、反转 趋势转趋势 MACD（带signal）+ obv + ema10 + ema60。
+"""
 
-def strategy_tea_radical(positionEntity,
-                         indicatorEntity,
-                         windowDF_calIndic,
-                         DFLastRow,
-                         strategy_result,
-                         IEMultiLevel):
+
+def strategy_tea_radical(positionEntity, indicatorEntity, windowDF_calIndic, DFLastRow, strategy_result, IEMultiLevel):
     # 1、计算自己需要的指标
     divergeDF, windowDF_calIndic = RMQIndicator.calMACD_area(windowDF_calIndic)  # df第0条是当前区域，第1条是过去的区域
     try:
@@ -89,11 +94,7 @@ def strategy_tea_radical(positionEntity,
         print("Error happens ", indicatorEntity.IE_assetsCode, " ", indicatorEntity.IE_timeLevel, " ", e)
 
 
-def strategy_fuzzy(positionEntity,
-                   indicatorEntity,
-                   windowDF_calIndic,
-                   bar_num,
-                   strategy_result):
+def strategy_fuzzy(positionEntity, indicatorEntity, windowDF_calIndic, bar_num, strategy_result):
     # if 0 != len(positionEntity.currentOrders):  # 满仓，判断止损
     #     RMQPosition.stopLoss(positionEntity, indicatorEntity, strategy_result)
 

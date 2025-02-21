@@ -65,7 +65,7 @@ def pre_handle():
         # concat_trade_point(assetList, "tea_radical_nature")
         """
         过滤交易点
-            strategy_name: tea_radical_nature  fuzzy_nature  identify_Market_Types
+            strategy_name: tea_radical_nature  fuzzy_nature  identify_Market_Types  extremum
                             c4_trend_nature
                             c4_oscillation_boll_nature
                             c4_oscillation_kdj_nature
@@ -77,7 +77,7 @@ def pre_handle():
                 label3：单级别校验各自MACD、DIF是否维持趋势
                 label4：单级别校验各自MACD、DIF+40个bar内趋势
         """
-        # RMQLabel.label(assetList, "c4_reversal_nature", "label1")
+        RMQLabel.label(assetList, "extremum", "label1")
         """
         画K线买卖点图
             method_name:
@@ -119,7 +119,7 @@ def run_experiment():
         time_point_step: 截取的时间步，最长500，最少得是8以上，因为很多时序模型需要得序列长度最少是8
         limit_length：限制长度是为了方便debug时调试，数据太多加载太慢
         handle_uneven_samples: macd策略样本不均，其他策略不一定有这个问题，所以这里控制要不要处理
-        strategy_name: 为了读回测点文件，tea_radical_nature  fuzzy_nature  identify_Market_Types
+        strategy_name: 为了读回测点文件，tea_radical_nature  fuzzy_nature  identify_Market_Types extremum
                             c4_trend_nature
                             c4_oscillation_boll_nature
                             c4_oscillation_kdj_nature
@@ -132,7 +132,8 @@ def run_experiment():
                 feature_c4_oscillation_boll
                 feature_c4_oscillation_kdj
                 feature_c4_breakout
-                feature_c4_reversal
+                feature_c4_reversal  
+                feature_extremum
         p2t_name: 针对不同特征，截不同得训练集数据
                 point_to_ts1 针对feature1截收盘价和成交量
                 point_to_ts2 针对feature2截MACD、KDJ、close
@@ -140,21 +141,21 @@ def run_experiment():
                     各级别标注交易点  "_" + asset.barEntity.timeLevel + "_label3"  此时flag是 _label2 _label3 _label4
                     fuzzy的各级别flag也有 _label1
     """
-    RMQDataset.prepare_dataset("_TRAIN", "2w_c4_oscillation_kdj_nature_20", 20,
-                               30000, True,
-                               "c4_oscillation_kdj_nature", "feature_c4_oscillation_kdj",
+    RMQDataset.prepare_dataset("_TRAIN", "2w_extremum_20", 60,
+                               20000, False,
+                               "extremum", "feature_extremum",
                                "point_to_ts1", "_label1")
-    RMQDataset.prepare_dataset("_TEST", "2w_c4_oscillation_kdj_nature_20", 20,
-                               20000, True,
-                               "c4_oscillation_kdj_nature", "feature_c4_oscillation_kdj",
+    RMQDataset.prepare_dataset("_TEST", "2w_extremum_20", 60,
+                               10000, False,
+                               "extremum", "feature_extremum",
                                "point_to_ts1", "_label1")
 
 
 def run_live():
-    # RMQDataset.prepare_dataset_single("_TEST", "2w_c4_oscillation_kdj_nature_20", 20,
-    #                                   20000, True,
-    #                                   "c4_oscillation_kdj_nature", "feature_c4_oscillation_kdj",
-    #                                   "point_to_ts1", "_label1", 3)
+    RMQDataset.prepare_dataset_single("_TEST", "2w_c4_oscillation_kdj_nature_20", 20,
+                                      20000, True,
+                                      "c4_oscillation_kdj_nature", "feature_c4_oscillation_kdj",
+                                      "point_to_ts1", "_label1", 3)
     """
 603737 结束 310
 603786 结束 170
@@ -173,5 +174,6 @@ def run_live():
 
 if __name__ == '__main__':
     #pre_handle()  # 数据预处理
-    #run_experiment()  # 所有股票组成训练集
-    run_live()  # 单独推理一个股票
+    run_experiment()  # 所有股票组成训练集
+    #run_live()  # 单独推理一个股票
+    pass

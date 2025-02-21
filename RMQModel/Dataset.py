@@ -787,6 +787,86 @@ def fuzzy_nature_point_to_ts1(assetList, temp_data_dict, temp_label_list, time_p
     print(assetList[0].assetsCode, "结束", len(temp_label_list))
 
 
+def extremum_point_to_ts1(assetList, temp_data_dict, temp_label_list, time_point_step, handle_uneven_samples,
+                          strategy_name, label_name, feature_plan_name):
+    # 加载数据
+    item = 'trade_point_backtest_' + strategy_name
+    labeled_filePath = (RMTTools.read_config("RMQData", item)
+                        + assetList[4].assetsMarket
+                        + "_"
+                        + assetList[4].assetsCode
+                        + "_"
+                        + assetList[4].barEntity.timeLevel
+                        + str(label_name)
+                        + ".csv")
+    data_0_filepath = (RMTTools.read_config("RMQData", "backtest_bar")
+                       + "bar_"
+                       + assetList[4].assetsMarket
+                       + "_"
+                       + assetList[4].assetsCode
+                       + "_"
+                       + assetList[4].barEntity.timeLevel
+                       + ".csv")
+
+    if not os.path.exists(labeled_filePath):
+        return None
+
+    labeled = pd.read_csv(labeled_filePath, index_col="time", parse_dates=True)
+    data_0 = pd.read_csv(data_0_filepath, index_col="time", parse_dates=True)
+
+    # 是否处理样本不均
+    if handle_uneven_samples:
+        handled_uneven_filepath = (RMTTools.read_config("RMQData", item)
+                                   + assetList[0].assetsMarket
+                                   + "_"
+                                   + assetList[0].assetsCode
+                                   + "_"
+                                   + assetList[0].barEntity.timeLevel
+                                   + str(label_name)
+                                   + "_handled_uneven" + ".csv")
+        if not os.path.exists(handled_uneven_filepath):
+            labeled = tea_radical_nature_handling_uneven_samples1(labeled)
+            labeled.to_csv(handled_uneven_filepath, index=True)
+        else:
+            labeled = pd.read_csv(handled_uneven_filepath, index_col="time", parse_dates=True)
+
+    # 遍历 concat_labeled 数据
+    for labeled_time, labeled_row in labeled.iterrows():
+        """1、寻找本级别匹配行"""
+        data_0_filter = (data_0.index == labeled_time)
+        matched_0 = data_0[data_0_filter]
+        if len(matched_0) > 0:
+            matched_0_index = matched_0.index[-1]
+            matched_0_row_index = data_0.index.get_loc(matched_0_index)
+            if matched_0_row_index >= time_point_step:
+                # 时间索引用完了，跟tea_radical_nature_label3一样删掉它，不然计算指标会报错
+                data_0_tmp = data_0.iloc[matched_0_row_index - time_point_step: matched_0_row_index].reset_index(
+                    drop=True)
+
+                open = data_0_tmp["open"]
+                high = data_0_tmp["high"]
+                low = data_0_tmp["low"]
+                close = data_0_tmp["close"]
+
+                if open.isna().any() or high.isna().any() or low.isna().any() or close.isna().any():
+                    continue  # 数据NaN，跳过
+            else:
+                continue  # backtest_bar 越界，跳过
+        else:
+            continue  # 无匹配日期，跳过
+
+        # # 如果通过所有越界检查，将数据存入字典  标签存入列表
+        temp_data_dict['open'].append(open)
+        temp_data_dict['high'].append(high)
+        temp_data_dict['low'].append(low)
+        temp_data_dict['close'].append(close)
+
+        temp_label_list.append(labeled_row['label'])
+
+    print(assetList[0].assetsCode, "结束", len(temp_label_list))
+    return "success"
+
+
 def identify_market_types_to_ts1(assetList, temp_data_dict, temp_label_list, time_point_step, handle_uneven_samples,
                                  strategy_name, label_name, feature_plan_name):
     # 加载数据
@@ -1432,6 +1512,8 @@ def prepare_dataset(flag, name, time_point_step, limit_length, handle_uneven_sam
                           'adx': [], 'plus_di': [], 'minus_di': [], 'atr': [], 'boll_mid': [], 'boll_upper': [],
                           'boll_lower': [], 'rsi': [], 'obv': [], 'volume_ma5': [], 'close': [], 'volume': []
                           }
+    elif feature_plan_name == 'feature_extremum':
+        temp_data_dict = {'open': [], 'high': [], 'low': [], 'close': []}
     elif feature_plan_name == 'feature_c4_trend':
         temp_data_dict = {'ema60': [], 'close': [], 'macd': [], 'signal': [], 'rsi': []}
     elif feature_plan_name == 'feature_c4_oscillation_boll':
@@ -1547,6 +1629,13 @@ def prepare_dataset(flag, name, time_point_step, limit_length, handle_uneven_sam
             fuzzy_nature_point_to_ts1(assetList, temp_data_dict, temp_label_list, time_point_step,
                                       handle_uneven_samples,
                                       strategy_name, label_name, feature_plan_name)
+        elif strategy_name == 'extremum' and p2t_name == "point_to_ts1":
+            # 单级别标注，单级别造数
+            res = extremum_point_to_ts1(assetList, temp_data_dict, temp_label_list, time_point_step,
+                                        handle_uneven_samples,
+                                        strategy_name, label_name, feature_plan_name)
+            if not res:
+                continue
         elif strategy_name == 'identify_Market_Types' and p2t_name == "point_to_ts1":
             # d标注，d造数
             identify_market_types_to_ts1(assetList, temp_data_dict, temp_label_list, time_point_step,
