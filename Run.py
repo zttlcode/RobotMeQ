@@ -8,7 +8,7 @@ import RMQData.Indicator as RMQIndicator
 import RMQData.Asset as RMQAsset
 import RMQVisualized.Draw_Matplotlib as RMQDrawPlot
 from RMQTool import Tools as RMTTools
-from RMQModel import Identify_Market_Types as RMQM_Identify_Market_Types
+from RMQModel import Identify_market_types as RMQM_Identify_Market_Types
 import numpy as np
 import matplotlib.pyplot as plt
 import scipy.signal as signal

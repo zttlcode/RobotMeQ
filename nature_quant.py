@@ -21,7 +21,7 @@ from RMQModel import Dataset as RMQDataset
 from RMQModel import Evaluate as RMQEvaluate
 from RMQVisualized import Draw_Pyecharts as RMQDraw_Pyecharts
 from RMQModel import Label as RMQLabel
-from RMQModel import Identify_Market_Types as RMQM_Identify_Market_Types
+from RMQModel import Identify_market_types as RMQM_Identify_Market_Types
 import Run as Run
 
 

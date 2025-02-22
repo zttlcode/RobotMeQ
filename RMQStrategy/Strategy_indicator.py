@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 from datetime import datetime
 import matplotlib.pyplot as plt
-from RMQModel import Identify_Market_Types_Helper as IMTHelper
+from RMQModel import Identify_market_types_helper as IMTHelper
 import RMQData.Asset as RMQAsset
 from RMQTool import Tools as RMTTools
 

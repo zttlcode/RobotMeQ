@@ -1,6 +1,6 @@
 import pandas as pd
 import os
-from RMQModel import Identify_Market_Types_Helper as IMTHelper
+from RMQModel import Identify_market_types_helper as IMTHelper
 import RMQData.Asset as RMQAsset
 from RMQTool import Tools as RMTTools
 

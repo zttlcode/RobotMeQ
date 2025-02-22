@@ -5,7 +5,7 @@ import os
 from RMQTool import Tools as RMTTools
 import RMQData.Asset as RMQAsset
 import RMQData.Indicator as RMQIndicator
-from RMQModel import Identify_Market_Types_Helper as IMTHelper
+from RMQModel import Identify_market_types_helper as IMTHelper
 from RMQStrategy import Strategy_indicator as RMQStrategyIndicator
 
 

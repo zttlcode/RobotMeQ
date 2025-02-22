@@ -5,7 +5,7 @@ import RMQStrategy.Strategy_fuzzy as RMQSFuzzy
 import RMQStrategy.Strategy_tea as RMQSTea
 import RMQStrategy.Strategy_nature as RMQSNature
 from RMQTool import Message
-from RMQModel import Identify_Market_Types_Helper as IMTHelper
+from RMQModel import Identify_market_types_helper as IMTHelper
 
 
 class StrategyResultEntity:
