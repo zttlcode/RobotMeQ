@@ -28,22 +28,22 @@ def process_fuzzy_trade_point_csv():
 
     def process_folder(folder_path):
         # 获取所有CSV文件
-        csv_files = glob.glob(os.path.join(folder_path, "*.csv"))
+        csv_files = glob.glob(os.path.join(folder_path, "*_d.csv"))
 
         # 遍历所有CSV文件并处理
         for file in csv_files:
             process_csv(file)
 
     # 使用示例
-    folder_path = '../QuantData/trade_point_backtest_extremum/'  # 替换为你的文件夹路径
+    folder_path = '../QuantData/trade_point_backtest_fuzzy_nature/'  # 替换为你的文件夹路径
     process_folder(folder_path)
 
 
 def count_label_distribution():
-    folder_path = "../QuantData/trade_point_backtest_extremum/"
+    folder_path = "../QuantData/trade_point_backtest_fuzzy_nature/"
     """ 遍历目标文件夹，统计每个CSV文件中 label 列的分布情况 """
     # 获取所有以 label1 结尾的 CSV 文件
-    csv_files = glob.glob(os.path.join(folder_path, "*label1.csv"))
+    csv_files = glob.glob(os.path.join(folder_path, "*_30_label1.csv"))
 
     for file in csv_files:
         try:
@@ -71,12 +71,12 @@ def count_label_distribution():
 def handle_800_wait():
     # 过滤已经800里未处理的数据
     # 文件夹路径和目标文件路径
-    folder_path = "../QuantData/trade_point_backtest_c4_reversal_nature/"  # 替换为存储CSV文件的文件夹路径
+    folder_path = "../QuantData/trade_point_backtest_fuzzy_nature/"  # 替换为存储CSV文件的文件夹路径
     hs_file_path = "../QuantData/a800_stocks.csv"  # hs.csv 文件路径
     output_file_path = "../QuantData/a800_wait_handle_stocks.csv"  # 输出文件路径
 
     # 步骤 1: 获取文件夹中所有文件名，并提取 cc 列
-    file_names = [f for f in os.listdir(folder_path) if f.endswith('.csv')]
+    file_names = [f for f in os.listdir(folder_path) if f.endswith('_15.csv')]
     cc_list = [f[2:8] for f in file_names if len(f) >= 8]  # 提取第18到23位
     cc_unique = set(cc_list)  # 去重，转为集合方便快速查找
     # 步骤 2: 读取 hs.csv 文件并截取 code 列前3位后进行比较
@@ -92,6 +92,6 @@ def handle_800_wait():
 
 
 if __name__ == '__main__':
-    process_fuzzy_trade_point_csv()
-    # count_label_distribution()  # 执行统计
+    # process_fuzzy_trade_point_csv()
+    count_label_distribution()  # 执行统计
     # handle_800_wait()  # 并行回测时，处理剩余数据

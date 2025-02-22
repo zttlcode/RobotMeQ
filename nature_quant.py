@@ -77,7 +77,7 @@ def pre_handle():
                 label3：单级别校验各自MACD、DIF是否维持趋势
                 label4：单级别校验各自MACD、DIF+40个bar内趋势
         """
-        RMQLabel.label(assetList, "extremum", "label1")
+        RMQLabel.label(assetList, "fuzzy_nature", "label1")
         """
         画K线买卖点图
             method_name:
@@ -173,7 +173,7 @@ def run_live():
 
 
 if __name__ == '__main__':
-    #pre_handle()  # 数据预处理
-    run_experiment()  # 所有股票组成训练集
+    pre_handle()  # 数据预处理
+    #run_experiment()  # 所有股票组成训练集
     #run_live()  # 单独推理一个股票
     pass

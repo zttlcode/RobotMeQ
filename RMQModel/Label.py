@@ -611,7 +611,7 @@ def fuzzy_nature_label1(asset, strategy_name):
             sell_price = price
             profit_ratio = (sell_price - buy_price) / buy_price  # 计算收益率
 
-            if profit_ratio > 0.05:  # 盈利超过5%
+            if profit_ratio > 0.10:  # 盈利超过5%
                 signal_df.at[buy_index, "label"] = 1  # 有效买入点
                 signal_df.at[signal_index, "label"] = 3  # 有效卖出点
             else:
