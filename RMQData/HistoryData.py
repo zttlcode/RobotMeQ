@@ -2,6 +2,7 @@ import baostock as bs
 import pandas as pd
 from RMQTool import Tools as RMTTools
 import RMQData.Asset as RMQAsset
+import akshare as ak
 
 
 def getData_BaoStock(asset, start_date, end_date, bar_type):
@@ -30,7 +31,7 @@ def getData_BaoStock(asset, start_date, end_date, bar_type):
         rs = bs.query_history_k_data_plus(code,
                                           "date,open,high,low,close,volume",
                                           start_date=start_date, end_date=end_date,
-                                          frequency="d", adjustflag="2")
+                                          frequency="d", adjustflag="3")
     else:
         # 分钟先数据，只有股票
         """
@@ -261,6 +262,48 @@ def cut_by_bar_num(df, bar_num):
         return df
 
 
+def get_USA_stock():
+    # 从新浪财经获取美股所有股票代码
+    df_USA_all = ak.get_us_stock_name()
+    df_USA_all.to_csv("../QuantData/USA_all_stocks.csv", encoding="utf-8", index=False)
+
+
+def get_sp500_code():
+    # 从Wikipedia获取标普500成分股列表
+    url = "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies"
+    df = pd.read_html(url)[0]
+
+    # 提取股票代码（Symbol列）
+    stock_codes = df['Symbol']
+
+    # 将股票代码保存到CSV文件
+    stock_codes.to_csv('../QuantData/sp500_stock_codes.csv', index=False)
+
+    print("CSV文件已保存。")
+
+
+def get_sp500_data():
+    # 读取s&p500_stock_codes.csv文件，获取股票代码
+    df = pd.read_csv('../QuantData/sp500_stock_codes.csv')
+    stock_codes = df['Symbol'].tolist()
+
+    # 循环遍历每个股票代码
+    for symbol in stock_codes:
+        try:
+            # 获取股票历史数据
+            stock_data = ak.stock_us_daily(symbol=symbol, adjust="")  # 调整方式根据需要可以修改
+
+            # 修改列名，将"date"改为"time"
+            stock_data.rename(columns={'date': 'time'}, inplace=True)
+
+            # 保存数据为CSV文件，文件名为股票代码
+            stock_data.to_csv(f'../QuantData/backTest/bar_USA_{symbol}_d.csv', index=False)
+
+            print(f"{symbol} 数据已保存为 {symbol}.csv")
+        except Exception as e:
+            print(f"无法获取 {symbol} 的数据: {e}")
+
+
 if __name__ == '__main__':
     """
     assetsType ： stock index ETF crypto
@@ -279,6 +322,8 @@ if __name__ == '__main__':
     #     # handle_TDX_data(asset)
 
     # 获取股票代码、获取股票发行日、获取股票各级别数据
-    get_stock_from_code_csv()  # 日线能从发行日开始，分钟级别最早是2019年元旦
+    # get_stock_from_code_csv()  # 日线能从发行日开始，分钟级别最早是2019年元旦
+
+    get_sp500_data()
 
 
