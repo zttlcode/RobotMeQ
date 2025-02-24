@@ -1,7 +1,6 @@
 import pandas as pd
 import os
-from RMQModel import Identify_market_types_helper as IMTHelper
-import RMQData.Asset as RMQAsset
+from RMQStrategy import Identify_market_types_helper as IMTHelper
 from RMQTool import Tools as RMTTools
 
 
@@ -70,24 +69,24 @@ def label_market_condition(df):
 def calculate_trend_probability(df):
     """综合趋势判断逻辑（区分涨跌方向）"""
     """
-        综合趋势判断逻辑（支持多时间框架验证）
-        返回趋势概率（0.0~1.0）
+    综合趋势判断逻辑（支持多时间框架验证）
+    返回趋势概率（0.0~1.0）
 
-        实现亮点：
-            多维度趋势验证体系：
-                6大核心条件：ADX强度、均线排列、价格结构、MACD动量、多时间框架验证、回调幅度过滤
-                采用加权积分机制（基础分+持续加分+波动率调整）
-            智能参数调整：
-                动态EMA周期（根据波动率自动调整）
-                自适应波动率权重（高波动市场降低趋势概率权重
-            多时间框架协同：
-                周线EMA50方向验证
-                4小时斐波那契关键位验证
-                日线与周线趋势一致性检查
-            复合过滤机制：
-                斐波那契回撤率+ATR波动率双过滤
-                MACD与均线方向协同验证
-                价格结构有效性检查（连续高/低点）
+    实现亮点：
+        多维度趋势验证体系：
+            6大核心条件：ADX强度、均线排列、价格结构、MACD动量、多时间框架验证、回调幅度过滤
+            采用加权积分机制（基础分+持续加分+波动率调整）
+        智能参数调整：
+            动态EMA周期（根据波动率自动调整）
+            自适应波动率权重（高波动市场降低趋势概率权重
+        多时间框架协同：
+            周线EMA50方向验证
+            4小时斐波那契关键位验证
+            日线与周线趋势一致性检查
+        复合过滤机制：
+            斐波那契回撤率+ATR波动率双过滤
+            MACD与均线方向协同验证
+            价格结构有效性检查（连续高/低点）
     """
     # 初始化双方向概率
     up_trend_prob = 0.0
@@ -205,14 +204,6 @@ def calculate_range_probability(df):
     综合震荡行情判断逻辑
     返回震荡概率（0.0~1.0）
 
-    六维震荡验证体系：
-        A[ADX<20] --> B[震荡基础]
-        C[布林带收口] --> B
-        D[波动率收缩] --> B
-        E[RSI中性] --> B
-        F[OBV平衡] --> B
-        G[成交量稳定] --> B
-        B --> H[综合概率]
     动态学习机制：
         布林带带宽采用历史分位数比较（过去120日20%分位）
         OBV平衡检测使用线性回归斜率
@@ -519,8 +510,8 @@ def run_backTest_label_market_condition(assetList):
 
         market_condition_list = []
         # for i in range(len(df) - 250 + 1):
-        for i in range(0, len(df) - 120 + 1, 1):
-            window_df = df.iloc[i:i + 120].copy()
+        for i in range(0, len(df) - 250 + 1, 1):
+            window_df = df.iloc[i:i + 250].copy()
             label = label_market_condition(window_df)
             max_key = max(label, key=label.get)
             max_value = label[max_key]
@@ -546,4 +537,4 @@ def run_backTest_label_market_condition(assetList):
                           + asset.indicatorEntity.IE_timeLevel
                           + ".csv", index=False)
 
-    print(assetList[0].assetsCode, "结束")
+    print(assetList[0].assetsCode, "行情分类标注结束")

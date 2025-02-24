@@ -3,9 +3,6 @@ import pandas as pd
 import RMQData.Asset as RMQAsset
 from RMQModel import Dataset as RMQDataset
 from RMQModel import Evaluate as RMQEvaluate
-from RMQVisualized import Draw_Pyecharts as RMQDraw_Pyecharts
-from RMQModel import Label as RMQLabel
-from RMQModel import Identify_market_types as RMQM_Identify_Market_Types
 import Run as Run
 
 
@@ -20,17 +17,39 @@ def pre_handle():
         为提高效率，单级别运行，启动10线程，2台电脑，预计2、3天跑完4000个行情
 
     a800_stocks
-    a800_wait_handle_stocks
+    a800_stocks_wait_handle_stocks
+    hk_1000_stock_codes
+    hk_1000_stock_codes_wait_handle_stocks
+    sp500_stock_codes
+    sp500_stock_codes_wait_handle_stocks
+    crypto_code
+    crypto_code_wait_handle_stocks
     """
-    allStockCode = pd.read_csv("./QuantData/a800_stocks.csv")
+    # allStockCode = pd.read_csv("./QuantData/hk_1000_stock_codes.csv")
+    allStockCode = pd.read_csv("./QuantData/asset_code/crypto_code.csv", dtype={'code': str})
     # 回测，并行 需要手动改里面的策略名
-    # Run.parallel_backTest(allStockCode)
+    Run.parallel_backTest(allStockCode)
     for index, row in allStockCode.iterrows():
-        assetList = RMQAsset.asset_generator(row['code'][3:],
-                                             row['code_name'],
-                                             ['d'],
-                                             'stock',
-                                             1, 'A')
+        # assetList = RMQAsset.asset_generator(row['code'][3:],
+        #                                      row['code_name'],
+        #                                      ['d'],
+        #                                      'stock',
+        #                                      1, 'A')
+        # assetList = RMQAsset.asset_generator(row['code'],
+        #                                      row['name'],
+        #                                      ['d'],
+        #                                      'stock',
+        #                                      1, 'HK')
+        # assetList = RMQAsset.asset_generator(row['Symbol'],
+        #                                      row['Symbol'],
+        #                                      ['d'],
+        #                                      'stock',
+        #                                      1, 'USA')
+        assetList = RMQAsset.asset_generator(row['code'],
+                                             row['code'],
+                                             ['60', '240', 'd'],
+                                             'crypto',
+                                             1, 'crypto')
         """
         回测，保存交易点
         加tick会细化价格导致操作提前，但实盘是bar结束了算指标，所以不影响
@@ -61,7 +80,7 @@ def pre_handle():
                 label3：单级别校验各自MACD、DIF是否维持趋势
                 label4：单级别校验各自MACD、DIF+40个bar内趋势
         """
-        RMQLabel.label(assetList, "fuzzy_nature", "label1")
+        # RMQLabel.label(assetList, "fuzzy_nature", "label1")
         """
         画K线买卖点图
             method_name:

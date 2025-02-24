@@ -90,38 +90,41 @@ def fuzzy(windowDF, bar_num):
         # 0~3初始化为0
 
     for k in range(n1 + ma1, n2 - 1):
-        # 循环到n-1,但下面的p会取到最新价格k+1,也就是n2
-        pa = np.sum(p[k - ma1:k]) / ma1
-        x3 = np.log(p[k] / pa)
-        y1 = meb(x3, 0, c, 2 * c)
-        y2 = meb(x3, c, 2 * c, 3 * c)
-        y3 = meb(x3, 2 * c, 3 * c, 3 * c)
-        y4 = meb(x3, -2 * c, -c, 0)
-        y5 = meb(x3, -3 * c, -2 * c, -c)
-        y6 = meb(x3, -3 * c, -3 * c, -2 * c)
-        y7 = meb(x3, -c, 0, c)
-        y = y1 + y2 + y3 + y7
-        ed1 = 0
-        if y != 0:
-            ed1 = (-0.1 * y1 - 0.2 * y2 - 0.4 * y3) / y
-        y = y4 + y5 + y6 + y7
-        ed2 = 0
-        if y != 0:
-            ed2 = (0.1 * y4 + 0.2 * y5 + 0.4 * y6) / y
+        try:
+            # 循环到n-1,但下面的p会取到最新价格k+1,也就是n2
+            pa = np.sum(p[k - ma1:k]) / ma1
+            x3 = np.log(p[k] / pa)
+            y1 = meb(x3, 0, c, 2 * c)
+            y2 = meb(x3, c, 2 * c, 3 * c)
+            y3 = meb(x3, 2 * c, 3 * c, 3 * c)
+            y4 = meb(x3, -2 * c, -c, 0)
+            y5 = meb(x3, -3 * c, -2 * c, -c)
+            y6 = meb(x3, -3 * c, -3 * c, -2 * c)
+            y7 = meb(x3, -c, 0, c)
+            y = y1 + y2 + y3 + y7
+            ed1 = 0
+            if y != 0:
+                ed1 = (-0.1 * y1 - 0.2 * y2 - 0.4 * y3) / y
+            y = y4 + y5 + y6 + y7
+            ed2 = 0
+            if y != 0:
+                ed2 = (0.1 * y4 + 0.2 * y5 + 0.4 * y6) / y
 
-        x = np.array([[ed1], [ed2]])
+            x = np.array([[ed1], [ed2]])
 
-        # 这行代码的目的是计算误差值 error[k]。
-        # p是价格的数组,计算索引为 k 和索引为 k+1 之间价格的对数收益率,
-        # 然后进行向量的点乘，其中 x.T 是 x 的转置，表示一个 1x2 的行向量，
-        # 而 aa[:, :, k-1] 表示 aa 的第三维中索引为 k-1 的切片。
-        # 这个点乘相当于将 x 与 aa[:, :, k-1] 的每一列进行对应元素的乘积，然后将结果相加
-        error[k] = (np.log(p[k + 1] / p[k]) - np.dot(x.T, aa[:, :, k - 1])).item()  # 这一步将得到的误差值(张量格式)转换为标量值
+            # 这行代码的目的是计算误差值 error[k]。
+            # p是价格的数组,计算索引为 k 和索引为 k+1 之间价格的对数收益率,
+            # 然后进行向量的点乘，其中 x.T 是 x 的转置，表示一个 1x2 的行向量，
+            # 而 aa[:, :, k-1] 表示 aa 的第三维中索引为 k-1 的切片。
+            # 这个点乘相当于将 x 与 aa[:, :, k-1] 的每一列进行对应元素的乘积，然后将结果相加
+            error[k] = (np.log(p[k + 1] / p[k]) - np.dot(x.T, aa[:, :, k - 1])).item()  # 这一步将得到的误差值(张量格式)转换为标量值
 
-        K = np.dot(P, x) / (np.dot(np.dot(x.T, P), x) + lmd)
-        # 最后一对系数比最新价格早一位,k截至到n2-1,最新价格是n2
-        aa[:, :, k] = aa[:, :, k - 1] + np.dot(K, error[k])
-        P = (P - np.dot(np.dot(K, x.T), P)) / lmd
+            K = np.dot(P, x) / (np.dot(np.dot(x.T, P), x) + lmd)
+            # 最后一对系数比最新价格早一位,k截至到n2-1,最新价格是n2
+            aa[:, :, k] = aa[:, :, k - 1] + np.dot(K, error[k])
+            P = (P - np.dot(np.dot(K, x.T), P)) / lmd
+        except Exception as e:
+            print(e)
     return n1, n2, aa
 
 
@@ -219,11 +222,11 @@ def detach_coefficient_figure(p, n, n1, n2, aa):
         # 同上, 循环遍历索引范围,操作的是系数,所以还是截至到n2-1,但买卖点是定位在最新价格,是n,所以加2
         if avmood[k] > 0 and ho == 0:
             nb += 1
-            buy.append(k - n1 + 2-5)  # 第k天看过去5天的系数差均值，大于0，则k+1天买入  20240708加了-5
+            buy.append(k - n1 + 2)  # 第k天看过去5天的系数差均值，大于0，则k+1天买入  20240708删了-5，-5相当于知道涨跌，提前5天交易，不合理
             ho = 1
         if avmood[k] < 0 and ho == 1:
             ns += 1
-            sel.append(k - n1 + 2-5)  # 20240708加了-5
+            sel.append(k - n1 + 2)  # k - n1 + 2   20240708删了-5，
             ho = 0
 
     # 处理未卖出的情况

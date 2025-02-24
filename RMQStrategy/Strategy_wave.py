@@ -5,7 +5,7 @@ import pandas as pd
 from scipy.signal import argrelextrema
 import RMQData.Asset as RMQAsset
 from RMQTool import Tools as RMTTools
-from RMQModel import Identify_market_types_helper as IMTHelper
+from RMQStrategy import Identify_market_types_helper as IMTHelper
 
 
 class WavePhaseAnalyzer:

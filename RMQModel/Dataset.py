@@ -5,8 +5,7 @@ import os
 from RMQTool import Tools as RMTTools
 import RMQData.Asset as RMQAsset
 import RMQData.Indicator as RMQIndicator
-from RMQModel import Identify_market_types_helper as IMTHelper
-from RMQStrategy import Strategy_indicator as RMQStrategyIndicator
+from RMQStrategy import Strategy_indicator as RMQStrategyIndicator, Identify_market_types_helper as IMTHelper
 
 
 def tea_radical_nature_handling_uneven_samples1(labeled):

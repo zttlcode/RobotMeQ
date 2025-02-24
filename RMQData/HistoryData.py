@@ -36,7 +36,7 @@ def getData_BaoStock(asset, start_date, end_date, bar_type):
         # 分钟先数据，只有股票
         """
         华尔街行情是不复权，通达信默认不复权，可以设置，
-        东方财富默认前复权，我应该选前复权
+        东方财富默认前复权，我应该选前复权  2025 0224 前复权会导致早期价格出现负数，后复权也有可能，因此都改为不复权
         adjustflag：复权类型，默认不复权：3；1：后复权；2：前复权
         前复权：以当前股价为基准向前复权计算股价。
         后复权：以上市首日股价作为基准向后复权计算股价
@@ -48,7 +48,7 @@ def getData_BaoStock(asset, start_date, end_date, bar_type):
         rs = bs.query_history_k_data_plus(code,
                                           "date,time,open,high,low,close,volume",
                                           start_date=start_date, end_date=end_date,
-                                          frequency=asset.barEntity.timeLevel, adjustflag="2")
+                                          frequency=asset.barEntity.timeLevel, adjustflag="3")
 
     print('query_history_k_data_plus respond error_code:' + rs.error_code)
     print('query_history_k_data_plus respond  error_msg:' + rs.error_msg)
@@ -99,7 +99,7 @@ def query_hs300_stocks():
         hs300_stocks.append(rs.get_row_data())
     result = pd.DataFrame(hs300_stocks, columns=rs.fields)
     # 结果集输出到csv文件
-    result.to_csv("../QuantData/hs300_stocks.csv", encoding="utf-8", index=False)
+    result.to_csv("../QuantData/a_hs300_stocks.csv", encoding="utf-8", index=False)
     print(result)
 
     # 登出系统
@@ -125,7 +125,7 @@ def query_zz500_stocks():
         zz500_stocks.append(rs.get_row_data())
     result = pd.DataFrame(zz500_stocks, columns=rs.fields)
     # 结果集输出到csv文件
-    result.to_csv("../QuantData/zz500_stocks.csv", encoding="utf-8", index=False)
+    result.to_csv("../QuantData/a_zz500_stocks.csv", encoding="utf-8", index=False)
     print(result)
 
     # 登出系统
@@ -159,7 +159,7 @@ def query_ipo_date(stock_code):
 
 def get_ipo_date_for_stock():
     # 读取 CSV 文件，得到 DataFrame 对象
-    file_path = "../QuantData/zz500_stocks.csv"  # 文件路径
+    file_path = "../QuantData/a_zz500_stocks.csv"  # 文件路径
     df = pd.read_csv(file_path)
     # 遍历每行数据，调用 query_ipo_date 并修改第一列的日期
     for index, row in df.iterrows():
@@ -172,10 +172,10 @@ def get_ipo_date_for_stock():
 
 
 def get_stock_from_code_csv():
-    allStockCode = pd.read_csv("../QuantData/zz500_stocks.csv")
+    allStockCode = pd.read_csv("../QuantData/a_zz500_stocks.csv")
     for index, row in allStockCode.iterrows():
-        assetList = RMQAsset.asset_generator(row['code'][3:], row['code_name'], ['5', '15', '30', '60', 'd'], 'stock',
-                                             1, 'A')  # asset是code等信息
+        assetList = RMQAsset.asset_generator(row['code'][3:], row['code_name'], ['5', '15', '30', '60', 'd'],
+                                             'stock', 1, 'A')  # asset是code等信息
         for asset in assetList:  # 每个标的所有级别
             lg = bs.login()
             print('login respond error_code:' + lg.error_code)
@@ -185,13 +185,13 @@ def get_stock_from_code_csv():
                 rs = bs.query_history_k_data_plus(row['code'],
                                                   "date,open,high,low,close,volume",
                                                   start_date=row['ipodate'],
-                                                  frequency="d", adjustflag="2")
+                                                  frequency="d", adjustflag="3")
             else:
                 # 分钟先数据，只有股票
                 rs = bs.query_history_k_data_plus(row['code'],
                                                   "date,time,open,high,low,close,volume",
                                                   start_date=row['ipodate'],
-                                                  frequency=asset.barEntity.timeLevel, adjustflag="2")
+                                                  frequency=asset.barEntity.timeLevel, adjustflag="3")
 
             print('query_history_k_data_plus respond error_code:' + rs.error_code)
             print('query_history_k_data_plus respond  error_msg:' + rs.error_msg)
@@ -359,7 +359,7 @@ def get_hk_stock_data():
 
 if __name__ == '__main__':
     """
-    assetsType ： stock index ETF crypto
+    stock index ETF crypto
     ['5', '15', '30', '60', 'd']
     backtest_bar  live_bar
     """

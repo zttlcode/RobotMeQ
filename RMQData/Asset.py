@@ -59,11 +59,12 @@ class Crypto(Asset):
 
 def asset_generator(assetsCode, assetsName, timeLevelList, assetsType, tradeRule, assetsMarket):
     """
-    :param tradeRule: T+1还是T+0
     :param assetsCode: 给代码
     :param assetsName: 给名字
     :param timeLevelList: 目前只支持5、15、30、60、d这几个级别
-    :param assetsType: 资产类型  用于生成不同的资产
+    :param assetsType: 资产类型  用于生成不同的资产 stock index ETF crypto
+    :param tradeRule: T+1还是T+0
+    :param assetsMarket: 所属市场 A HK USA crypto
     :return: 给想要的级别，就能new对应级别的对象，放入列表
     """
     # 判断是否为多级别  多级别在实盘、生成新bar时，会不断用 当日最新成交量-累积成交量，算出当前bar的成交量
@@ -74,11 +75,15 @@ def asset_generator(assetsCode, assetsName, timeLevelList, assetsType, tradeRule
     assetList = []
     for timeLevel in timeLevelList:
         if assetsType == 'stock':
-            assetList.append(Stock(assetsCode, assetsName, timeLevel, isRunMultiLevel, assetsType, tradeRule, assetsMarket))
+            assetList.append(Stock(assetsCode, assetsName, timeLevel, isRunMultiLevel, assetsType, tradeRule,
+                                   assetsMarket))
         elif assetsType == 'index':
-            assetList.append(Index(assetsCode, assetsName, timeLevel, isRunMultiLevel, assetsType, tradeRule, assetsMarket))
+            assetList.append(Index(assetsCode, assetsName, timeLevel, isRunMultiLevel, assetsType, tradeRule,
+                                   assetsMarket))
         elif assetsType == 'ETF':
-            assetList.append(ETF(assetsCode, assetsName, timeLevel, isRunMultiLevel, assetsType, tradeRule, assetsMarket))
+            assetList.append(ETF(assetsCode, assetsName, timeLevel, isRunMultiLevel, assetsType, tradeRule,
+                                 assetsMarket))
         elif assetsType == 'crypto':
-            assetList.append(Crypto(assetsCode, assetsName, timeLevel, isRunMultiLevel, assetsType, tradeRule, assetsMarket))
+            assetList.append(Crypto(assetsCode, assetsName, timeLevel, isRunMultiLevel, assetsType, tradeRule,
+                                    assetsMarket))
     return assetList

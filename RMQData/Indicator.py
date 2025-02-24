@@ -1,5 +1,4 @@
 import pandas as pd
-import statsmodels.formula.api as smf
 import json
 from RMQTool import Tools as RMTTools
 
@@ -335,9 +334,6 @@ def calRSI(dataFrame):
     但灵敏度不够，经常会“滞后”的情况。
     （2）当数值在40到60之间波动时，往往参考价值不大，具体而言，当数值向上突破50临界点时，表示股价已转强，
     反之向下跌破50时则表示转弱。不过在实践过程中，经常会出现RSI跌破50后股价却不下跌，以及突破50后股价不涨。
-    :param dataFrame:
-    :param periodList:
-    :return:
     """
     periodList = [6, 12, 24]  # 周期列表
     # 计算和上一个交易日收盘价的差值
@@ -347,21 +343,12 @@ def calRSI(dataFrame):
 
     # 在df对象中创建了up列，该列的值暂时和diff值相同，有正有负
     dataFrame['up'] = dataFrame['diff']
-    # 过滤掉小于0的值。把up列中的负值设置成0，这样一来，up列中就只包含了“N日内收盘价的涨数”
-
-    # 此链式调用有警告，改成下面的
-    # df['up'][df['up'] < 0] = 0
-
-    # 在Pandas中根据条件替换列中的值
-    # df.loc[ df["column_name"] == "some_value", "column_name" ] = "value"
-    # some_value = 需要被替换的值  value = 应该被放置的值。
-    # 这里是想把up列，值小于0的替换为0
+    # 把up列中的负值设置成0，这样一来，up列中就只包含了“N日内收盘价的涨数”
     dataFrame.loc[dataFrame['up'] < 0, 'up'] = 0
 
     # 用同样的方法，在df对象中创建了down列，并在其中存入了“N日内收盘价的跌数”
     dataFrame['down'] = dataFrame['diff']
     # 过滤掉大于0的值
-    # df['down'][df['down'] > 0] = 0
     dataFrame.loc[dataFrame['down'] > 0, 'down'] = 0
 
     # 通过for循环，依次计算periodList中不同周期的RSI等值
@@ -405,23 +392,3 @@ def cal_DonchianChannel(dataFrame, window=20):
     # 计算唐奇安通道中心线
     dataFrame['donc_mid'] = (dataFrame['donc_up'] + dataFrame['donc_down']) / 2
     return dataFrame
-
-
-# 最小二乘法拟合直线
-def LeastSquares(df):
-    # 参考博文如下
-    # https://blog.csdn.net/sinat_23971513/article/details/121483023
-    # https://blog.csdn.net/BF02jgtRS00XKtCx/article/details/108687817
-    # seaborn，也是个画图的包，官方文档地址：http://seaborn.pydata.org/generated/seaborn.lmplot.html
-    # statsmodels，计算统计数据的包，官方文档地址：https://www.statsmodels.org/stable/index.html
-    # scipy 也是个数学用的库
-
-    # 这个暂定传df，但转为时间价格坐标系的代码还没写
-
-    # 读取 时间、价格文件，返回斜率
-    ccpp = pd.read_csv('../QuantData/LeastSquares.csv')  # 第一列为x轴，第二列为y轴 y = ax + b
-    # plt.show()  # 展示拟合图
-    regression2 = smf.ols(formula='y~x', data=ccpp)  # y是被解释变量，x是解释变量 OLS Ordinary Least Squares 普通最小二乘法
-    model2 = regression2.fit()
-    print(model2.params)  # params是pandas.Series格式 Intercept是b,x是斜率a
-    return model2.params.x

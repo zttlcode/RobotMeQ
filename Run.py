@@ -1,14 +1,13 @@
 import pandas as pd
 from multiprocessing import Pool, current_process
 import os
-from datetime import datetime
 import RMQData.Tick as RMQTick
 import RMQStrategy.Strategy as RMQStrategy
 import RMQData.Indicator as RMQIndicator
 import RMQData.Asset as RMQAsset
 import RMQVisualized.Draw_Matplotlib as RMQDrawPlot
 from RMQTool import Tools as RMTTools
-from RMQModel import Identify_market_types as RMQM_Identify_Market_Types
+from RMQStrategy import Identify_market_types as RMQM_Identify_Market_Types
 import numpy as np
 import matplotlib.pyplot as plt
 import scipy.signal as signal
@@ -147,19 +146,43 @@ def run_backTest_multip(data_chunk):
     process_name = current_process().name  # 获取当前进程的名称
     process_id = os.getpid()  # 获取当前进程 ID
     for _, row in data_chunk.iterrows():
-        print(f"Process {process_name} (PID {process_id}) is processing: {row['code'][3:]}")
-        assetList = RMQAsset.asset_generator(row['code'][3:],
-                                             row['code_name'],
-                                             ['15'],  # '5', '15', '30', '60', 'd'
-                                             'stock',
-                                             1, 'A')
-        run_back_test_no_tick(assetList, "fuzzy_nature")  # 0:02:29.502122 新回测，不转tick
-        # RMQM_Identify_Market_Types.run_backTest_label_market_condition(assetList)  # 回测标注日线级别行情类型 该上面时间级别为d
+        # print(f"Process {process_name} (PID {process_id}) is processing: {row['code'][3:]}")
+        # assetList = RMQAsset.asset_generator(row['code'][3:],
+        #                                      row['code_name'],
+        #                                      ['15'],  # '5', '15', '30', '60', 'd'
+        #                                      'stock',
+        #                                      1, 'A')
+        # print(f"Process {process_name} (PID {process_id}) is processing: {row['code']}")
+        # assetList = RMQAsset.asset_generator(row['code'],
+        #                                      row['name'],
+        #                                      ['d'],  # '5', '15', '30', '60', 'd'
+        #                                      'stock',
+        #                                      1, 'HK')
+        # print(f"Process {process_name} (PID {process_id}) is processing: {row['Symbol']}")
+        # assetList = RMQAsset.asset_generator(row['Symbol'],
+        #                                      row['Symbol'],
+        #                                      ['d'],  # '5', '15', '30', '60', 'd'
+        #                                      'stock',
+        #                                      1, 'USA')
+        print(f"Process {process_name} (PID {process_id}) is processing: {row['code']}")
+        assetList = RMQAsset.asset_generator(row['code'],
+                                             row['code'],
+                                             ['15'],
+                                             'crypto',
+                                             1, 'crypto')
+        # run_back_test_no_tick(assetList, "tea_radical_nature")  # 0:02:29.502122 新回测，不转tick
+        # run_back_test_no_tick(assetList, "fuzzy_nature")  # 0:02:29.502122 新回测，不转tick
+        # run_back_test_no_tick(assetList, "c4_trend_nature")  # 0:02:29.502122 新回测，不转tick
+        # run_back_test_no_tick(assetList, "c4_oscillation_boll_nature")  # 0:02:29.502122 新回测，不转tick
+        # run_back_test_no_tick(assetList, "c4_oscillation_kdj_nature")  # 0:02:29.502122 新回测，不转tick
+        # run_back_test_no_tick(assetList, "c4_breakout_nature")  # 0:02:29.502122 新回测，不转tick
+        # run_back_test_no_tick(assetList, "c4_reversal_nature")  # 0:02:29.502122 新回测，不转tick
+        RMQM_Identify_Market_Types.run_backTest_label_market_condition(assetList)  # 回测标注日线级别行情类型 该上面时间级别为d
 
 
 def parallel_backTest(allStockCode):
     # 多个并行
-    num_processes = 20  # 确定进程数量和数据块
+    num_processes = 9  # 确定进程数量和数据块
     data_chunks = chunk_dataframe(allStockCode, num_processes)  # 把300个股票分给20个进程并行处理
     # 使用 multiprocessing 开启进程池
     with Pool(num_processes) as pool:
