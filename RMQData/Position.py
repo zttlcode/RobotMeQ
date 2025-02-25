@@ -8,7 +8,7 @@ class PositionEntity:
         self.currentOrders = {}  # 记录买入订单 用于在策略里判断是否有仓位可以卖
         self.historyOrders = {}  # 记录已完成订单，卖出时更新，计算收益
         self.orderNumber = 0  # 每买一单+1
-        self.money = 1000000  # 总资产100万
+        self.money = 50000000  # 总资产5000万
         self.trade_point_list = []  # 记录策略所有买卖点  格式 [["2021-04-26", 47, "buy"], ["2021-06-15", 55.1, "sell"]]
         self.tradeRule = tradeRule  # T+1是1，T+0是0
 

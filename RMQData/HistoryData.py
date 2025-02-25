@@ -262,12 +262,6 @@ def cut_by_bar_num(df, bar_num):
         return df
 
 
-def get_USA_stock():
-    # 从新浪财经获取美股所有股票代码
-    df_USA_all = ak.get_us_stock_name()
-    df_USA_all.to_csv("../QuantData/USA_all_stocks.csv", encoding="utf-8", index=False)
-
-
 def get_sp500_code():
     # 从Wikipedia获取标普500成分股列表
     url = "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies"
@@ -275,7 +269,8 @@ def get_sp500_code():
 
     # 提取股票代码（Symbol列）
     stock_codes = df['Symbol']
-
+    # 修改列名，将"date"改为"time"
+    stock_codes.rename(columns={'Symbol': 'code'}, inplace=True)
     # 将股票代码保存到CSV文件
     stock_codes.to_csv('../QuantData/sp500_stock_codes.csv', index=False)
 
@@ -285,7 +280,7 @@ def get_sp500_code():
 def get_sp500_data():
     # 读取s&p500_stock_codes.csv文件，获取股票代码
     df = pd.read_csv('../QuantData/sp500_stock_codes.csv')
-    stock_codes = df['Symbol'].tolist()
+    stock_codes = df['code'].tolist()
 
     # 循环遍历每个股票代码
     for symbol in stock_codes:

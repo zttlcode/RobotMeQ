@@ -8,7 +8,7 @@ import re
 
 def find_zero_close_files():
     # 使用示例
-    folder_path = "./QuantData/backTest/"  # 请替换为实际的文件夹路径
+    folder_path = "../QuantData/backTest/"  # 请替换为实际的文件夹路径
     # 获取所有CSV文件
     csv_files = glob.glob(os.path.join(folder_path, "*.csv"))
 
@@ -41,7 +41,7 @@ def process_backtest_nan_data_a800():
                 # 检查是否存在 'close' 列，并查找 close=0 的行
                 if 'close' in df.columns and (df['close'] == 0).any():
                     filename = os.path.basename(file)  # 获取文件名（不含路径）
-                    extracted_code = filename[6:12]  # 提取 6-12 位字符
+                    extracted_code = filename[7:12]  # 提取 6-12 位字符
                     extracted_codes.add(extracted_code)
 
             except Exception as e:
@@ -77,8 +77,8 @@ def process_backtest_nan_data_a800():
             print(f"处理文件 {a800_csv_path} 时发生错误: {e}")
 
     # 使用示例
-    folder_path = "./QuantData/backTest/"  # 替换为 CSV 文件所在的文件夹
-    a800_csv_path = "./QuantData/a800_stocks.csv"  # a800_stocks.csv 文件路径
+    folder_path = "../QuantData/backTest/"  # 替换为 CSV 文件所在的文件夹
+    a800_csv_path = "../QuantData/a800_stocks.csv"  # a800_stocks.csv 文件路径
 
     # 提取 close=0 的文件名 6-12 位字符
     codes_to_remove = extract_codes_from_csv(folder_path)
@@ -90,8 +90,8 @@ def process_backtest_nan_data_a800():
 # 之前没发现，所以把其他文件夹里含这股票的文件也删除
 def process_backtest_nan_data_a800_for_other():
     # 设置路径
-    a800_csv_path = "./QuantData/a800_stocks.csv"
-    backtest_folder = "./QuantData/trade_point_backtest_fuzzy_nature/"
+    a800_csv_path = "../QuantData/a800_stocks.csv"
+    backtest_folder = "../QuantData/trade_point_backtest_fuzzy_nature/"
 
     def get_valid_codes(a800_csv_path):
         """ 从 a800_stocks.csv 提取去掉前三位的 code 列，形成有效代码集合 """
@@ -134,62 +134,35 @@ def process_fuzzy_trade_point_csv():
 
         # 记录初始状态
         modified = False
+        try:
+            # 删除第一行如果label列不是'buy'
+            if df.iloc[0]['signal'] != 'buy':
+                df = df.iloc[1:]
+                modified = True
 
-        # 删除第一行如果label列不是'buy'
-        if df.iloc[0]['signal'] != 'buy':
-            df = df.iloc[1:]
-            modified = True
+            # 删除最后一行如果label列不是'sell'
+            if df.iloc[-1]['signal'] != 'sell':
+                df = df.iloc[:-1]
+                modified = True
 
-        # 删除最后一行如果label列不是'sell'
-        if df.iloc[-1]['signal'] != 'sell':
-            df = df.iloc[:-1]
-            modified = True
-
-        # 仅在数据被修改时才写入CSV
-        if modified:
-            df.to_csv(file_path, index=False)
-            print(f"文件 {file_path} 已修改并保存！")
+            # 仅在数据被修改时才写入CSV
+            if modified:
+                df.to_csv(file_path, index=False)
+                print(f"文件 {file_path} 已修改并保存！")
+        except Exception as e:
+            print(file_path, e)
 
     def process_folder(folder_path):
         # 获取所有CSV文件
-        csv_files = glob.glob(os.path.join(folder_path, "*_d.csv"))
+        csv_files = glob.glob(os.path.join(folder_path, "*.csv"))
 
         # 遍历所有CSV文件并处理
         for file in csv_files:
             process_csv(file)
 
     # 使用示例
-    folder_path = '../QuantData/trade_point_backtest_fuzzy_nature/'  # 替换为你的文件夹路径
+    folder_path = '../QuantData/trade_point_backtest_c4_oscillation_kdj_nature/'  # 替换为你的文件夹路径
     process_folder(folder_path)
-
-
-def count_label_distribution():
-    folder_path = "../QuantData/trade_point_backtest_fuzzy_nature/"
-    """ 遍历目标文件夹，统计每个CSV文件中 label 列的分布情况 """
-    # 获取所有以 label1 结尾的 CSV 文件
-    csv_files = glob.glob(os.path.join(folder_path, "*_30_label1.csv"))
-
-    for file in csv_files:
-        try:
-            df = pd.read_csv(file)  # 读取 CSV 文件
-
-            if 'label' in df.columns:  # 确保有 label 列
-                # 统计 label 列中 1、2、3、4 各自的数量
-                label_counts = df['label'].value_counts().reindex([1, 2, 3, 4], fill_value=0)
-
-                # 打印结果
-                print(f"文件: {os.path.basename(file)}")
-                print(f"  Label 1: {label_counts[1]} 行")
-                print(f"  Label 2: {label_counts[2]} 行")
-                print(f"  Label 3: {label_counts[3]} 行")
-                print(f"  Label 4: {label_counts[4]} 行")
-                print("-" * 40)
-
-            else:
-                print(f"文件 {file} 缺少 label 列，跳过处理。")
-
-        except Exception as e:
-            print(f"读取文件 {file} 失败: {e}")
 
 
 def handle_800_wait():
@@ -214,6 +187,7 @@ def handle_800_wait():
 
     print(f"过滤完成，结果已保存到 {output_file_path}")
 
+
 def handle_hk_1000_wait():
     # 过滤已经800里未处理的数据
     # 文件夹路径和目标文件路径
@@ -236,12 +210,13 @@ def handle_hk_1000_wait():
 
     print(f"过滤完成，结果已保存到 {output_file_path}")
 
+
 def handle_sp500_wait():
     # 过滤已经800里未处理的数据
     # 文件夹路径和目标文件路径
-    folder_path = "../QuantData/trade_point_backtest_c4_oscillation_kdj_nature/"  # 替换为存储CSV文件的文件夹路径
-    hs_file_path = "../QuantData/sp500_stock_codes.csv"  # hs.csv 文件路径
-    output_file_path = "../QuantData/sp500_stock_codes_wait_handle_stocks.csv"  # 输出文件路径
+    folder_path = "../QuantData/trade_point_backtest_c4_reversal_nature/"  # 替换为存储CSV文件的文件夹路径
+    hs_file_path = "../QuantData/asset_code/sp500_stock_codes.csv"  # hs.csv 文件路径
+    output_file_path = "../QuantData/asset_code/sp500_stock_codes_wait_handle_stocks.csv"  # 输出文件路径
 
     # 步骤 1: 获取文件夹中所有文件名，并提取 cc 列
     file_names = [f for f in os.listdir(folder_path) if fnmatch.fnmatch(f, 'USA_*_d.csv')]
@@ -250,7 +225,7 @@ def handle_sp500_wait():
     cc_unique = set(cc_list)  # 去重，转为集合方便快速查找
     # 步骤 2: 读取 hs.csv 文件并截取 code 列前3位后进行比较
     hs_df = pd.read_csv(hs_file_path)  # 假设 hs.csv 文件有多列
-    hs_df['code_trimmed'] = hs_df['Symbol'].astype(str)  # 截取 code 列的第4位到末尾
+    hs_df['code_trimmed'] = hs_df['code'].astype(str)  # 截取 code 列的第4位到末尾
     filtered_df = hs_df[~hs_df['code_trimmed'].isin(cc_unique)]  # 筛选出截取后不在 cc 中的行
 
     # 步骤 3: 删除临时列并保存结果到 a800_stocks_wait_handle_stocks.csv 文件
@@ -258,6 +233,7 @@ def handle_sp500_wait():
     filtered_df.to_csv(output_file_path, index=False)
 
     print(f"过滤完成，结果已保存到 {output_file_path}")
+
 
 def handle_crypto_wait():
     # 过滤已经800里未处理的数据
@@ -282,7 +258,7 @@ def handle_crypto_wait():
     print(f"过滤完成，结果已保存到 {output_file_path}")
 
 
-def count_consecutive_sequences(series, target_condition, min_length=5):
+def count_consecutive_sequences(series, target_condition, min_length=10):
     # 统计函数：计算 market_condition 中连续 >= 5 行的情况
     count = 0
     streak = 0
@@ -305,14 +281,14 @@ def count_consecutive_sequences(series, target_condition, min_length=5):
 def count_market_condition_for_label():
     # 标注前，先看各类分布情况，再决定要不要处理样本不均
     # 文件夹路径
-    folder_path = "./QuantData/market_condition_backtest/"
+    folder_path = "../QuantData/market_condition_backtest/"
 
     # 结果存储
     summary = []
 
     # 遍历文件夹中的所有 CSV 文件
     for filename in os.listdir(folder_path):
-        if filename.endswith("_60.csv"):
+        if fnmatch.fnmatch(filename, 'crypto_*_240.csv'):
             file_path = os.path.join(folder_path, filename)
 
             # 读取 CSV 文件
@@ -340,13 +316,13 @@ def count_market_condition_for_preprocessing():
     # 回测完行情分类，统计每个文件中，各分类占比多少
 
     # 文件夹路径
-    folder_path = "./QuantData/market_condition_backtest/"
+    folder_path = "../QuantData/market_condition_backtest/"
 
     # 遍历文件夹中的所有 CSV 文件
     summary = {}
 
     for filename in os.listdir(folder_path):
-        if filename.endswith("_60.csv"):
+        if fnmatch.fnmatch(filename, 'crypto_*_d.csv'):
             file_path = os.path.join(folder_path, filename)
 
             # 读取 CSV 文件
@@ -368,8 +344,8 @@ def count_market_condition_for_preprocessing():
 
 def count_signal_before_label():
     # 文件夹路径
-    folder_path = "./QuantData/trade_point_backtest_c4_trend_nature/"
-    output_file = "./QuantData/trade_point_backtest_c4_trend_nature/signal_count_summary.csv"  # 结果文件
+    folder_path = "../QuantData/trade_point_backtest_c4_trend_nature/"
+    output_file = "../QuantData/trade_point_backtest_c4_trend_nature/signal_count_summary.csv"  # 结果文件
 
     # 用于存储每个 CSV 文件的统计结果
     all_results = []
@@ -443,15 +419,38 @@ def count_trade_point_csv_files():
         print("所有 cc 值的出现次数均为 5")
 
 
+def count_label_distribution():
+    folder_path = "../QuantData/trade_point_backtest_c4_trend_nature/"
+    """ 遍历目标文件夹，统计每个CSV文件中 label 列的分布情况 """
+    csv_files = [f for f in os.listdir(folder_path) if fnmatch.fnmatch(f, 'A_*_30_label1.csv')]
+
+    # 获取所有以 label1 结尾的 CSV 文件
+    # csv_files = glob.glob(os.path.join(folder_path, "*_d_label1.csv"))
+
+    for file in csv_files:
+        try:
+            file_path = os.path.join(folder_path, file)
+            df = pd.read_csv(file_path)  # 读取 CSV 文件
+
+            if 'label' in df.columns:  # 确保有 label 列
+                # 统计 label 列中 1、2、3、4 各自的数量
+                label_counts = df['label'].value_counts().reindex([1, 2, 3, 4], fill_value=0)
+
+                # 打印结果
+                print(f"文件: {os.path.basename(file)}")
+                print(f"  Label 1: {label_counts[1]} 行")
+                print(f"  Label 2: {label_counts[2]} 行")
+                print(f"  Label 3: {label_counts[3]} 行")
+                print(f"  Label 4: {label_counts[4]} 行")
+                print("-" * 40)
+
+            else:
+                print(f"文件 {file} 缺少 label 列，跳过处理。")
+
+        except Exception as e:
+            print(f"读取文件 {file} 失败: {e}")
+
+
 if __name__ == '__main__':
-    # find_zero_close_files()
-    # process_backtest_nan_data_a800()
-    # process_backtest_nan_data_a800_for_other()
-    # process_fuzzy_trade_point_csv()
-    # count_label_distribution()  # 执行统计
-    # count_market_condition_for_label()
-    # count_signal_before_label()
-    # handle_800_wait()  # 并行回测时，处理剩余数据
-    # handle_hk_1000_wait()
-    handle_sp500_wait()
+    process_fuzzy_trade_point_csv()
 

@@ -146,48 +146,26 @@ def run_backTest_multip(data_chunk):
     process_name = current_process().name  # 获取当前进程的名称
     process_id = os.getpid()  # 获取当前进程 ID
     for _, row in data_chunk.iterrows():
-        # print(f"Process {process_name} (PID {process_id}) is processing: {row['code'][3:]}")
-        # assetList = RMQAsset.asset_generator(row['code'][3:],
-        #                                      row['code_name'],
-        #                                      ['15'],  # '5', '15', '30', '60', 'd'
-        #                                      'stock',
-        #                                      1, 'A')
-        # print(f"Process {process_name} (PID {process_id}) is processing: {row['code']}")
-        # assetList = RMQAsset.asset_generator(row['code'],
-        #                                      row['name'],
-        #                                      ['d'],  # '5', '15', '30', '60', 'd'
-        #                                      'stock',
-        #                                      1, 'HK')
-        # print(f"Process {process_name} (PID {process_id}) is processing: {row['Symbol']}")
-        # assetList = RMQAsset.asset_generator(row['Symbol'],
-        #                                      row['Symbol'],
-        #                                      ['d'],  # '5', '15', '30', '60', 'd'
-        #                                      'stock',
-        #                                      1, 'USA')
         print(f"Process {process_name} (PID {process_id}) is processing: {row['code']}")
         assetList = RMQAsset.asset_generator(row['code'],
                                              row['code'],
-                                             ['15'],
-                                             'crypto',
-                                             1, 'crypto')
-        # run_back_test_no_tick(assetList, "tea_radical_nature")  # 0:02:29.502122 新回测，不转tick
-        # run_back_test_no_tick(assetList, "fuzzy_nature")  # 0:02:29.502122 新回测，不转tick
-        # run_back_test_no_tick(assetList, "c4_trend_nature")  # 0:02:29.502122 新回测，不转tick
-        # run_back_test_no_tick(assetList, "c4_oscillation_boll_nature")  # 0:02:29.502122 新回测，不转tick
-        # run_back_test_no_tick(assetList, "c4_oscillation_kdj_nature")  # 0:02:29.502122 新回测，不转tick
-        # run_back_test_no_tick(assetList, "c4_breakout_nature")  # 0:02:29.502122 新回测，不转tick
-        # run_back_test_no_tick(assetList, "c4_reversal_nature")  # 0:02:29.502122 新回测，不转tick
-        RMQM_Identify_Market_Types.run_backTest_label_market_condition(assetList)  # 回测标注日线级别行情类型 该上面时间级别为d
+                                             ['d'],
+                                             'stock',
+                                             1, 'USA')
+        run_back_test_no_tick(assetList, "c4_reversal_nature")  # 0:02:29.502122 新回测，不转tick
+        # RMQM_Identify_Market_Types.run_backTest_label_market_condition(assetList)  # 回测标注日线级别行情类型 该上面时间级别为d
 
 
 def parallel_backTest(allStockCode):
     # 多个并行
-    num_processes = 9  # 确定进程数量和数据块
+    num_processes = 20  # 确定进程数量和数据块
     data_chunks = chunk_dataframe(allStockCode, num_processes)  # 把300个股票分给20个进程并行处理
     # 使用 multiprocessing 开启进程池
     with Pool(num_processes) as pool:
         pool.map(run_backTest_multip, data_chunks)
 
+
+# --------------------------------------------------
 
 def plot_waves(prices, wave_points, wave_prices):
     """绘制波浪结构，包括 ABC 调整浪"""
@@ -250,9 +228,8 @@ def detect_waves(data_1, distance=5, prominence=1):
     return wave_df
 
 
-def process_stock_data(allStockCode):
+def preprocess_stock_data(allStockCode):
     """处理所有股票数据并保存最终结果
-    这个处理后用fuzzy标注的，刚开始我忘了预处理，导致label有nan，模型训练报错
     """
     for index, row in allStockCode.iterrows():
         assetList = RMQAsset.asset_generator(row['code'][3:], row['code_name'], ['d'], 'stock', 1, 'A')
@@ -302,4 +279,5 @@ if __name__ == '__main__':
     # 运行处理函数 传统极值标注法回测数据
     allStockCode = pd.read_csv("../QuantData/a800_stocks.csv")
     # df_dataset = allStockCode.iloc[500:]
-    # process_stock_data(allStockCode)
+    # 执行完此函数，要执行process_fuzzy_trade_point_csv()，再用fuzzy_nature_label1标注，否则会导致模型训练时label分类中含有nan，模型训练报错
+    # preprocess_stock_data(allStockCode)

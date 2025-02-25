@@ -161,7 +161,6 @@ def tea_radical_nature_label1(assetList, strategy_name):
 
 
 def tea_radical_nature_label2(asset, strategy_name):
-    """ """
     """
     单级别各自标记
     """
@@ -294,7 +293,6 @@ def tea_radical_nature_label2(asset, strategy_name):
 
 
 def tea_radical_nature_label3(asset, strategy_name):
-    """ """
     """
     MACD指标标记
     """
@@ -358,7 +356,7 @@ def tea_radical_nature_label3(asset, strategy_name):
                     trade_MACD = window_100_bar.iloc[40]["MACD"]
                     trade_DIF = window_100_bar.iloc[40]["DIF"]
                     trade_DEA = window_100_bar.iloc[40]["DEA"]
-                    offset = 100.0  # 为了解决对数计算有负数，增加偏移量
+                    offset = 10000.0  # 为了解决对数计算有负数，增加偏移量
 
                     # 根据信号类型执行不同的逻辑
                     if signal_row["signal"] == "buy":
@@ -424,7 +422,6 @@ def tea_radical_nature_label3(asset, strategy_name):
 
 
 def tea_radical_nature_label4(asset, strategy_name):
-    """ """
     """
     MACD指标标记 + 价格过滤
     """
@@ -488,7 +485,7 @@ def tea_radical_nature_label4(asset, strategy_name):
                     trade_DIF = window_100_bar.iloc[40]["DIF"]
                     trade_DEA = window_100_bar.iloc[40]["DEA"]
                     trade_price = signal_row["price"]
-                    offset = 100.0  # 为了解决对数计算有负数，增加偏移量
+                    offset = 10000.0  # 为了解决对数计算有负数，增加偏移量
 
                     # 根据信号类型执行不同的逻辑
                     if signal_row["signal"] == "buy":
@@ -574,7 +571,6 @@ def tea_radical_nature_label4(asset, strategy_name):
 
 
 def fuzzy_nature_label1(asset, strategy_name):
-    """ """
     """
     单级别各自标记
     """
@@ -611,7 +607,7 @@ def fuzzy_nature_label1(asset, strategy_name):
             sell_price = price
             profit_ratio = (sell_price - buy_price) / buy_price  # 计算收益率
 
-            if profit_ratio > 0.10:  # 盈利超过5%
+            if profit_ratio > 0.2:  # 盈利超过5%
                 signal_df.at[buy_index, "label"] = 1  # 有效买入点
                 signal_df.at[signal_index, "label"] = 3  # 有效卖出点
             else:
@@ -887,7 +883,6 @@ def c4_oscillation_boll_nature_label1(asset, strategy_name):
                 if backtest_position + 40 > len(backtest_df):
                     # 如果剩余数据不足 40 行，将剩余数据标记为 0
                     signal_df.loc[signal_time:, "label"] = 0
-                    break  # 直接退出循环
                 else:
                     # 获取从当前行开始顺延 40 行数据
                     next_40_bars = backtest_df.iloc[backtest_position: backtest_position + 40]

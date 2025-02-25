@@ -292,6 +292,53 @@ KDJ accuracy:0.6899009900990098  步长20 CNN
 突破 accuracy:0.4230862110601304  步长20 CNN
 反转 accuracy:0.41749502982107356  步长20 CNN
 
+tea 不同市场、不同标注方式、不同级别。
+run里面多个策略同时跑，导致订单出现错误，数据混乱
+
+4个市场的数据，8个策略回测+标注，那以策略角度安排，一个策略跑完4个市场，换下一个策略。
+identify_Market_Types
+    A:15、30、60、d  label1
+    HK:d label1
+    USA:d label1
+    crypto:15、60、240、d  label1
+tea_radical_nature
+    A:5、15、30、60、d  concat_label1 label2 label3 label4
+    HK:d   label2 label3 label4
+    USA:d  label2 label3 label4
+    crypto:15、60、240、d  label2 label3 label4
+fuzzy_nature
+    A:15、30、60、d  label1  d要求收益>20%，其他级别10%
+    HK:d  label1  要求收益>20%
+    USA:d  label1  要求收益>20%
+    crypto:15、60、240、d  label1  全级别要求收益>20%
+c4_trend_nature
+    A:15、30、60、d  label1
+    HK:d  label1
+    USA:d  label1
+    crypto:15、60、240、d  label1
+c4_oscillation_boll_nature
+    A:15、30、60、d  label1
+    HK:d  label1
+    USA:d  label1
+    crypto:15、60、240、d  label1
+c4_oscillation_kdj_nature
+    A:15、30、60、d  label1
+    HK:d    label1
+    USA:d  label1
+    crypto:15、60、240、d   label1
+c4_breakout_nature
+    A:15、30、60、d  label1
+    HK:d   label1
+    USA:d  label1
+    crypto:15、60、240、d  label1
+c4_reversal_nature
+    A:15、30、60、d  label1
+    HK:d  label1
+    USA:d  label1
+    crypto:15、60、240、d  label1
+
+
+
 五  result
 收益率做评价指标，用王立新那种回测作为结果
 评估指标方面，用户需要注意不要只看准确率，而应该关注召回率、F1分数，尤其是对少数类的表现。可能需要使用混淆矩阵、AUC-ROC曲线等来全面评估模型性能。

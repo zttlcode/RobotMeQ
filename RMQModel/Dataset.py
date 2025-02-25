@@ -99,6 +99,8 @@ def fuzzy_nature_handling_uneven_samples1(labeled):
     # 计算需要删除的行数
     excess_13 = len(group_13) // 2 - min_count
     excess_24 = len(group_24) // 2 - min_count
+    if len(group_13) == 0:
+        return pd.DataFrame()
 
     def remove_evenly(group, excess_count):
         """ 在整个 group 中均匀删除成对数据 """
@@ -166,7 +168,8 @@ def tea_radical_nature_point_to_ts1(assetList, temp_data_dict, temp_label_list, 
                            + "_"
                            + assetList[0].assetsCode
                            + '_60.csv')
-
+    if not os.path.exists(concat_labeled_filePath):
+        return None
     concat_labeled = pd.read_csv(concat_labeled_filePath, index_col="time", parse_dates=True)
     index_d = pd.read_csv(index_d_filepath, index_col="date", parse_dates=True)
     data_d = pd.read_csv(data_d_filePath, index_col="time", parse_dates=True)
@@ -181,6 +184,9 @@ def tea_radical_nature_point_to_ts1(assetList, temp_data_dict, temp_label_list, 
                                    + "_handled_uneven" + ".csv")
         if not os.path.exists(handled_uneven_filepath):
             concat_labeled = tea_radical_nature_handling_uneven_samples1(concat_labeled)
+            if concat_labeled.empty:
+                print(assetList[0].assetsCode, "处理样本不均终止")
+                return None
             concat_labeled.to_csv(handled_uneven_filepath, index=True)
         else:
             concat_labeled = pd.read_csv(handled_uneven_filepath, index_col="time", parse_dates=True)
@@ -327,6 +333,7 @@ def tea_radical_nature_point_to_ts1(assetList, temp_data_dict, temp_label_list, 
         temp_label_list.append(labeled_row['label'])
 
     print(assetList[0].assetsCode, "结束", len(temp_label_list))
+    return "success"
 
 
 def tea_radical_nature_point_to_ts2(assetList, temp_data_dict, temp_label_list, time_point_step, handle_uneven_samples,
@@ -341,6 +348,8 @@ def tea_radical_nature_point_to_ts2(assetList, temp_data_dict, temp_label_list, 
                         + assetList[0].barEntity.timeLevel
                         + str(label_name)
                         + ".csv")
+    if not os.path.exists(labeled_filePath):
+        return None
     data_0_filepath = (RMTTools.read_config("RMQData", "backtest_bar")
                        + "bar_"
                        + assetList[0].assetsMarket
@@ -385,6 +394,9 @@ def tea_radical_nature_point_to_ts2(assetList, temp_data_dict, temp_label_list, 
                                    + "_handled_uneven" + ".csv")
         if not os.path.exists(handled_uneven_filepath):
             labeled = tea_radical_nature_handling_uneven_samples1(labeled)
+            if labeled.empty:
+                print(assetList[0].assetsCode, "处理样本不均终止")
+                return None
             labeled.to_csv(handled_uneven_filepath, index=True)
         else:
             labeled = pd.read_csv(handled_uneven_filepath, index_col="time", parse_dates=True)
@@ -526,6 +538,7 @@ def tea_radical_nature_point_to_ts2(assetList, temp_data_dict, temp_label_list, 
         temp_label_list.append(labeled_row['label'])
 
     print(assetList[0].assetsCode, "结束", len(temp_label_list))
+    return "success"
 
 
 def tea_radical_nature_point_to_ts3(assetList, temp_data_dict, temp_label_list, time_point_step, handle_uneven_samples,
@@ -540,6 +553,8 @@ def tea_radical_nature_point_to_ts3(assetList, temp_data_dict, temp_label_list, 
                         + assetList[0].barEntity.timeLevel
                         + str(label_name)
                         + ".csv")
+    if not os.path.exists(labeled_filePath):
+        return None
     data_0_filepath = (RMTTools.read_config("RMQData", "backtest_bar")
                        + "bar_"
                        + assetList[0].assetsMarket
@@ -564,6 +579,9 @@ def tea_radical_nature_point_to_ts3(assetList, temp_data_dict, temp_label_list, 
                                    + "_handled_uneven" + ".csv")
         if not os.path.exists(handled_uneven_filepath):
             labeled = tea_radical_nature_handling_uneven_samples1(labeled)
+            if labeled.empty:
+                print(assetList[0].assetsCode, "处理样本不均终止")
+                return None
             labeled.to_csv(handled_uneven_filepath, index=True)
         else:
             labeled = pd.read_csv(handled_uneven_filepath, index_col="time", parse_dates=True)
@@ -611,6 +629,7 @@ def tea_radical_nature_point_to_ts3(assetList, temp_data_dict, temp_label_list, 
         temp_label_list.append(labeled_row['label'])
 
     print(assetList[0].assetsCode, "结束", len(temp_label_list))
+    return "success"
 
 
 def fuzzy_nature_point_to_ts1(assetList, temp_data_dict, temp_label_list, time_point_step, handle_uneven_samples,
@@ -671,6 +690,9 @@ def fuzzy_nature_point_to_ts1(assetList, temp_data_dict, temp_label_list, time_p
                                    + "_handled_uneven" + ".csv")
         if not os.path.exists(handled_uneven_filepath):
             labeled = fuzzy_nature_handling_uneven_samples1(labeled)
+            if labeled.empty:
+                print(assetList[0].assetsCode, "处理样本不均终止")
+                return None
             labeled.to_csv(handled_uneven_filepath, index=True)
         else:
             labeled = pd.read_csv(handled_uneven_filepath, index_col="time", parse_dates=True)
@@ -784,6 +806,7 @@ def fuzzy_nature_point_to_ts1(assetList, temp_data_dict, temp_label_list, time_p
         temp_label_list.append(labeled_row['label'])
 
     print(assetList[0].assetsCode, "结束", len(temp_label_list))
+    return "success"
 
 
 def extremum_point_to_ts1(assetList, temp_data_dict, temp_label_list, time_point_step, handle_uneven_samples,
@@ -825,6 +848,9 @@ def extremum_point_to_ts1(assetList, temp_data_dict, temp_label_list, time_point
                                    + "_handled_uneven" + ".csv")
         if not os.path.exists(handled_uneven_filepath):
             labeled = tea_radical_nature_handling_uneven_samples1(labeled)
+            if labeled.empty:
+                print(assetList[0].assetsCode, "处理样本不均终止")
+                return None
             labeled.to_csv(handled_uneven_filepath, index=True)
         else:
             labeled = pd.read_csv(handled_uneven_filepath, index_col="time", parse_dates=True)
@@ -919,6 +945,9 @@ def identify_market_types_to_ts1(assetList, temp_data_dict, temp_label_list, tim
     # 是否处理样本不均
     if handle_uneven_samples:
         labeled = fuzzy_nature_handling_uneven_samples1(labeled)
+        if labeled.empty:
+            print(assetList[0].assetsCode, "处理样本不均终止")
+            return None
 
     # 遍历 labeled 数据
     for labeled_time, labeled_row in labeled.iterrows():
@@ -1053,6 +1082,7 @@ def identify_market_types_to_ts1(assetList, temp_data_dict, temp_label_list, tim
         temp_label_list.append(labeled_row['label'])
 
     print(assetList[0].assetsCode, "结束", len(temp_label_list))
+    return "success"
 
 
 def c4_trend_nature_point_to_ts1(assetList, temp_data_dict, temp_label_list, time_point_step, handle_uneven_samples,
@@ -1267,6 +1297,9 @@ def c4_oscillation_kdj_nature_point_to_ts1(assetList, temp_data_dict, temp_label
                                    + "_handled_uneven" + ".csv")
         if not os.path.exists(handled_uneven_filepath):
             labeled = fuzzy_nature_handling_uneven_samples1(labeled)
+            if labeled.empty:
+                print(assetList[0].assetsCode, "处理样本不均终止")
+                return None
             labeled.to_csv(handled_uneven_filepath, index=True)
         else:
             labeled = pd.read_csv(handled_uneven_filepath, index_col="time", parse_dates=True)
@@ -1610,24 +1643,32 @@ def prepare_dataset(flag, name, time_point_step, limit_length, handle_uneven_sam
         # 准备训练数据
         if strategy_name == 'tea_radical_nature' and p2t_name == "point_to_ts1":
             # 拼接所有点，60、d、index_d造数
-            tea_radical_nature_point_to_ts1(assetList, temp_data_dict, temp_label_list, time_point_step,
-                                            handle_uneven_samples,
-                                            strategy_name, label_name, feature_plan_name)
+            res = tea_radical_nature_point_to_ts1(assetList, temp_data_dict, temp_label_list, time_point_step,
+                                                  handle_uneven_samples,
+                                                  strategy_name, label_name, feature_plan_name)
+            if not res:
+                continue
         elif strategy_name == 'tea_radical_nature' and p2t_name == "point_to_ts2":
             # 5标注，5、15、30造数
-            tea_radical_nature_point_to_ts2(assetList, temp_data_dict, temp_label_list, time_point_step,
-                                            handle_uneven_samples,
-                                            strategy_name, label_name, feature_plan_name)
+            res = tea_radical_nature_point_to_ts2(assetList, temp_data_dict, temp_label_list, time_point_step,
+                                                  handle_uneven_samples,
+                                                  strategy_name, label_name, feature_plan_name)
+            if not res:
+                continue
         elif strategy_name == 'tea_radical_nature' and p2t_name == "point_to_ts3":
             # 单级别标注，单级别造数
-            tea_radical_nature_point_to_ts3(assetList, temp_data_dict, temp_label_list, time_point_step,
-                                            handle_uneven_samples,
-                                            strategy_name, label_name, feature_plan_name)
+            res = tea_radical_nature_point_to_ts3(assetList, temp_data_dict, temp_label_list, time_point_step,
+                                                  handle_uneven_samples,
+                                                  strategy_name, label_name, feature_plan_name)
+            if not res:
+                continue
         elif strategy_name == 'fuzzy_nature' and p2t_name == "point_to_ts1":
             # 30标注，30、60、d造数
-            fuzzy_nature_point_to_ts1(assetList, temp_data_dict, temp_label_list, time_point_step,
-                                      handle_uneven_samples,
-                                      strategy_name, label_name, feature_plan_name)
+            res = fuzzy_nature_point_to_ts1(assetList, temp_data_dict, temp_label_list, time_point_step,
+                                            handle_uneven_samples,
+                                            strategy_name, label_name, feature_plan_name)
+            if not res:
+                continue
         elif strategy_name == 'extremum' and p2t_name == "point_to_ts1":
             # 单级别标注，单级别造数
             res = extremum_point_to_ts1(assetList, temp_data_dict, temp_label_list, time_point_step,

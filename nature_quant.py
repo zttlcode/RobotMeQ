@@ -3,57 +3,47 @@ import pandas as pd
 import RMQData.Asset as RMQAsset
 from RMQModel import Dataset as RMQDataset
 from RMQModel import Evaluate as RMQEvaluate
+from RMQModel import Label as RMQLabel
+from RMQStrategy import Identify_market_types as RMQS_Identify_Market_Types
+from RMQVisualized import Draw_Pyecharts as Draw_Pyecharts
 import Run as Run
 
 
 def pre_handle():
     """ """"""
-    数据预处理
-    A股、港股、美股、数字币。 每个市场风格不同，混合训练会降低特色，
-        目前只用A股数据，沪深300+中证500=A股前800家上市公司
-        待实验市场：港股、美股标普500、数字币市值前10
-        数据来自证券宝，每个股票5种数据：日线、60m、30m、15m、5m。日线从该股发行日到2025年1月9日，分钟级最早为2019年1月2日。前复权，数据已压缩备份
-    所有数据进行单级别回测，保留策略交易点，多进程运行
-        为提高效率，单级别运行，启动10线程，2台电脑，预计2、3天跑完4000个行情
-
-    a800_stocks
-    a800_stocks_wait_handle_stocks
-    hk_1000_stock_codes
-    hk_1000_stock_codes_wait_handle_stocks
-    sp500_stock_codes
-    sp500_stock_codes_wait_handle_stocks
-    crypto_code
-    crypto_code_wait_handle_stocks
+    每个市场风格不同，混合训练会降低特色，
+    A股数据，沪深300+中证500=A股前800家上市公司，港股、美股标普500、数字币市值前9
+    数据来自证券宝，每个股票5种数据：日线、60m、30m、15m、5m。日线从该股发行日到2025年1月9日，分钟级最早为2019年1月2日。前复权，数据已压缩备份
+    
+    数据回测前，先判断下载的数据有没有非法值，find_zero_close_files
+    
+    A股 a800_stocks  a800_stocks_wait_handle_stocks
+    row['code'][3:]  row['code_name']  '5', '15', '30', '60', 'd'  stock  1  A
+    
+    港股 hk_1000_stock_codes  hk_1000_stock_codes_wait_handle_stocks
+    row['code']  row['name']  'd'  stock  1  HK
+    
+    美股 sp500_stock_codes  sp500_stock_codes_wait_handle_stocks
+    row['code']  row['code']  'd'  stock  1  USA
+    
+    数字币 crypto_code  crypto_code_wait_handle_stocks
+    row['code']  row['code']  '15', '60', '240', 'd'  crypto  1  crypto
     """
-    # allStockCode = pd.read_csv("./QuantData/hk_1000_stock_codes.csv")
     allStockCode = pd.read_csv("./QuantData/asset_code/crypto_code.csv", dtype={'code': str})
-    # 回测，并行 需要手动改里面的策略名
-    Run.parallel_backTest(allStockCode)
+    # Run.parallel_backTest(allStockCode)  # 回测，并行 需要手动改里面的策略名。
     for index, row in allStockCode.iterrows():
-        # assetList = RMQAsset.asset_generator(row['code'][3:],
-        #                                      row['code_name'],
-        #                                      ['d'],
-        #                                      'stock',
-        #                                      1, 'A')
-        # assetList = RMQAsset.asset_generator(row['code'],
-        #                                      row['name'],
-        #                                      ['d'],
-        #                                      'stock',
-        #                                      1, 'HK')
-        # assetList = RMQAsset.asset_generator(row['Symbol'],
-        #                                      row['Symbol'],
-        #                                      ['d'],
-        #                                      'stock',
-        #                                      1, 'USA')
         assetList = RMQAsset.asset_generator(row['code'],
                                              row['code'],
-                                             ['60', '240', 'd'],
+                                             ['15', '60', '240', 'd'],
                                              'crypto',
                                              1, 'crypto')
+
         """
         回测，保存交易点
         加tick会细化价格导致操作提前，但实盘是bar结束了算指标，所以不影响
-        strategy_name : tea_radical_nature  fuzzy_nature
+        strategy_name : 
+            tea_radical_nature  
+            fuzzy_nature
             c4_trend_nature
             c4_oscillation_boll_nature
             c4_oscillation_kdj_nature
@@ -62,25 +52,28 @@ def pre_handle():
         """
         # Run.run_back_test(assetList, "tea_radical_nature")  # 0:18:27.437876 旧回测，转tick，运行时长
         # Run.run_back_test_no_tick(assetList, "fuzzy_nature")  # 0:02:29.502122 新回测，不转tick
-        # RMQM_Identify_Market_Types.run_backTest_label_market_condition(assetList)  # 回测标注日线级别行情类型 该上面时间级别为d
+        # RMQS_Identify_Market_Types.run_backTest_label_market_condition(assetList)  # 回测标注日线级别行情类型 该上面时间级别为d
 
         # 各级别交易点拼接在一起
         # concat_trade_point(assetList, "tea_radical_nature")
         """
         过滤交易点
-            strategy_name: tea_radical_nature  fuzzy_nature  identify_Market_Types  extremum
+            strategy_name: identify_Market_Types 
+                            tea_radical_nature  
+                            fuzzy_nature    回测后，标注前，一定要process_fuzzy_trade_point_csv()预处理
                             c4_trend_nature
                             c4_oscillation_boll_nature
                             c4_oscillation_kdj_nature
                             c4_breakout_nature
                             c4_reversal_nature
+                            extremum
             label_name: 
-                label1: 多级别交易点合并，校验交易后日线级别涨跌幅、40个bar内趋势
+                label1: 多级别交易点合并，校验交易后日线级别涨跌幅、40个bar内趋势 tea_radical_nature的是concat，其他都是单级别
                 label2：单级别校验各自涨跌幅、40个bar内趋势
                 label3：单级别校验各自MACD、DIF是否维持趋势
                 label4：单级别校验各自MACD、DIF+40个bar内趋势
         """
-        # RMQLabel.label(assetList, "fuzzy_nature", "label1")
+        # RMQLabel.label(assetList, "c4_reversal_nature", "label1")
         """
         画K线买卖点图
             method_name:
@@ -92,7 +85,7 @@ def pre_handle():
                 fuzzy的各级别flag也有 _label1
             strategy_name: tea_radical_nature  fuzzy_nature
         """
-        # RMQDraw_Pyecharts.show(assetList, "single", "fuzzy_nature", "_label1")
+        # Draw_Pyecharts.show(assetList, "single", "c4_trend_nature", "_label1")
         """
         计算收益率
             is_concat: True 计算合并交易点的收益率  此时flag只会是 _concat 或 _concat_label1
@@ -176,7 +169,7 @@ def run_live():
 
 
 if __name__ == '__main__':
-    pre_handle()  # 数据预处理
-    #run_experiment()  # 所有股票组成训练集
+    # pre_handle()  # 数据预处理
+    run_experiment()  # 所有股票组成训练集
     #run_live()  # 单独推理一个股票
     pass
