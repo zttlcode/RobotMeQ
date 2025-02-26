@@ -34,7 +34,7 @@ def pre_handle():
     for index, row in allStockCode.iterrows():
         assetList = RMQAsset.asset_generator(row['code'],
                                              row['code'],
-                                             ['15', '60', '240', 'd'],
+                                             ['d'],
                                              'crypto',
                                              1, 'crypto')
 
@@ -85,7 +85,7 @@ def pre_handle():
                 fuzzy的各级别flag也有 _label1
             strategy_name: tea_radical_nature  fuzzy_nature
         """
-        # Draw_Pyecharts.show(assetList, "single", "c4_trend_nature", "_label1")
+        # Draw_Pyecharts.show(assetList, "single", "fuzzy_nature", "_label1")
         """
         计算收益率
             is_concat: True 计算合并交易点的收益率  此时flag只会是 _concat 或 _concat_label1
@@ -136,14 +136,15 @@ def run_experiment():
         label_name: 合并标注交易点的  此时flag只会是 _concat_label1
                     各级别标注交易点  "_" + asset.barEntity.timeLevel + "_label3"  此时flag是 _label2 _label3 _label4
                     fuzzy的各级别flag也有 _label1
+        name里要加级别，跑单级别时，在Dataset里只填对应级别
     """
     RMQDataset.prepare_dataset("_TRAIN", "2w_extremum_20", 60,
                                20000, False,
-                               "extremum", "feature_extremum",
+                               "tea_radical_nature", "feature_extremum",
                                "point_to_ts1", "_label1")
     RMQDataset.prepare_dataset("_TEST", "2w_extremum_20", 60,
                                10000, False,
-                               "extremum", "feature_extremum",
+                               "tea_radical_nature", "feature_extremum",
                                "point_to_ts1", "_label1")
 
 
@@ -169,7 +170,7 @@ def run_live():
 
 
 if __name__ == '__main__':
-    # pre_handle()  # 数据预处理
-    run_experiment()  # 所有股票组成训练集
+    pre_handle()  # 数据预处理
+    #run_experiment()  # 所有股票组成训练集
     #run_live()  # 单独推理一个股票
     pass

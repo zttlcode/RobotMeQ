@@ -280,6 +280,8 @@ accuracy:0.5109467159852045  TimesNet
                                                accuracy:0.6055099648300117  30
                                                accuracy:0.6163540445486518  30  LSTM
     实验发现，单级别准确率跟多级别组合差不多。原因：无论日线什么形态，小级别都有的赚，因此影响不大。
+        同样的高级别形态，小级别有买有卖，因此起决定作用的还是小级别。
+        多级别还是通过行情识别去参与决策吧
 
 2025 0218 行情类型识别，3个分类
 accuracy:0.8332816826783697  步长10 CNN
@@ -321,7 +323,7 @@ c4_oscillation_boll_nature
     HK:d  label1
     USA:d  label1
     crypto:15、60、240、d  label1
-c4_oscillation_kdj_nature
+c4_oscillation_kdj_nature  全是5%
     A:15、30、60、d  label1
     HK:d    label1
     USA:d  label1

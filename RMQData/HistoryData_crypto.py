@@ -33,7 +33,10 @@ def process_crypto_data_current_month(code, time_level):
                     # 注意，2025年元旦后，时间戳多了3位，从毫秒变成微秒了
                     df['Close time'] = df['Close time'].apply(lambda x: x // 1000 if len(str(int(x))) > 13 else x)
                     df['Close time'] = pd.to_datetime(df['Close time'] + 1, unit='ms')
-                    df['Close time'] = df['Close time'].dt.strftime('%Y-%m-%d %H:%M:%S')
+                    if time_level == '1d':
+                        df['Close time'] = df['Close time'].dt.strftime('%Y-%m-%d')
+                    else:
+                        df['Close time'] = df['Close time'].dt.strftime('%Y-%m-%d %H:%M:%S')
                     # 6. 将列名转换为小写并修改 'close_time' 为 'time'
                     df.columns = ['open', 'high', 'low', 'close', 'volume', 'time']
 
@@ -77,7 +80,10 @@ def process_crypto_data(code, time_level, target_time_level):
                     # 注意，2025年元旦后，时间戳多了3位，从毫秒变成微秒了
                     df['Close time'] = df['Close time'].apply(lambda x: x // 1000 if len(str(int(x))) > 13 else x)
                     df['Close time'] = pd.to_datetime(df['Close time'] + 1, unit='ms')
-                    df['Close time'] = df['Close time'].dt.strftime('%Y-%m-%d %H:%M:%S')
+                    if time_level == '1d':
+                        df['Close time'] = df['Close time'].dt.strftime('%Y-%m-%d')
+                    else:
+                        df['Close time'] = df['Close time'].dt.strftime('%Y-%m-%d %H:%M:%S')
                     # 6. 将列名转换为小写并修改 'close_time' 为 'time'
                     df.columns = ['open', 'high', 'low', 'close', 'volume', 'time']
 
@@ -141,8 +147,8 @@ if __name__ == '__main__':
     df_codes = pd.DataFrame(codes, columns=['code'])
     # 11. 遍历所有数字币的 DataFrame 并处理
     for code in df_codes['code']:
-        process_crypto_data(code, "15m", "15")
-        process_crypto_data(code, "1h", "60")
-        process_crypto_data(code, "4h", "240")
+        # process_crypto_data(code, "15m", "15")
+        # process_crypto_data(code, "1h", "60")
+        # process_crypto_data(code, "4h", "240")
         process_crypto_data(code, "1d", "d")
 
