@@ -137,6 +137,8 @@ def run_experiment():
                     各级别标注交易点  "_" + asset.barEntity.timeLevel + "_label3"  此时flag是 _label2 _label3 _label4
                     fuzzy的各级别flag也有 _label1
         name里要加级别，跑单级别时，在Dataset里只填对应级别
+        行情分类、极值 不需要处理样本不均
+        
     """
     RMQDataset.prepare_dataset("_TRAIN", "2w_extremum_20", 60,
                                20000, False,
