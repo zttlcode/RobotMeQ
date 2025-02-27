@@ -133,13 +133,13 @@ def run_experiment():
         name: 标的_级别_行数 ts文件命名，跟limit_length对应，这文件有多少条数据
                 跑单级别时，在Dataset里只填对应级别        
     """
-    RMQDataset.prepare_dataset("_TRAIN", "A_15_2w", 160,
+    RMQDataset.prepare_dataset("_TRAIN", "A_d_2w", 160,
                                20000, True,
-                               "c4_reversal_nature", "feature_c4_reversal",
+                               "extremum", "feature_c4_oscillation_boll",
                                "point_to_ts1", "_label1")
-    RMQDataset.prepare_dataset("_TEST", "A_15_2w", 160,
+    RMQDataset.prepare_dataset("_TEST", "A_d_2w", 160,
                                10000, True,
-                               "c4_reversal_nature", "feature_c4_reversal",
+                               "extremum", "feature_c4_oscillation_boll",
                                "point_to_ts1", "_label1")
 
 

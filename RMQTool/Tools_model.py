@@ -420,7 +420,7 @@ def count_trade_point_csv_files():
 
 
 def count_label_distribution():
-    folder_path = "../QuantData/trade_point_backtest_c4_reversal_nature/"
+    folder_path = "../QuantData/trade_point_backtest_extremum/"
     """ 遍历目标文件夹，统计每个CSV文件中 label 列的分布情况 """
     csv_files = [f for f in os.listdir(folder_path) if fnmatch.fnmatch(f, 'A_*_d_label1.csv')]
 
@@ -459,6 +459,54 @@ def count_label_distribution():
     print(f"  Label 2: {label_counts2} 行")
     print(f"  Label 3: {label_counts3} 行")
     print(f"  Label 4: {label_counts4} 行")
+
+
+def count_label_null():
+    # 查看label列是否为nan，如果是，则删除那一行
+    folder_path = "./QuantData/trade_point_backtest_tea_radical_nature/"
+
+    # 遍历文件夹，获取所有符合 'USA_*_d.csv' 规则的文件
+    csv_files = [f for f in os.listdir(folder_path) if fnmatch.fnmatch(f, '*_label2.csv')]
+
+    for file in csv_files:
+        file_path = os.path.join(folder_path, file)
+        df = pd.read_csv(file_path)
+
+        # 检查是否包含 'label' 列
+        if 'label' in df.columns:
+            if df['label'].isnull().any():
+                print(f"File: {file} - Contains NaN values in 'label' column")
+                df = df.dropna(subset=['label'])  # 删除 label 列中包含 NaN 的行
+                df.to_csv(file_path, index=False)  # 重新写入 CSV 文件
+        else:
+            print(f"File: {file} - No 'label' column found")
+
+
+def check_time_sort():
+    # 查看时间列是否为升序，如果不是，中间数据乱了，这个原因估计是run里多个策略同时运行，导致订单文件重复读取
+
+    folder_path = "./QuantData/trade_point_backtest_c4_reversal_nature/"
+
+    # 遍历文件夹，获取所有符合 'USA_*_d.csv' 规则的文件
+    # csv_files = [f for f in os.listdir(folder_path) if fnmatch.fnmatch(f, 'HK_*_d.csv')]
+    csv_files = [f for f in os.listdir(folder_path) if fnmatch.fnmatch(f, '*.csv')]
+
+    for file in csv_files:
+        file_path = os.path.join(folder_path, file)
+        df = pd.read_csv(file_path)
+
+        # 检查是否包含 'date' 列
+        if 'time' in df.columns:
+            df['time'] = pd.to_datetime(df['time'], errors='coerce')  # 转换为 datetime 类型，处理异常值
+            if df['time'].isnull().any():
+                print(f"File: {file} - Contains invalid date values")
+                continue
+
+            # 检查是否严格递增
+            if not df['time'].is_monotonic_increasing:
+                print(f"File: {file} - Date column is not strictly increasing")
+        else:
+            print(f"File: {file} - No 'date' column found")
 
 
 if __name__ == '__main__':

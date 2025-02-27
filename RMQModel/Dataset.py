@@ -777,7 +777,8 @@ def single_time_level_point_to_ts1(assetList, temp_data_dict, temp_label_list, t
                                    + str(label_name)
                                    + "_handled_uneven" + ".csv")
         if not os.path.exists(handled_uneven_filepath):
-            if strategy_name == 'c4_oscillation_kdj_nature' or strategy_name == 'fuzzy_nature':
+            if strategy_name == 'c4_oscillation_kdj_nature' or strategy_name == 'fuzzy_nature'\
+                    or strategy_name == 'extremum':
                 labeled = fuzzy_nature_handling_uneven_samples1(labeled)
             else:
                 labeled = tea_radical_nature_handling_uneven_samples1(labeled)
@@ -1124,7 +1125,7 @@ def prepare_dataset(flag, name, time_point_step, limit_length, handle_uneven_sam
     for index, row in df_dataset.iterrows():
         assetList = RMQAsset.asset_generator(row['code'][3:],
                                              row['code'],
-                                             ['60'],
+                                             ['d'],
                                              'stock',
                                              1, 'A')
         # 准备训练数据
