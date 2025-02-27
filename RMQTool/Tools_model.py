@@ -168,12 +168,12 @@ def process_fuzzy_trade_point_csv():
 def handle_800_wait():
     # 过滤已经800里未处理的数据
     # 文件夹路径和目标文件路径
-    folder_path = "../QuantData/trade_point_backtest_fuzzy_nature/"  # 替换为存储CSV文件的文件夹路径
-    hs_file_path = "../QuantData/a800_stocks.csv"  # hs.csv 文件路径
-    output_file_path = "../QuantData/a800_stocks_wait_handle_stocks.csv"  # 输出文件路径
+    folder_path = "../QuantData/market_condition_backtest/"  # 替换为存储CSV文件的文件夹路径
+    hs_file_path = "../QuantData/asset_code/a800_stocks.csv"  # hs.csv 文件路径
+    output_file_path = "../QuantData/asset_code/a800_stocks_wait_handle_stocks.csv"  # 输出文件路径
 
     # 步骤 1: 获取文件夹中所有文件名，并提取 cc 列
-    file_names = [f for f in os.listdir(folder_path) if f.endswith('_15.csv')]
+    file_names = [f for f in os.listdir(folder_path) if fnmatch.fnmatch(f, 'A_*_60.csv')]
     cc_list = [f[2:8] for f in file_names if len(f) >= 8]  # 提取第18到23位
     cc_unique = set(cc_list)  # 去重，转为集合方便快速查找
     # 步骤 2: 读取 hs.csv 文件并截取 code 列前3位后进行比较
@@ -420,13 +420,16 @@ def count_trade_point_csv_files():
 
 
 def count_label_distribution():
-    folder_path = "../QuantData/trade_point_backtest_c4_trend_nature/"
+    folder_path = "../QuantData/trade_point_backtest_c4_reversal_nature/"
     """ 遍历目标文件夹，统计每个CSV文件中 label 列的分布情况 """
-    csv_files = [f for f in os.listdir(folder_path) if fnmatch.fnmatch(f, 'A_*_30_label1.csv')]
+    csv_files = [f for f in os.listdir(folder_path) if fnmatch.fnmatch(f, 'A_*_d_label1.csv')]
 
     # 获取所有以 label1 结尾的 CSV 文件
     # csv_files = glob.glob(os.path.join(folder_path, "*_d_label1.csv"))
-
+    label_counts1 = 0
+    label_counts2 = 0
+    label_counts3 = 0
+    label_counts4 = 0
     for file in csv_files:
         try:
             file_path = os.path.join(folder_path, file)
@@ -437,20 +440,27 @@ def count_label_distribution():
                 label_counts = df['label'].value_counts().reindex([1, 2, 3, 4], fill_value=0)
 
                 # 打印结果
-                print(f"文件: {os.path.basename(file)}")
-                print(f"  Label 1: {label_counts[1]} 行")
-                print(f"  Label 2: {label_counts[2]} 行")
-                print(f"  Label 3: {label_counts[3]} 行")
-                print(f"  Label 4: {label_counts[4]} 行")
-                print("-" * 40)
-
+                # print(f"文件: {os.path.basename(file)}")
+                # print(f"  Label 1: {label_counts[1]} 行")
+                # print(f"  Label 2: {label_counts[2]} 行")
+                # print(f"  Label 3: {label_counts[3]} 行")
+                # print(f"  Label 4: {label_counts[4]} 行")
+                # print("-" * 40)
+                label_counts1 += label_counts[1]
+                label_counts2 += label_counts[2]
+                label_counts3 += label_counts[3]
+                label_counts4 += label_counts[4]
             else:
                 print(f"文件 {file} 缺少 label 列，跳过处理。")
 
         except Exception as e:
             print(f"读取文件 {file} 失败: {e}")
+    print(f"  Label 1: {label_counts1} 行")
+    print(f"  Label 2: {label_counts2} 行")
+    print(f"  Label 3: {label_counts3} 行")
+    print(f"  Label 4: {label_counts4} 行")
 
 
 if __name__ == '__main__':
-    process_fuzzy_trade_point_csv()
+    count_label_distribution()
 

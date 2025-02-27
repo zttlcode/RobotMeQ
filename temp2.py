@@ -2,10 +2,10 @@ import os
 import fnmatch
 import pandas as pd
 
-folder_path = "./QuantData/trade_point_backtest_c4_reversal_nature/"
+folder_path = "./QuantData/trade_point_backtest_tea_radical_nature/"
 
 # 遍历文件夹，获取所有符合 'USA_*_d.csv' 规则的文件
-csv_files = [f for f in os.listdir(folder_path) if fnmatch.fnmatch(f, '*_label1.csv')]
+csv_files = [f for f in os.listdir(folder_path) if fnmatch.fnmatch(f, '*_label2.csv')]
 
 for file in csv_files:
     file_path = os.path.join(folder_path, file)

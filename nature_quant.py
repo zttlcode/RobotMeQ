@@ -34,22 +34,10 @@ def pre_handle():
     for index, row in allStockCode.iterrows():
         assetList = RMQAsset.asset_generator(row['code'],
                                              row['code'],
-                                             ['d'],
+                                             ['15', '60', '240', 'd'],
                                              'crypto',
                                              1, 'crypto')
-
-        """
-        回测，保存交易点
-        加tick会细化价格导致操作提前，但实盘是bar结束了算指标，所以不影响
-        strategy_name : 
-            tea_radical_nature  
-            fuzzy_nature
-            c4_trend_nature
-            c4_oscillation_boll_nature
-            c4_oscillation_kdj_nature
-            c4_breakout_nature
-            c4_reversal_nature
-        """
+        # 回测，保存交易点,加tick会细化价格导致操作提前，但实盘是bar结束了算指标，所以不影响
         # Run.run_back_test(assetList, "tea_radical_nature")  # 0:18:27.437876 旧回测，转tick，运行时长
         # Run.run_back_test_no_tick(assetList, "fuzzy_nature")  # 0:02:29.502122 新回测，不转tick
         # RMQS_Identify_Market_Types.run_backTest_label_market_condition(assetList)  # 回测标注日线级别行情类型 该上面时间级别为d
@@ -73,7 +61,7 @@ def pre_handle():
                 label3：单级别校验各自MACD、DIF是否维持趋势
                 label4：单级别校验各自MACD、DIF+40个bar内趋势
         """
-        # RMQLabel.label(assetList, "c4_reversal_nature", "label1")
+        # RMQLabel.label(assetList, "fuzzy_nature", "label1")
         """
         画K线买卖点图
             method_name:
@@ -110,43 +98,48 @@ def run_experiment():
     由于两个数据集都要做，因此写俩方法串行，别删
         按照原始标注方法，_TRAIN 最多24.6万  _TEST 最多14.6万
         limit_length==0 代表不截断，全数据
+        
         flag: _TRAIN 训练集截前500个股票，  _TEST 测试集截后300个  截之前按固定随机数乱序了
-        name: 给ts文件命名，跟limit_length对应，这文件有多少条数据
         time_point_step: 截取的时间步，最长500，最少得是8以上，因为很多时序模型需要得序列长度最少是8
         limit_length：限制长度是为了方便debug时调试，数据太多加载太慢
         handle_uneven_samples: macd策略样本不均，其他策略不一定有这个问题，所以这里控制要不要处理
-        strategy_name: 为了读回测点文件，tea_radical_nature  fuzzy_nature  identify_Market_Types extremum
-                            c4_trend_nature
-                            c4_oscillation_boll_nature
-                            c4_oscillation_kdj_nature
-                            c4_breakout_nature
-                            c4_reversal_nature
+        strategy_name: 为了读回测点文件，     
+                        identify_Market_Types  不需要处理样本不均
+                        fuzzy_nature
+                        tea_radical_nature
+                        c4_trend_nature
+                        c4_oscillation_boll_nature
+                        c4_oscillation_kdj_nature
+                        c4_breakout_nature
+                        c4_reversal_nature
+                        extremum  不需要处理样本不均
         feature_plan_name: 不同特征组织方案
-                feature1 日线、小时线、指数日线
-                feature2 macd5分钟、15分钟、30分钟
+                feature_tea_concat 日线、小时线、指数日线
+                feature_tea_multi_level macd5分钟、15分钟、30分钟
+                feature_fuzzy_multi_level
+                feature_all
+                feature_tea_macd
                 feature_c4_trend
                 feature_c4_oscillation_boll
                 feature_c4_oscillation_kdj
                 feature_c4_breakout
                 feature_c4_reversal  
                 feature_extremum
-        p2t_name: 针对不同特征，截不同得训练集数据
-                point_to_ts1 针对feature1截收盘价和成交量
-                point_to_ts2 针对feature2截MACD、KDJ、close
+        p2t_name: point_to_ts1 单级别
+                  point_to_ts2 多级别
         label_name: 合并标注交易点的  此时flag只会是 _concat_label1
                     各级别标注交易点  "_" + asset.barEntity.timeLevel + "_label3"  此时flag是 _label2 _label3 _label4
                     fuzzy的各级别flag也有 _label1
-        name里要加级别，跑单级别时，在Dataset里只填对应级别
-        行情分类、极值 不需要处理样本不均
-        
+        name: 标的_级别_行数 ts文件命名，跟limit_length对应，这文件有多少条数据
+                跑单级别时，在Dataset里只填对应级别        
     """
-    RMQDataset.prepare_dataset("_TRAIN", "2w_extremum_20", 60,
-                               20000, False,
-                               "tea_radical_nature", "feature_extremum",
+    RMQDataset.prepare_dataset("_TRAIN", "A_15_2w", 160,
+                               20000, True,
+                               "c4_reversal_nature", "feature_c4_reversal",
                                "point_to_ts1", "_label1")
-    RMQDataset.prepare_dataset("_TEST", "2w_extremum_20", 60,
-                               10000, False,
-                               "tea_radical_nature", "feature_extremum",
+    RMQDataset.prepare_dataset("_TEST", "A_15_2w", 160,
+                               10000, True,
+                               "c4_reversal_nature", "feature_c4_reversal",
                                "point_to_ts1", "_label1")
 
 
@@ -172,7 +165,7 @@ def run_live():
 
 
 if __name__ == '__main__':
-    pre_handle()  # 数据预处理
-    #run_experiment()  # 所有股票组成训练集
-    #run_live()  # 单独推理一个股票
+    # pre_handle()  # 数据预处理
+    run_experiment()  # 所有股票组成训练集
+    # run_live()  # 单独推理一个股票
     pass

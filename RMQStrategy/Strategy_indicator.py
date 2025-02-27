@@ -109,19 +109,6 @@ class TradingStrategies:
             print(f"[反转卖出] {last_row.name} | 价格: {last_row['close']:.2f} | OBV: {last_row['obv'] / 1e6:.2f}M")
 
 
-def calculate_indicators(df):
-    """整合所有指标计算"""
-    df = IMTHelper.calculate_ema(df)
-    df = IMTHelper.calculate_macd(df)
-    df = IMTHelper.calculate_atr(df)
-    df = IMTHelper.calculate_bollinger_bands(df)
-    df = IMTHelper.calculate_rsi(df)
-    df = IMTHelper.calculate_obv(df)
-    df = IMTHelper.calculate_kdj(df)
-
-    return df
-
-
 def plot_strategy(df):
     plt.figure(figsize=(16, 8))
     plt.plot(df['close'], label='Price')
@@ -135,7 +122,7 @@ def plot_strategy(df):
 
 # ----------------- 使用示例 -----------------
 if __name__ == "__main__":
-    allStockCode = pd.read_csv("../QuantData/a800_stocks.csv")
+    allStockCode = pd.read_csv("../QuantData/a800_stocks.csv", dtype={'code': str})
     for index, row in allStockCode.iterrows():
         assetList = RMQAsset.asset_generator(row['code'][3:],
                                              row['code_name'],
@@ -154,7 +141,13 @@ if __name__ == "__main__":
                                     + '.csv')
             df = pd.read_csv(backtest_df_filePath, encoding='utf-8', parse_dates=['time'], index_col="time")
 
-            df = calculate_indicators(df)
+            df = IMTHelper.calculate_ema(df)
+            df = IMTHelper.calculate_macd(df)
+            df = IMTHelper.calculate_atr(df)
+            df = IMTHelper.calculate_bollinger_bands(df)
+            df = IMTHelper.calculate_rsi(df)
+            df = IMTHelper.calculate_obv(df)
+            df = IMTHelper.calculate_kdj(df)
 
             for i in range(0, len(df) - 120 + 1, 1):
                 window_df = df.iloc[i:i + 120].copy()

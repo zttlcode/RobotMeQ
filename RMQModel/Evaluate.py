@@ -127,7 +127,7 @@ def return_rate(assetList, is_concat, flag, strategy_name, pred, handled_uneven)
 
 def compare_return_rate():
     # 计算不同标注方式的收益率
-    allStockCode = pd.read_csv("./QuantData/a800_stocks.csv")
+    allStockCode = pd.read_csv("./QuantData/a800_stocks.csv", dtype={'code': str})
     n = 0
     temp_data_dict = {'have5label': []}
     for index, row in allStockCode.iterrows():

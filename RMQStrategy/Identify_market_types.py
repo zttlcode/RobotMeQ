@@ -518,7 +518,8 @@ def run_backTest_label_market_condition(assetList):
             # print(f"最大键: {max_key}, {max_value}, {window_df['close'].iloc[-1]}")
 
             # 回测所有行情分类
-            market_condition = [window_df.index[-1].strftime('%Y-%m-%d'),
+            market_condition = [window_df.index[-1].strftime('%Y-%m-%d') if asset.barEntity.timeLevel == 'd'
+                                else window_df.index[-1].strftime('%Y-%m-%d %H:%M:%S'),
                                 window_df['close'].iloc[-1],
                                 max_key, label[max_key]]
             market_condition_list.append(market_condition)

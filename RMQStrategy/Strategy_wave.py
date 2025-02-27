@@ -326,7 +326,7 @@ def plt_wave_labels(analyzer):
 
 # 使用示例
 if __name__ == "__main__":
-    allStockCode = pd.read_csv("../QuantData/a800_stocks.csv")
+    allStockCode = pd.read_csv("../QuantData/a800_stocks.csv", dtype={'code': str})
     for index, row in allStockCode.iterrows():
         assetList = RMQAsset.asset_generator(row['code'][3:],
                                              row['code_name'],

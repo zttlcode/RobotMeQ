@@ -224,6 +224,8 @@
 
 报错：
     ValueError: Expected input batch_size (1) to match target batch_size (0). 这个报错是数据量运气不好，随便改一下数据量就好了
+    C:\actions-runner\_work\pytorch\pytorch\builder\windows\pytorch\aten\src\ATen\native\cuda\Loss.cu:250: block: [0,0,0], thread: [8,0,0] Assertion `t >= 0 && t < n_classes` failed.
+    这个报错是分类有问题，要么模型最后的分类不是四类，要么ts文件里label有Nan导致分类不是4类
     fuzzy,kdj,极值，这三个回测后都是交易对，要先预处理，再标注，不然标注会出现Nan，训练时会出现Nan类
     run里面多个策略同时跑，导致订单出现错误，数据混乱
 
