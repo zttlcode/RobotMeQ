@@ -125,47 +125,65 @@ def run_experiment():
                 feature_c4_breakout
                 feature_c4_reversal  
                 feature_extremum
-        p2t_name: point_to_ts1 单级别
-                  point_to_ts2 多级别
+        p2t_name: point_to_ts_single
+                  point_to_ts_up_time_level
+                  point_to_ts_concat  拼接所有点，60、d、index_d造数
+                  point_to_ts_tea_multi_level  5标注，5、15、30造数
+                  point_to_ts_fuzzy_multi_level  30标注，30、60、d造数
         label_name: 合并标注交易点的  此时flag只会是 _concat_label1
                     各级别标注交易点  "_" + asset.barEntity.timeLevel + "_label3"  此时flag是 _label2 _label3 _label4
                     fuzzy的各级别flag也有 _label1
-        name: 标的_级别_行数 ts文件命名，跟limit_length对应，这文件有多少条数据
+        name: 标的_级别 ts文件命名，跟limit_length对应，这文件有多少条数据
                 跑单级别时，在Dataset里只填对应级别        
     """
-    RMQDataset.prepare_dataset("_TRAIN", "A_d_2w", 160,
+    RMQDataset.prepare_dataset("_TRAIN", "A_15", 160,
                                20000, True,
-                               "extremum", "feature_c4_oscillation_boll",
-                               "point_to_ts1", "_label1")
-    RMQDataset.prepare_dataset("_TEST", "A_d_2w", 160,
+                               "c4_trend_nature", "feature_all",
+                               "point_to_ts_single", "_label1")
+    RMQDataset.prepare_dataset("_TEST", "A_15", 160,
                                10000, True,
-                               "extremum", "feature_c4_oscillation_boll",
-                               "point_to_ts1", "_label1")
+                               "tea_radical_nature", "feature_all",
+                               "point_to_ts_single", "_label1")
 
 
 def run_live():
-    RMQDataset.prepare_dataset_single("_TEST", "2w_c4_oscillation_kdj_nature_20", 20,
+    """""" """
+    组装预测数据  预测交易点/预测行情
+
+    """
+    RMQDataset.prepare_dataset_single("_TEST", "A_15", 20,
                                       20000, True,
-                                      "c4_oscillation_kdj_nature", "feature_c4_oscillation_kdj",
-                                      "point_to_ts1", "_label1", 3)
-    """
-603737 结束 310
-603786 结束 170
-    """
-    assetList = RMQAsset.asset_generator('603786',
-                                         '',
-                                         ['d'],
-                                         'stock',
-                                         1, 'A')
-    RMQEvaluate.return_rate(assetList, False, "_label1", "c4_oscillation_kdj_nature",
-                            False, True)
-    # 读取CSV文件
-    RMQEvaluate.return_rate(assetList, False, "_label1", "c4_oscillation_kdj_nature",
-                            True, True)
+                                      "c4_trend_nature", "feature_all",
+                                      "point_to_ts_up_time_level", "_label1", 5,
+                                      True, 'index_d')
+
+    # 预测收益
+    # allStockCode = pd.read_csv("D:/github/RobotMeQ/QuantData/asset_code/a800_stocks.csv", dtype={'code': str})
+    # df_dataset = allStockCode.iloc[500:]
+    # n = 1
+    # for index, row in df_dataset.iterrows():
+    #     assetList = RMQAsset.asset_generator(row['code'][3:],
+    #                                          '',
+    #                                          ['d'],
+    #                                          'stock',
+    #                                          1, 'A')
+    #     RMQEvaluate.return_rate(assetList, False, "_label1", "c4_oscillation_kdj_nature",
+    #                             False, True)
+    #     # 读取CSV文件
+    #     RMQEvaluate.return_rate(assetList, False, "_label1", "c4_oscillation_kdj_nature",
+    #                             True, True)
+    #     n += 1
+    #     if n > 3:
+    #         break
+    # 计算行情分类对正确率的影响
+    # df = pd.read_csv("./results/603786_prd_result_tpp.csv")
+    # 用 predictions_market 列过滤predictions列，然准确率是否提升
+    # 若过滤，损失了2，4的准确率，不好对比，应该只处理1，3列的predictions_market，得到predictions_filtered列，再和trues计算准确率
+    # filtered_df = df[df['predictions'].isin([1, 3])]
 
 
 if __name__ == '__main__':
     # pre_handle()  # 数据预处理
-    run_experiment()  # 所有股票组成训练集
-    # run_live()  # 单独推理一个股票
+    # run_experiment()  # 所有股票组成训练集
+    run_live()  # 单独推理一个股票
     pass

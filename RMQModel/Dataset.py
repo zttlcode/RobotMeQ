@@ -718,8 +718,8 @@ def fuzzy_nature_point_to_ts2(assetList, temp_data_dict, temp_label_list, time_p
     return "success"
 
 
-def single_time_level_point_to_ts1(assetList, temp_data_dict, temp_label_list, time_point_step, handle_uneven_samples,
-                                   strategy_name, label_name, feature_plan_name):
+def single_time_level_point_to_ts(assetList, temp_data_dict, temp_label_list, time_point_step, handle_uneven_samples,
+                                  strategy_name, label_name, feature_plan_name, pred_market_type):
     # 加载数据
     if strategy_name == 'identify_Market_Types':
         item = 'market_condition_backtest'
@@ -765,6 +765,9 @@ def single_time_level_point_to_ts1(assetList, temp_data_dict, temp_label_list, t
         data_0 = IMTHelper.calculate_obv(data_0)
     elif feature_plan_name == 'feature_all':
         data_0 = IMTHelper.calculate_indicators(data_0)
+    # 处理Nan
+    data_0.fillna(method='bfill', inplace=True)  # 用后一个非NaN值填充（后向填充）
+    data_0.fillna(method='ffill', inplace=True)  # 用前一个非NaN值填充（前向填充）
 
     # 是否处理样本不均
     if handle_uneven_samples:
@@ -777,7 +780,7 @@ def single_time_level_point_to_ts1(assetList, temp_data_dict, temp_label_list, t
                                    + str(label_name)
                                    + "_handled_uneven" + ".csv")
         if not os.path.exists(handled_uneven_filepath):
-            if strategy_name == 'c4_oscillation_kdj_nature' or strategy_name == 'fuzzy_nature'\
+            if strategy_name == 'c4_oscillation_kdj_nature' or strategy_name == 'fuzzy_nature' \
                     or strategy_name == 'extremum':
                 labeled = fuzzy_nature_handling_uneven_samples1(labeled)
             else:
@@ -881,6 +884,7 @@ def single_time_level_point_to_ts1(assetList, temp_data_dict, temp_label_list, t
                             or boll_mid.isna().any() or boll_upper.isna().any() or boll_lower.isna().any()
                             or rsi.isna().any() or obv.isna().any() or volume_ma5.isna().any()
                             or close.isna().any() or volume.isna().any()):
+                        print("还有Nan")
                         continue  # 数据NaN，跳过
                 elif feature_plan_name == 'feature_extremum':
                     open = data_0_tmp["open"]
@@ -953,6 +957,343 @@ def single_time_level_point_to_ts1(assetList, temp_data_dict, temp_label_list, t
     return "success"
 
 
+def up_time_level_point_to_ts(assetList, temp_data_dict, temp_label_list, time_point_step, handle_uneven_samples,
+                              strategy_name, label_name, feature_plan_name, pred_market_type, up_time_level):
+    # 加载数据
+    if strategy_name == 'identify_Market_Types':
+        item = 'market_condition_backtest'
+    else:
+        item = 'trade_point_backtest_' + strategy_name
+    labeled_filePath = (RMTTools.read_config("RMQData", item)
+                        + assetList[0].assetsMarket
+                        + "_"
+                        + assetList[0].assetsCode
+                        + "_"
+                        + assetList[0].barEntity.timeLevel
+                        + str(label_name)
+                        + ".csv")
+    if up_time_level == '15':
+        data_up_filePath = (RMTTools.read_config("RMQData", "backtest_bar")
+                            + "bar_"
+                            + assetList[0].assetsMarket
+                            + "_"
+                            + assetList[0].assetsCode
+                            + "_"
+                            + '15'
+                            + ".csv")
+    elif up_time_level == '30':
+        data_up_filePath = (RMTTools.read_config("RMQData", "backtest_bar")
+                            + "bar_"
+                            + assetList[0].assetsMarket
+                            + "_"
+                            + assetList[0].assetsCode
+                            + "_"
+                            + '30'
+                            + ".csv")
+    elif up_time_level == '60':
+        data_up_filePath = (RMTTools.read_config("RMQData", "backtest_bar")
+                            + "bar_"
+                            + assetList[0].assetsMarket
+                            + "_"
+                            + assetList[0].assetsCode
+                            + "_"
+                            + '60'
+                            + ".csv")
+    elif up_time_level == 'd':
+        data_up_filePath = (RMTTools.read_config("RMQData", "backtest_bar")
+                            + "bar_"
+                            + assetList[0].assetsMarket
+                            + "_"
+                            + assetList[0].assetsCode
+                            + "_"
+                            + 'd'
+                            + ".csv")
+    elif up_time_level == 'index_d':
+        data_up_filePath = (RMTTools.read_config("RMQData", "backtest_bar")
+                            + "bar_"
+                            + assetList[0].assetsMarket
+                            + "_"
+                            + "000001_index_d" + ".csv")
+    else:
+        raise ValueError("up_time_level输入异常")
+
+    if not os.path.exists(labeled_filePath):
+        return None
+    labeled = pd.read_csv(labeled_filePath, index_col="time", parse_dates=True)
+    if up_time_level == '15' or up_time_level == '30':
+        data_0 = pd.read_csv(data_up_filePath, parse_dates=["time"])
+    else:
+        data_0 = pd.read_csv(data_up_filePath, index_col="time", parse_dates=True)
+
+    # 计算所有指标
+    data_0 = IMTHelper.calculate_indicators(data_0)
+    # 处理Nan
+    data_0.fillna(method='bfill', inplace=True)  # 用后一个非NaN值填充（后向填充）
+    data_0.fillna(method='ffill', inplace=True)  # 用前一个非NaN值填充（前向填充）
+
+    # 是否处理样本不均
+    if handle_uneven_samples:
+        handled_uneven_filepath = (RMTTools.read_config("RMQData", item)
+                                   + assetList[0].assetsMarket
+                                   + "_"
+                                   + assetList[0].assetsCode
+                                   + "_"
+                                   + assetList[0].barEntity.timeLevel
+                                   + str(label_name)
+                                   + "_handled_uneven" + ".csv")
+        if not os.path.exists(handled_uneven_filepath):
+            if strategy_name == 'c4_oscillation_kdj_nature' or strategy_name == 'fuzzy_nature' \
+                    or strategy_name == 'extremum':
+                labeled = fuzzy_nature_handling_uneven_samples1(labeled)
+            else:
+                labeled = tea_radical_nature_handling_uneven_samples1(labeled)
+            if labeled.empty:
+                print(assetList[0].assetsCode, "处理样本不均终止")
+                return None
+            labeled.to_csv(handled_uneven_filepath, index=True)
+        else:
+            labeled = pd.read_csv(handled_uneven_filepath, index_col="time", parse_dates=True)
+
+    # 遍历 concat_labeled 数据
+    for labeled_time, labeled_row in labeled.iterrows():
+        labeled_date = labeled_time.date()
+        labeled_hour = labeled_time.hour
+
+        if up_time_level == '15':
+            data_0_start_time = labeled_time.floor("15T")  # 向下取整到最近的15分钟
+            data_0_end_time = data_0_start_time + pd.Timedelta(minutes=15)
+            # 在 15分钟级别 中查找符合区间的行
+            data_0_mask = (data_0["time"] > data_0_start_time) & (data_0["time"] <= data_0_end_time)
+            data_0_matching_indices = data_0.index[data_0_mask].to_numpy()  # 使用 to_numpy() 解决 FutureWarning
+
+            if data_0_matching_indices.size > 0:
+                data_0_prev_index = data_0_matching_indices[-1] - 1  # 获取上一行的索引
+
+                # 检查是否越界
+                if data_0_prev_index < 0:
+                    continue
+
+                # 获取上一行的time
+                # data_0_prev_row_time = data_0.loc[data_0_prev_index, "time"]
+                # data_0_row_index = data_0.index.get_loc(pd.Timestamp(data_0_prev_row_time))
+                data_0_row_index = data_0_prev_index
+
+                if data_0_row_index >= time_point_step:
+                    data_0_tmp = data_0.iloc[data_0_row_index - time_point_step: data_0_row_index].reset_index(
+                        drop=True)
+                    ema10 = data_0_tmp["ema10"]
+                    ema20 = data_0_tmp["ema20"]
+                    ema60 = data_0_tmp["ema60"]
+                    macd = data_0_tmp["macd"]
+                    signal = data_0_tmp["signal"]
+                    adx = data_0_tmp["adx"]
+                    plus_di = data_0_tmp["plus_di"]
+                    minus_di = data_0_tmp["minus_di"]
+                    atr = data_0_tmp["atr"]
+                    boll_mid = data_0_tmp["boll_mid"]
+                    boll_upper = data_0_tmp["boll_upper"]
+                    boll_lower = data_0_tmp["boll_lower"]
+                    rsi = data_0_tmp["rsi"]
+                    obv = data_0_tmp["obv"]
+                    volume_ma5 = data_0_tmp["volume_ma5"]
+                    close = data_0_tmp["close"]
+                    volume = data_0_tmp["volume"]
+                    if (ema10.isna().any() or ema20.isna().any() or ema60.isna().any()
+                            or macd.isna().any() or signal.isna().any() or adx.isna().any()
+                            or plus_di.isna().any() or minus_di.isna().any() or atr.isna().any()
+                            or boll_mid.isna().any() or boll_upper.isna().any() or boll_lower.isna().any()
+                            or rsi.isna().any() or obv.isna().any() or volume_ma5.isna().any()
+                            or close.isna().any() or volume.isna().any()):
+                        continue  # 数据NaN，跳过
+                else:
+                    continue  # d.csv 越界，跳过
+            else:
+                continue  # 无匹配日期，跳过
+        elif up_time_level == '30':
+            data_0_start_time = labeled_time.floor("30T")  # 向下取整到最近的15分钟
+            data_0_end_time = data_0_start_time + pd.Timedelta(minutes=30)
+            # 在 30分钟级别 中查找符合区间的行
+            data_0_mask = (data_0["time"] > data_0_start_time) & (data_0["time"] <= data_0_end_time)
+            data_0_matching_indices = data_0.index[data_0_mask].to_numpy()  # 使用 to_numpy() 解决 FutureWarning
+
+            if data_0_matching_indices.size > 0:
+                data_0_prev_index = data_0_matching_indices[-1] - 1  # 获取上一行的索引
+
+                # 检查是否越界
+                if data_0_prev_index < 0:
+                    continue
+
+                # 获取上一行的time
+                # data_0_prev_row_time = data_0.loc[data_0_prev_index, "time"]
+                # data_0_row_index = data_0.index.get_loc(pd.Timestamp(data_0_prev_row_time))
+                data_0_row_index = data_0_prev_index
+
+                if data_0_row_index >= time_point_step:
+                    data_0_tmp = data_0.iloc[data_0_row_index - time_point_step: data_0_row_index].reset_index(
+                        drop=True)
+                    ema10 = data_0_tmp["ema10"]
+                    ema20 = data_0_tmp["ema20"]
+                    ema60 = data_0_tmp["ema60"]
+                    macd = data_0_tmp["macd"]
+                    signal = data_0_tmp["signal"]
+                    adx = data_0_tmp["adx"]
+                    plus_di = data_0_tmp["plus_di"]
+                    minus_di = data_0_tmp["minus_di"]
+                    atr = data_0_tmp["atr"]
+                    boll_mid = data_0_tmp["boll_mid"]
+                    boll_upper = data_0_tmp["boll_upper"]
+                    boll_lower = data_0_tmp["boll_lower"]
+                    rsi = data_0_tmp["rsi"]
+                    obv = data_0_tmp["obv"]
+                    volume_ma5 = data_0_tmp["volume_ma5"]
+                    close = data_0_tmp["close"]
+                    volume = data_0_tmp["volume"]
+                    if (ema10.isna().any() or ema20.isna().any() or ema60.isna().any()
+                            or macd.isna().any() or signal.isna().any() or adx.isna().any()
+                            or plus_di.isna().any() or minus_di.isna().any() or atr.isna().any()
+                            or boll_mid.isna().any() or boll_upper.isna().any() or boll_lower.isna().any()
+                            or rsi.isna().any() or obv.isna().any() or volume_ma5.isna().any()
+                            or close.isna().any() or volume.isna().any()):
+                        continue  # 数据NaN，跳过
+                else:
+                    continue  # 越界，跳过
+            else:
+                continue  # 无匹配日期或小时，跳过
+        elif up_time_level == '60':
+            """60级别匹配行"""
+            if labeled_hour == 9 or labeled_hour == 13:
+                labeled_hour += 1  # 这俩匹配不上，只能改一下时间
+            day_hour_filter = (data_0.index.date == labeled_date) & (data_0.index.hour == labeled_hour)
+            matched_60 = data_0[day_hour_filter]
+            if len(matched_60) > 0:
+                matched_60_index = matched_60.index[-1]
+                data_0_row_index = data_0.index.get_loc(matched_60_index)
+                if data_0_row_index >= time_point_step:
+                    data_0_tmp = data_0.iloc[data_0_row_index - time_point_step: data_0_row_index].reset_index(
+                        drop=True)
+                    ema10 = data_0_tmp["ema10"]
+                    ema20 = data_0_tmp["ema20"]
+                    ema60 = data_0_tmp["ema60"]
+                    macd = data_0_tmp["macd"]
+                    signal = data_0_tmp["signal"]
+                    adx = data_0_tmp["adx"]
+                    plus_di = data_0_tmp["plus_di"]
+                    minus_di = data_0_tmp["minus_di"]
+                    atr = data_0_tmp["atr"]
+                    boll_mid = data_0_tmp["boll_mid"]
+                    boll_upper = data_0_tmp["boll_upper"]
+                    boll_lower = data_0_tmp["boll_lower"]
+                    rsi = data_0_tmp["rsi"]
+                    obv = data_0_tmp["obv"]
+                    volume_ma5 = data_0_tmp["volume_ma5"]
+                    close = data_0_tmp["close"]
+                    volume = data_0_tmp["volume"]
+                    if (ema10.isna().any() or ema20.isna().any() or ema60.isna().any()
+                            or macd.isna().any() or signal.isna().any() or adx.isna().any()
+                            or plus_di.isna().any() or minus_di.isna().any() or atr.isna().any()
+                            or boll_mid.isna().any() or boll_upper.isna().any() or boll_lower.isna().any()
+                            or rsi.isna().any() or obv.isna().any() or volume_ma5.isna().any()
+                            or close.isna().any() or volume.isna().any()):
+                        continue  # 数据NaN，跳过
+                else:
+                    continue  # backtest_bar 越界，跳过
+            else:
+                continue  # 无匹配日期，跳过
+        elif up_time_level == 'd':
+            if pd.Timestamp(labeled_date) in data_0.index:
+                data_0_row_index = data_0.index.get_loc(pd.Timestamp(labeled_date))
+                if data_0_row_index >= time_point_step:
+                    data_0_tmp = data_0.iloc[data_0_row_index - time_point_step: data_0_row_index].reset_index(
+                        drop=True)
+                    ema10 = data_0_tmp["ema10"]
+                    ema20 = data_0_tmp["ema20"]
+                    ema60 = data_0_tmp["ema60"]
+                    macd = data_0_tmp["macd"]
+                    signal = data_0_tmp["signal"]
+                    adx = data_0_tmp["adx"]
+                    plus_di = data_0_tmp["plus_di"]
+                    minus_di = data_0_tmp["minus_di"]
+                    atr = data_0_tmp["atr"]
+                    boll_mid = data_0_tmp["boll_mid"]
+                    boll_upper = data_0_tmp["boll_upper"]
+                    boll_lower = data_0_tmp["boll_lower"]
+                    rsi = data_0_tmp["rsi"]
+                    obv = data_0_tmp["obv"]
+                    volume_ma5 = data_0_tmp["volume_ma5"]
+                    close = data_0_tmp["close"]
+                    volume = data_0_tmp["volume"]
+                    if (ema10.isna().any() or ema20.isna().any() or ema60.isna().any()
+                            or macd.isna().any() or signal.isna().any() or adx.isna().any()
+                            or plus_di.isna().any() or minus_di.isna().any() or atr.isna().any()
+                            or boll_mid.isna().any() or boll_upper.isna().any() or boll_lower.isna().any()
+                            or rsi.isna().any() or obv.isna().any() or volume_ma5.isna().any()
+                            or close.isna().any() or volume.isna().any()):
+                        print("还有Nan")
+                        continue  # 数据NaN，跳过
+                else:
+                    continue  # backtest_bar 越界，跳过
+            else:
+                continue  # 无匹配日期，跳过
+        elif up_time_level == 'index_d':
+            if pd.Timestamp(labeled_date) in data_0.index:
+                data_0_row_index = data_0.index.get_loc(pd.Timestamp(labeled_date))
+                if data_0_row_index >= time_point_step:
+                    data_0_tmp = data_0.iloc[data_0_row_index - time_point_step: data_0_row_index].reset_index(
+                        drop=True)
+                    ema10 = data_0_tmp["ema10"]
+                    ema20 = data_0_tmp["ema20"]
+                    ema60 = data_0_tmp["ema60"]
+                    macd = data_0_tmp["macd"]
+                    signal = data_0_tmp["signal"]
+                    adx = data_0_tmp["adx"]
+                    plus_di = data_0_tmp["plus_di"]
+                    minus_di = data_0_tmp["minus_di"]
+                    atr = data_0_tmp["atr"]
+                    boll_mid = data_0_tmp["boll_mid"]
+                    boll_upper = data_0_tmp["boll_upper"]
+                    boll_lower = data_0_tmp["boll_lower"]
+                    rsi = data_0_tmp["rsi"]
+                    obv = data_0_tmp["obv"]
+                    volume_ma5 = data_0_tmp["volume_ma5"]
+                    close = data_0_tmp["close"]
+                    volume = data_0_tmp["volume"]
+                    if (ema10.isna().any() or ema20.isna().any() or ema60.isna().any()
+                            or macd.isna().any() or signal.isna().any() or adx.isna().any()
+                            or plus_di.isna().any() or minus_di.isna().any() or atr.isna().any()
+                            or boll_mid.isna().any() or boll_upper.isna().any() or boll_lower.isna().any()
+                            or rsi.isna().any() or obv.isna().any() or volume_ma5.isna().any()
+                            or close.isna().any() or volume.isna().any()):
+                        continue  # 数据NaN，跳过
+                else:
+                    continue  # backtest_bar 越界，跳过
+            else:
+                continue  # 无匹配日期，跳过
+
+        # # 如果通过所有越界检查，将数据存入字典  标签存入列表
+        temp_data_dict['ema10'].append(ema10)
+        temp_data_dict['ema20'].append(ema20)
+        temp_data_dict['ema60'].append(ema60)
+        temp_data_dict['macd'].append(macd)
+        temp_data_dict['signal'].append(signal)
+        temp_data_dict['adx'].append(adx)
+        temp_data_dict['plus_di'].append(plus_di)
+        temp_data_dict['minus_di'].append(minus_di)
+        temp_data_dict['atr'].append(atr)
+        temp_data_dict['boll_mid'].append(boll_mid)
+        temp_data_dict['boll_upper'].append(boll_upper)
+        temp_data_dict['boll_lower'].append(boll_lower)
+        temp_data_dict['rsi'].append(rsi)
+        temp_data_dict['obv'].append(obv)
+        temp_data_dict['volume_ma5'].append(volume_ma5)
+        temp_data_dict['volume'].append(volume)
+        temp_data_dict['close'].append(close)
+
+        temp_label_list.append(labeled_row['label'])
+
+    print(assetList[0].assetsCode, "结束", len(temp_label_list))
+    return "success"
+
+
 def get_feature(feature_plan_name):
     # 创建一个字典来存储匹配的结果
     if feature_plan_name == 'feature_c4_trend':
@@ -995,37 +1336,45 @@ def get_feature(feature_plan_name):
 
 
 def get_point_to_ts(time_point_step, handle_uneven_samples, strategy_name,
-                    feature_plan_name, p2t_name, label_name, temp_data_dict, temp_label_list, assetList):
+                    feature_plan_name, p2t_name, label_name, temp_data_dict, temp_label_list, assetList,
+                    pred_market_type, up_time_level):
     res = None
-    if strategy_name == 'tea_radical_nature' and p2t_name == "point_to_ts3":
-        # 拼接所有点，60、d、index_d造数
-        res = tea_radical_nature_point_to_ts3(assetList, temp_data_dict, temp_label_list, time_point_step,
-                                              handle_uneven_samples,
-                                              strategy_name, label_name, feature_plan_name)
-    elif strategy_name == 'tea_radical_nature' and p2t_name == "point_to_ts2":
-        # 5标注，5、15、30造数
-        res = tea_radical_nature_point_to_ts2(assetList, temp_data_dict, temp_label_list, time_point_step,
-                                              handle_uneven_samples,
-                                              strategy_name, label_name, feature_plan_name)
-    elif strategy_name == 'fuzzy_nature' and p2t_name == "point_to_ts2":
-        # 30标注，30、60、d造数
-        res = fuzzy_nature_point_to_ts2(assetList, temp_data_dict, temp_label_list, time_point_step,
-                                        handle_uneven_samples,
-                                        strategy_name, label_name, feature_plan_name)
-    elif (strategy_name == 'c4_trend_nature' or
-          strategy_name == 'c4_oscillation_boll_nature' or
-          strategy_name == 'c4_oscillation_kdj_nature' or
-          strategy_name == 'c4_breakout_nature' or
-          strategy_name == 'c4_reversal_nature' or
-          strategy_name == 'tea_radical_nature' or
-          strategy_name == 'fuzzy_nature' or
-          strategy_name == 'identify_Market_Types' or
-          strategy_name == 'extremum'
-    ) and p2t_name == "point_to_ts1":
-        # 单级别
-        res = single_time_level_point_to_ts1(assetList, temp_data_dict, temp_label_list, time_point_step,
-                                             handle_uneven_samples,
-                                             strategy_name, label_name, feature_plan_name)
+    if (strategy_name == 'c4_trend_nature'
+            or strategy_name == 'c4_oscillation_boll_nature'
+            or strategy_name == 'c4_oscillation_kdj_nature'
+            or strategy_name == 'c4_breakout_nature'
+            or strategy_name == 'c4_reversal_nature'
+            or strategy_name == 'tea_radical_nature'
+            or strategy_name == 'fuzzy_nature'
+            or strategy_name == 'identify_Market_Types'
+            or strategy_name == 'extremum'):
+        if p2t_name == "point_to_ts_single":  # 单级别
+            res = single_time_level_point_to_ts(assetList, temp_data_dict, temp_label_list, time_point_step,
+                                                handle_uneven_samples,
+                                                strategy_name, label_name, feature_plan_name,
+                                                pred_market_type)
+        elif p2t_name == "point_to_ts_up_time_level":  # 找上级行情
+            res = up_time_level_point_to_ts(assetList, temp_data_dict, temp_label_list, time_point_step,
+                                            handle_uneven_samples,
+                                            strategy_name, label_name, feature_plan_name,
+                                            pred_market_type, up_time_level)
+        elif p2t_name == "point_to_ts_concat":
+            # 拼接所有点，60、d、index_d造数
+            res = tea_radical_nature_point_to_ts3(assetList, temp_data_dict, temp_label_list, time_point_step,
+                                                  handle_uneven_samples,
+                                                  strategy_name, label_name, feature_plan_name)
+        elif p2t_name == "point_to_ts_tea_multi_level":
+            # 5标注，5、15、30造数
+            res = tea_radical_nature_point_to_ts2(assetList, temp_data_dict, temp_label_list, time_point_step,
+                                                  handle_uneven_samples,
+                                                  strategy_name, label_name, feature_plan_name)
+        elif p2t_name == "point_to_ts_fuzzy_multi_level":
+            # 30标注，30、60、d造数
+            res = fuzzy_nature_point_to_ts2(assetList, temp_data_dict, temp_label_list, time_point_step,
+                                            handle_uneven_samples,
+                                            strategy_name, label_name, feature_plan_name)
+    else:
+        raise ValueError("strategy_name输入异常")
 
     return res, temp_data_dict, temp_label_list
 
@@ -1125,13 +1474,13 @@ def prepare_dataset(flag, name, time_point_step, limit_length, handle_uneven_sam
     for index, row in df_dataset.iterrows():
         assetList = RMQAsset.asset_generator(row['code'][3:],
                                              row['code'],
-                                             ['d'],
+                                             ['15'],
                                              'stock',
                                              1, 'A')
         # 准备训练数据
         res, temp_data_dict, temp_label_list = get_point_to_ts(time_point_step, handle_uneven_samples, strategy_name,
                                                                feature_plan_name, p2t_name, label_name, temp_data_dict,
-                                                               temp_label_list, assetList)
+                                                               temp_label_list, assetList, False, None)
         if not res:
             continue
         if limit_length == 0:  # 全数据
@@ -1168,7 +1517,7 @@ def prepare_dataset(flag, name, time_point_step, limit_length, handle_uneven_sam
 
 
 def prepare_dataset_single(flag, name, time_point_step, limit_length, handle_uneven_samples, strategy_name,
-                           feature_plan_name, p2t_name, label_name, count):
+                           feature_plan_name, p2t_name, label_name, count, pred_market_type, up_time_level):
     allStockCode = pd.read_csv("./QuantData/asset_code/a800_stocks.csv", dtype={'code': str})
     df_dataset = allStockCode.iloc[500:]
     n = 1
@@ -1177,19 +1526,21 @@ def prepare_dataset_single(flag, name, time_point_step, limit_length, handle_une
         temp_label_list = []
         assetList = RMQAsset.asset_generator(row['code'][3:],
                                              row['code_name'],
-                                             ['5', '15', '30', '60', 'd'],
+                                             ['60'],  # 找上级也填单级别，因为上级在up_time_level_point_to_ts里写死了
                                              'stock',
                                              1, 'A')
         # 准备训练数据
         res, temp_data_dict, temp_label_list = get_point_to_ts(time_point_step, handle_uneven_samples, strategy_name,
                                                                feature_plan_name, p2t_name, label_name, temp_data_dict,
-                                                               temp_label_list, assetList)
+                                                               temp_label_list, assetList, pred_market_type,
+                                                               up_time_level)
         # 循环结束后，字典转为DataFrame
         result_df = pd.DataFrame(temp_data_dict)
         # 将列表转换成 Series
         result_series = pd.Series(temp_label_list)
 
-        problem_name_str = ("pred_" + name + "_" + assetList[0].assetsMarket + "_"
+        problem_name_str = ("pred_" + str(pred_market_type) + "_" + name + "_"
+                            + assetList[0].assetsMarket + "_"
                             + assetList[0].assetsCode + "_" + assetList[0].barEntity.timeLevel
                             + "_" + str(strategy_name) + "_" + str(feature_plan_name) + "_"
                             + str(handle_uneven_samples) + "_uneven" + str(label_name) + "_"
@@ -1198,10 +1549,25 @@ def prepare_dataset_single(flag, name, time_point_step, limit_length, handle_une
             class_value_list_str = ["1", "2", "3"]
         else:
             class_value_list_str = ["1", "2", "3", "4"]
+
+        # 20250228增加逻辑：如果是为策略交易点判断当时的行情类型，则改为行情分类
+        # 注意，不能在get_point_to_ts中挑出1、3类，因为预测结果是list，没有时间，跟原始label文件对不上
+        if pred_market_type:
+            class_value_list_str = ["1", "2", "3"]
+
+            if len(temp_label_list) <= 3:
+                # 修改前三个值为 "1", "2", "3"，其余值改为 "3"
+                print(assetList[0].assetsCode, "数据量少于3条，不值得测试")
+                continue
+            else:
+                temp_label_list = ["1", "2", "3"] + ["3"] * (len(temp_label_list) - 3)
+                # 预测行情，不计算准确率，所以原来的买卖分类无所谓，随便填
+                result_series = pd.Series(temp_label_list)
+
         # 写入 ts 文件
         write_dataframe_to_tsfile(
             data=result_df,
-            path="./QuantData/trade_point_backTest_ts",  # 保存文件的路径
+            path="./QuantData/trade_point_backTest_ts/prediction",  # 保存文件的路径
             problem_name=problem_name_str,  # 问题名称
             class_label=class_value_list_str,  # 是否有 class_label
             class_value_list=result_series,  # 是否有 class_label
@@ -1211,7 +1577,7 @@ def prepare_dataset_single(flag, name, time_point_step, limit_length, handle_une
         # 写入 ts 文件
         write_dataframe_to_tsfile(
             data=result_df,
-            path="./QuantData/trade_point_backTest_ts",  # 保存文件的路径
+            path="./QuantData/trade_point_backTest_ts/prediction",  # 保存文件的路径
             problem_name=problem_name_str,  # 问题名称
             class_label=class_value_list_str,  # 是否有 class_label
             class_value_list=result_series,  # 是否有 class_label
@@ -1219,7 +1585,7 @@ def prepare_dataset_single(flag, name, time_point_step, limit_length, handle_une
             fold="_TRAIN"
         )
         n += 1
-        if n >= count:
+        if n > count:
             break
 
 
