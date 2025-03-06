@@ -11,7 +11,6 @@ import Run as Run
 
 def pre_handle():
     """ """"""
-    每个市场风格不同，混合训练会降低特色，
     A股数据，沪深300+中证500=A股前800家上市公司，港股、美股标普500、数字币市值前9
     数据来自证券宝，每个股票5种数据：日线、60m、30m、15m、5m。日线从该股发行日到2025年1月9日，分钟级最早为2019年1月2日。前复权，数据已压缩备份
     
@@ -29,14 +28,14 @@ def pre_handle():
     数字币 crypto_code  crypto_code_wait_handle_stocks
     row['code']  row['code']  '15', '60', '240', 'd'  crypto  1  crypto
     """
-    allStockCode = pd.read_csv("./QuantData/asset_code/crypto_code.csv", dtype={'code': str})
+    allStockCode = pd.read_csv("./QuantData/asset_code/a800_stocks.csv", dtype={'code': str})
     # Run.parallel_backTest(allStockCode)  # 回测，并行 需要手动改里面的策略名。
     for index, row in allStockCode.iterrows():
-        assetList = RMQAsset.asset_generator(row['code'],
-                                             row['code'],
-                                             ['15', '60', '240', 'd'],
-                                             'crypto',
-                                             1, 'crypto')
+        assetList = RMQAsset.asset_generator(row['code'][3:],
+                                             row['code_name'],
+                                             ['5', '15', '30', '60', 'd'],
+                                             'stock',
+                                             1, 'A')
         # 回测，保存交易点,加tick会细化价格导致操作提前，但实盘是bar结束了算指标，所以不影响
         # Run.run_back_test(assetList, "tea_radical_nature")  # 0:18:27.437876 旧回测，转tick，运行时长
         # Run.run_back_test_no_tick(assetList, "fuzzy_nature")  # 0:02:29.502122 新回测，不转tick
@@ -57,6 +56,7 @@ def pre_handle():
                             extremum
             label_name: 
                 label1: 多级别交易点合并，校验交易后日线级别涨跌幅、40个bar内趋势 tea_radical_nature的是concat，其他都是单级别
+                    tea之外的策略都是label1
                 label2：单级别校验各自涨跌幅、40个bar内趋势
                 label3：单级别校验各自MACD、DIF是否维持趋势
                 label4：单级别校验各自MACD、DIF+40个bar内趋势
@@ -73,7 +73,7 @@ def pre_handle():
                 fuzzy的各级别flag也有 _label1
             strategy_name: tea_radical_nature  fuzzy_nature
         """
-        # Draw_Pyecharts.show(assetList, "single", "fuzzy_nature", "_label1")
+        # Draw_Pyecharts.show(assetList, "single", "tea_radical_nature", "_label3")
         """
         计算收益率
             is_concat: True 计算合并交易点的收益率  此时flag只会是 _concat 或 _concat_label1
@@ -88,10 +88,11 @@ def pre_handle():
                             c4_breakout_nature
                             c4_reversal_nature
         """
-        # RMQEvaluate.return_rate(assetList, False, "_label1", "c4_oscillation_boll_nature", False, True)
+        # RMQEvaluate.return_rate(assetList, False, "_label1", "c4_oscillation_boll_nature",
+        #                         False, False, True)
 
 
-def run_experiment():
+def prepare_train_dataset():
     """"""
     """
     标注完成，准备训练数据
@@ -146,16 +147,23 @@ def run_experiment():
                                "point_to_ts_single", "_label1")
 
 
-def run_live():
+def prepare_pred_dataset():
     """""" """
-    组装预测数据  预测交易点/预测行情
-
+    组装预测数据  
+        预测交易点:
+            point_to_ts_single  用本级别交易点，找对应时间回测数据，策略和特征可随意组合
+            pred_market_type False
+            up_time_level 任意值都行
+        预测行情
+            point_to_ts_up_time_level  用本级别交易点，找up_time_level对应级别的回测数据，
+            特征只用feature_all
+            目前看判断当前级别行情没用，等老师点评过决定删不删
     """
-    RMQDataset.prepare_dataset_single("_TEST", "A_15", 20,
+    RMQDataset.prepare_dataset_single("_TEST", "A_15", 160,
                                       20000, True,
-                                      "c4_trend_nature", "feature_all",
-                                      "point_to_ts_up_time_level", "_label1", 5,
-                                      True, 'index_d')
+                                      "tea_radical_nature", "feature_all",
+                                      "point_to_ts_up_time_level", "_label3", 20,
+                                      True, 'd')
 
     # 预测收益
     # allStockCode = pd.read_csv("D:/github/RobotMeQ/QuantData/asset_code/a800_stocks.csv", dtype={'code': str})
@@ -164,26 +172,25 @@ def run_live():
     # for index, row in df_dataset.iterrows():
     #     assetList = RMQAsset.asset_generator(row['code'][3:],
     #                                          '',
-    #                                          ['d'],
+    #                                          ['15'],
     #                                          'stock',
     #                                          1, 'A')
-    #     RMQEvaluate.return_rate(assetList, False, "_label1", "c4_oscillation_kdj_nature",
-    #                             False, True)
-    #     # 读取CSV文件
-    #     RMQEvaluate.return_rate(assetList, False, "_label1", "c4_oscillation_kdj_nature",
-    #                             True, True)
+    #     # 标注收益，这是最完美结果
+    #     RMQEvaluate.return_rate(assetList, False, "_label3", "tea_radical_nature",
+    #                             False, False, True)
+    #     # 模型预测
+    #     RMQEvaluate.return_rate(assetList, False, "_label3", "tea_radical_nature",
+    #                             True, False, True)
+    #     # 多模型过滤，比模型预测收益高就好。
+    #     RMQEvaluate.return_rate(assetList, False, "_label3", "tea_radical_nature",
+    #                             True, True, True)
     #     n += 1
-    #     if n > 3:
+    #     if n > 20:
     #         break
-    # 计算行情分类对正确率的影响
-    # df = pd.read_csv("./results/603786_prd_result_tpp.csv")
-    # 用 predictions_market 列过滤predictions列，然准确率是否提升
-    # 若过滤，损失了2，4的准确率，不好对比，应该只处理1，3列的predictions_market，得到predictions_filtered列，再和trues计算准确率
-    # filtered_df = df[df['predictions'].isin([1, 3])]
 
 
 if __name__ == '__main__':
     # pre_handle()  # 数据预处理
-    # run_experiment()  # 所有股票组成训练集
-    run_live()  # 单独推理一个股票
+    # prepare_train_dataset()  # 所有股票组成训练集
+    prepare_pred_dataset()  # 单独推理一个股票
     pass

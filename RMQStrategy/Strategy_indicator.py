@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from RMQStrategy import Identify_market_types_helper as IMTHelper
 import RMQData.Asset as RMQAsset
 from RMQTool import Tools as RMTTools
-
+import time
 
 class TradingStrategies:
     def __init__(self, df):
@@ -122,7 +122,7 @@ def plot_strategy(df):
 
 # ----------------- 使用示例 -----------------
 if __name__ == "__main__":
-    allStockCode = pd.read_csv("../QuantData/a800_stocks.csv", dtype={'code': str})
+    allStockCode = pd.read_csv("../QuantData/asset_code/a800_stocks.csv", dtype={'code': str})
     for index, row in allStockCode.iterrows():
         assetList = RMQAsset.asset_generator(row['code'][3:],
                                              row['code_name'],
@@ -158,6 +158,8 @@ if __name__ == "__main__":
                 # 执行不同策略（根据实际行情类型调用）
                 # strategies.trend_strategy()
                 strategies.oscillation_strategy()
+                plot_strategy(strategies.df)
+                time.sleep(1)
                 # strategies.breakout_strategy()
                 # strategies.reversal_strategy()
 

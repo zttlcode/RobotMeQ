@@ -719,7 +719,7 @@ def fuzzy_nature_point_to_ts2(assetList, temp_data_dict, temp_label_list, time_p
 
 
 def single_time_level_point_to_ts(assetList, temp_data_dict, temp_label_list, time_point_step, handle_uneven_samples,
-                                  strategy_name, label_name, feature_plan_name, pred_market_type):
+                                  strategy_name, label_name, feature_plan_name):
     # 加载数据
     if strategy_name == 'identify_Market_Types':
         item = 'market_condition_backtest'
@@ -958,7 +958,7 @@ def single_time_level_point_to_ts(assetList, temp_data_dict, temp_label_list, ti
 
 
 def up_time_level_point_to_ts(assetList, temp_data_dict, temp_label_list, time_point_step, handle_uneven_samples,
-                              strategy_name, label_name, feature_plan_name, pred_market_type, up_time_level):
+                              strategy_name, label_name, feature_plan_name, up_time_level):
     # 加载数据
     if strategy_name == 'identify_Market_Types':
         item = 'market_condition_backtest'
@@ -1228,11 +1228,13 @@ def up_time_level_point_to_ts(assetList, temp_data_dict, temp_label_list, time_p
                             or boll_mid.isna().any() or boll_upper.isna().any() or boll_lower.isna().any()
                             or rsi.isna().any() or obv.isna().any() or volume_ma5.isna().any()
                             or close.isna().any() or volume.isna().any()):
-                        print("还有Nan")
+                        print("还有Nan", data_0_row_index)
                         continue  # 数据NaN，跳过
                 else:
+                    print("越界", data_0_row_index)
                     continue  # backtest_bar 越界，跳过
             else:
+                print("无匹配日期")
                 continue  # 无匹配日期，跳过
         elif up_time_level == 'index_d':
             if pd.Timestamp(labeled_date) in data_0.index:
@@ -1336,8 +1338,7 @@ def get_feature(feature_plan_name):
 
 
 def get_point_to_ts(time_point_step, handle_uneven_samples, strategy_name,
-                    feature_plan_name, p2t_name, label_name, temp_data_dict, temp_label_list, assetList,
-                    pred_market_type, up_time_level):
+                    feature_plan_name, p2t_name, label_name, temp_data_dict, temp_label_list, assetList, up_time_level):
     res = None
     if (strategy_name == 'c4_trend_nature'
             or strategy_name == 'c4_oscillation_boll_nature'
@@ -1351,13 +1352,11 @@ def get_point_to_ts(time_point_step, handle_uneven_samples, strategy_name,
         if p2t_name == "point_to_ts_single":  # 单级别
             res = single_time_level_point_to_ts(assetList, temp_data_dict, temp_label_list, time_point_step,
                                                 handle_uneven_samples,
-                                                strategy_name, label_name, feature_plan_name,
-                                                pred_market_type)
+                                                strategy_name, label_name, feature_plan_name)
         elif p2t_name == "point_to_ts_up_time_level":  # 找上级行情
             res = up_time_level_point_to_ts(assetList, temp_data_dict, temp_label_list, time_point_step,
                                             handle_uneven_samples,
-                                            strategy_name, label_name, feature_plan_name,
-                                            pred_market_type, up_time_level)
+                                            strategy_name, label_name, feature_plan_name, up_time_level)
         elif p2t_name == "point_to_ts_concat":
             # 拼接所有点，60、d、index_d造数
             res = tea_radical_nature_point_to_ts3(assetList, temp_data_dict, temp_label_list, time_point_step,
@@ -1480,7 +1479,7 @@ def prepare_dataset(flag, name, time_point_step, limit_length, handle_uneven_sam
         # 准备训练数据
         res, temp_data_dict, temp_label_list = get_point_to_ts(time_point_step, handle_uneven_samples, strategy_name,
                                                                feature_plan_name, p2t_name, label_name, temp_data_dict,
-                                                               temp_label_list, assetList, False, None)
+                                                               temp_label_list, assetList, None)
         if not res:
             continue
         if limit_length == 0:  # 全数据
@@ -1526,14 +1525,13 @@ def prepare_dataset_single(flag, name, time_point_step, limit_length, handle_une
         temp_label_list = []
         assetList = RMQAsset.asset_generator(row['code'][3:],
                                              row['code_name'],
-                                             ['60'],  # 找上级也填单级别，因为上级在up_time_level_point_to_ts里写死了
+                                             ['15'],  # 找上级也填单级别，因为上级在up_time_level_point_to_ts里写死了
                                              'stock',
                                              1, 'A')
         # 准备训练数据
         res, temp_data_dict, temp_label_list = get_point_to_ts(time_point_step, handle_uneven_samples, strategy_name,
                                                                feature_plan_name, p2t_name, label_name, temp_data_dict,
-                                                               temp_label_list, assetList, pred_market_type,
-                                                               up_time_level)
+                                                               temp_label_list, assetList, up_time_level)
         # 循环结束后，字典转为DataFrame
         result_df = pd.DataFrame(temp_data_dict)
         # 将列表转换成 Series
@@ -1552,17 +1550,17 @@ def prepare_dataset_single(flag, name, time_point_step, limit_length, handle_une
 
         # 20250228增加逻辑：如果是为策略交易点判断当时的行情类型，则改为行情分类
         # 注意，不能在get_point_to_ts中挑出1、3类，因为预测结果是list，没有时间，跟原始label文件对不上
-        if pred_market_type:
-            class_value_list_str = ["1", "2", "3"]
-
-            if len(temp_label_list) <= 3:
-                # 修改前三个值为 "1", "2", "3"，其余值改为 "3"
-                print(assetList[0].assetsCode, "数据量少于3条，不值得测试")
-                continue
-            else:
-                temp_label_list = ["1", "2", "3"] + ["3"] * (len(temp_label_list) - 3)
-                # 预测行情，不计算准确率，所以原来的买卖分类无所谓，随便填
-                result_series = pd.Series(temp_label_list)
+        # if pred_market_type:
+        #     class_value_list_str = ["1", "2", "3"]
+        #
+        #     if len(temp_label_list) <= 3:
+        #         # 修改前三个值为 "1", "2", "3"，其余值改为 "3"
+        #         print(assetList[0].assetsCode, "数据量少于3条，不值得测试")
+        #         continue
+        #     else:
+        #         temp_label_list = ["1", "2", "3"] + ["3"] * (len(temp_label_list) - 3)
+        #         # 预测行情，不计算准确率，所以原来的买卖分类无所谓，随便填
+        #         result_series = pd.Series(temp_label_list)
 
         # 写入 ts 文件
         write_dataframe_to_tsfile(
