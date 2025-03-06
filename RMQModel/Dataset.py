@@ -1506,7 +1506,7 @@ def prepare_dataset(flag, name, time_point_step, limit_length, handle_uneven_sam
     # 写入 ts 文件
     write_dataframe_to_tsfile(
         data=result_df,
-        path="./QuantData/trade_point_backTest_ts",  # 保存文件的路径
+        path="D:/github/RobotMeQ_Dataset/QuantData/trade_point_backTest_ts",  # 保存文件的路径
         problem_name=problem_name_str,  # 问题名称
         class_label=class_value_list_str,  # 是否有 class_label
         class_value_list=result_series,  # 是否有 class_label
@@ -1565,7 +1565,7 @@ def prepare_dataset_single(flag, name, time_point_step, limit_length, handle_une
         # 写入 ts 文件
         write_dataframe_to_tsfile(
             data=result_df,
-            path="./QuantData/trade_point_backTest_ts/prediction",  # 保存文件的路径
+            path="D:/github/RobotMeQ_Dataset/QuantData/trade_point_backTest_ts/prediction",  # 保存文件的路径
             problem_name=problem_name_str,  # 问题名称
             class_label=class_value_list_str,  # 是否有 class_label
             class_value_list=result_series,  # 是否有 class_label
@@ -1575,7 +1575,7 @@ def prepare_dataset_single(flag, name, time_point_step, limit_length, handle_une
         # 写入 ts 文件
         write_dataframe_to_tsfile(
             data=result_df,
-            path="./QuantData/trade_point_backTest_ts/prediction",  # 保存文件的路径
+            path="D:/github/RobotMeQ_Dataset/QuantData/trade_point_backTest_ts/prediction",  # 保存文件的路径
             problem_name=problem_name_str,  # 问题名称
             class_label=class_value_list_str,  # 是否有 class_label
             class_value_list=result_series,  # 是否有 class_label

@@ -8,7 +8,7 @@ import re
 
 def find_zero_close_files():
     # 使用示例
-    folder_path = "../QuantData/backTest/"  # 请替换为实际的文件夹路径
+    folder_path = "D:/github/RobotMeQ_Dataset/QuantData/backTest/"  # 请替换为实际的文件夹路径
     # 获取所有CSV文件
     csv_files = glob.glob(os.path.join(folder_path, "*.csv"))
 
@@ -77,7 +77,7 @@ def process_backtest_nan_data_a800():
             print(f"处理文件 {a800_csv_path} 时发生错误: {e}")
 
     # 使用示例
-    folder_path = "../QuantData/backTest/"  # 替换为 CSV 文件所在的文件夹
+    folder_path = "D:/github/RobotMeQ_Dataset/QuantData/backTest/"  # 替换为 CSV 文件所在的文件夹
     a800_csv_path = "../QuantData/a800_stocks.csv"  # a800_stocks.csv 文件路径
 
     # 提取 close=0 的文件名 6-12 位字符
@@ -91,7 +91,7 @@ def process_backtest_nan_data_a800():
 def process_backtest_nan_data_a800_for_other():
     # 设置路径
     a800_csv_path = "../QuantData/a800_stocks.csv"
-    backtest_folder = "../QuantData/trade_point_backtest_fuzzy_nature/"
+    backtest_folder = "D:/github/RobotMeQ_Dataset/QuantData/trade_point_backtest_fuzzy_nature/"
 
     def get_valid_codes(a800_csv_path):
         """ 从 a800_stocks.csv 提取去掉前三位的 code 列，形成有效代码集合 """
@@ -161,14 +161,14 @@ def process_fuzzy_trade_point_csv():
             process_csv(file)
 
     # 使用示例
-    folder_path = '../QuantData/trade_point_backtest_c4_oscillation_kdj_nature/'  # 替换为你的文件夹路径
+    folder_path = 'D:/github/RobotMeQ_Dataset/QuantData/trade_point_backtest_c4_oscillation_kdj_nature/'  # 替换为你的文件夹路径
     process_folder(folder_path)
 
 
 def handle_800_wait():
     # 过滤已经800里未处理的数据
     # 文件夹路径和目标文件路径
-    folder_path = "../QuantData/market_condition_backtest/"  # 替换为存储CSV文件的文件夹路径
+    folder_path = "D:/github/RobotMeQ_Dataset/QuantData/market_condition_backtest/"  # 替换为存储CSV文件的文件夹路径
     hs_file_path = "../QuantData/asset_code/a800_stocks.csv"  # hs.csv 文件路径
     output_file_path = "../QuantData/asset_code/a800_stocks_wait_handle_stocks.csv"  # 输出文件路径
 
@@ -191,9 +191,9 @@ def handle_800_wait():
 def handle_hk_1000_wait():
     # 过滤已经800里未处理的数据
     # 文件夹路径和目标文件路径
-    folder_path = "../QuantData/market_condition_backtest/"  # 替换为存储CSV文件的文件夹路径
-    hs_file_path = "../QuantData/hk_1000_stock_codes.csv"  # hs.csv 文件路径
-    output_file_path = "../QuantData/hk_1000_stock_codes_wait_handle_stocks.csv"  # 输出文件路径
+    folder_path = "D:/github/RobotMeQ_Dataset/QuantData/market_condition_backtest/"  # 替换为存储CSV文件的文件夹路径
+    hs_file_path = "../QuantData/asset_code/hk_1000_stock_codes.csv"  # hs.csv 文件路径
+    output_file_path = "../QuantData/asset_code/hk_1000_stock_codes_wait_handle_stocks.csv"  # 输出文件路径
 
     # 步骤 1: 获取文件夹中所有文件名，并提取 cc 列
     file_names = [f for f in os.listdir(folder_path) if fnmatch.fnmatch(f, 'HK_*_d.csv')]
@@ -214,7 +214,7 @@ def handle_hk_1000_wait():
 def handle_sp500_wait():
     # 过滤已经800里未处理的数据
     # 文件夹路径和目标文件路径
-    folder_path = "../QuantData/trade_point_backtest_c4_reversal_nature/"  # 替换为存储CSV文件的文件夹路径
+    folder_path = "D:/github/RobotMeQ_Dataset/QuantData/trade_point_backtest_c4_reversal_nature/"  # 替换为存储CSV文件的文件夹路径
     hs_file_path = "../QuantData/asset_code/sp500_stock_codes.csv"  # hs.csv 文件路径
     output_file_path = "../QuantData/asset_code/sp500_stock_codes_wait_handle_stocks.csv"  # 输出文件路径
 

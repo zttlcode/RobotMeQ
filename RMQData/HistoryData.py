@@ -292,7 +292,7 @@ def get_sp500_data():
             stock_data.rename(columns={'date': 'time'}, inplace=True)
 
             # 保存数据为CSV文件，文件名为股票代码
-            stock_data.to_csv(f'../QuantData/backTest/bar_USA_{symbol}_d.csv', index=False)
+            stock_data.to_csv(f'D:/github/RobotMeQ_Dataset/QuantData/backTest/bar_USA_{symbol}_d.csv', index=False)
 
             print(f"{symbol} 数据已保存为 {symbol}.csv")
         except Exception as e:
@@ -345,7 +345,7 @@ def get_hk_stock_data():
             stock_data.rename(columns={'date': 'time'}, inplace=True)
 
             # 保存数据为CSV文件，文件名为股票代码
-            stock_data.to_csv(f'../QuantData/backTest/bar_HK_{symbol}_d.csv', index=False)
+            stock_data.to_csv(f'D:/github/RobotMeQ_Dataset/QuantData/backTest/bar_HK_{symbol}_d.csv', index=False)
 
             print(f"{symbol} 数据已保存为 {symbol}.csv")
         except Exception as e:
