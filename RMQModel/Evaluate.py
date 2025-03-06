@@ -100,7 +100,7 @@ def cal_return_rate(asset, flag, strategy_name, pred, pred_tpp, handled_uneven):
         # print(f"时间: {row['time']}, 价格: {price}, 总成本: {previous_total_cost:.2f}, 收益率: {previous_return_rate:.2%}")
         # print(f"{signal} 100股, 目前持股数: {shares}, 持股金额: {holding_value:.2f}")
         # print(f"总成本: {latest_total_cost:.2f}, 收益率: {latest_return_rate:.2%}\n")
-
+        #
         # print(f"时间: {row['time']}, 现价: {price}, 总投资额: {previous_total_cost:.2f}, "
         #       f"收益率: {previous_return_rate:.2%}")
         # print(f"{signal} 100股, 持仓: {shares}, 市值: {holding_value:.2f}, 现价: {price}, "
@@ -140,7 +140,7 @@ def return_rate(assetList, is_concat, flag, strategy_name, pred, pred_tpp, handl
 
 def compare_return_rate():
     # 计算不同标注方式的收益率
-    allStockCode = pd.read_csv("./QuantData/a800_stocks.csv", dtype={'code': str})
+    allStockCode = pd.read_csv("../QuantData/asset_code/a800_stocks.csv", dtype={'code': str})
     n = 0
     temp_data_dict = {'have5label': []}
     for index, row in allStockCode.iterrows():

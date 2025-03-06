@@ -88,8 +88,8 @@ def pre_handle():
                             c4_breakout_nature
                             c4_reversal_nature
         """
-        # RMQEvaluate.return_rate(assetList, False, "_label1", "c4_oscillation_boll_nature",
-        #                         False, False, True)
+        RMQEvaluate.return_rate(assetList, False, None, "c4_reversal_nature",
+                                False, False, False)
 
 
 def prepare_train_dataset():
@@ -190,7 +190,7 @@ def prepare_pred_dataset():
 
 
 if __name__ == '__main__':
-    # pre_handle()  # 数据预处理
+    pre_handle()  # 数据预处理
     # prepare_train_dataset()  # 所有股票组成训练集
-    prepare_pred_dataset()  # 单独推理一个股票
+    # prepare_pred_dataset()  # 单独推理一个股票
     pass

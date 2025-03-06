@@ -23,9 +23,9 @@ def strategy_tea_radical(positionEntity, indicatorEntity, windowDF_calIndic, DFL
             # macd绿柱面积过去 > 现在  因为是负数，所以要更小
             """
            2025 01 22
-           看图发现，有些买点明显MACD变小，跌势加剧，但所处区域面积小，仍可算作底背离，导致买入，因此加校验
-           可以在divergeDF中加，但怕改代码导致其他问题
-           实盘增加计算macd柱子变化
+           看图发现，有些买点明显MACD变小，跌势加剧，但所处区域面积小，仍可算作底背离，导致买入，因此加校验计算macd柱子变化
+           windowDF_calIndic.iloc[DFLastRow]['MACD']
+                    >= windowDF_calIndic.iloc[DFLastRow - 1]['MACD']
             """
             if (divergeDF.iloc[2]['area']
                     < divergeDF.iloc[0]['area']

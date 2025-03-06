@@ -3,6 +3,7 @@ import RMQStrategy.Strategy_tea as RMQSTea
 import RMQStrategy.Strategy_nature as RMQSNature
 from RMQTool import Message
 from RMQStrategy import Identify_market_types_helper as IMTHelper
+import RMQStrategy.Strategy_indicator as RMQSIndicator
 
 
 class StrategyResultEntity:
@@ -160,5 +161,26 @@ def strategy(asset, strategy_result, IEMultiLevel, strategy_name):
         windowDF_calIndic = IMTHelper.calculate_macd(windowDF_calIndic)
         windowDF_calIndic = IMTHelper.calculate_obv(windowDF_calIndic)
         RMQSNature.strategy_c4_reversal(positionEntity, indicatorEntity, windowDF_calIndic)
+    elif strategy_name == "c4_trend":
+        windowDF_calIndic = IMTHelper.calculate_ema(windowDF_calIndic)
+        windowDF_calIndic = IMTHelper.calculate_macd(windowDF_calIndic)
+        windowDF_calIndic = IMTHelper.calculate_rsi(windowDF_calIndic)
+        RMQSIndicator.strategy_c4_trend(positionEntity, indicatorEntity, windowDF_calIndic, barEntity.bar_num - 2, strategy_result,)
+    elif strategy_name == "c4_oscillation_boll":
+        windowDF_calIndic = IMTHelper.calculate_bollinger_bands(windowDF_calIndic)
+        windowDF_calIndic = IMTHelper.calculate_rsi(windowDF_calIndic)
+        RMQSIndicator.strategy_c4_oscillation_boll(positionEntity, indicatorEntity, windowDF_calIndic)
+    elif strategy_name == "c4_oscillation_kdj":
+        windowDF_calIndic = IMTHelper.calculate_kdj(windowDF_calIndic)
+        RMQSIndicator.strategy_c4_oscillation_kdj(positionEntity, indicatorEntity, windowDF_calIndic)
+    elif strategy_name == "c4_breakout":
+        windowDF_calIndic = IMTHelper.calculate_atr(windowDF_calIndic)
+        windowDF_calIndic = IMTHelper.calculate_bollinger_bands(windowDF_calIndic)
+        RMQSIndicator.strategy_c4_breakout(positionEntity, indicatorEntity, windowDF_calIndic)
+    elif strategy_name == "c4_reversal":
+        windowDF_calIndic = IMTHelper.calculate_ema(windowDF_calIndic)
+        windowDF_calIndic = IMTHelper.calculate_macd(windowDF_calIndic)
+        windowDF_calIndic = IMTHelper.calculate_obv(windowDF_calIndic)
+        RMQSIndicator.strategy_c4_reversal(positionEntity, indicatorEntity, windowDF_calIndic)
     else:
         print("未指定策略")
