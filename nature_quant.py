@@ -7,6 +7,17 @@ from RMQModel import Label as RMQLabel
 from RMQStrategy import Identify_market_types as RMQS_Identify_Market_Types
 from RMQVisualized import Draw_Pyecharts as Draw_Pyecharts
 import Run as Run
+from sktime.datasets import write_dataframe_to_tsfile
+import csv
+import fnmatch
+import os
+import paramiko
+import io
+import glob
+
+
+from RMQStrategy import Strategy_indicator as RMQStrategyIndicator, Identify_market_types_helper as IMTHelper
+from RMQTool import Message
 
 
 def pre_handle():
@@ -33,7 +44,7 @@ def pre_handle():
     for index, row in allStockCode.iterrows():
         assetList = RMQAsset.asset_generator(row['code'][3:],
                                              row['code_name'],
-                                             ['5', '15', '30', '60', 'd'],
+                                             ['d'],
                                              'stock',
                                              1, 'A')
         # 回测，保存交易点,加tick会细化价格导致操作提前，但实盘是bar结束了算指标，所以不影响
@@ -73,7 +84,7 @@ def pre_handle():
                 fuzzy的各级别flag也有 _label1
             strategy_name: tea_radical_nature  fuzzy_nature
         """
-        # Draw_Pyecharts.show(assetList, "single", "tea_radical_nature", "_label3")
+        # Draw_Pyecharts.show(assetList, "multi_concat", "tea_radical_nature", "_concat_label1")
         """
         计算收益率
             is_concat: True 计算合并交易点的收益率  此时flag只会是 _concat 或 _concat_label1
@@ -88,8 +99,8 @@ def pre_handle():
                             c4_breakout_nature
                             c4_reversal_nature
         """
-        RMQEvaluate.return_rate(assetList, False, None, "c4_reversal_nature",
-                                False, False, False)
+        # RMQEvaluate.return_rate(assetList, False, '_label3', "tea_radical_nature",
+        #                         False, False, False)
 
 
 def prepare_train_dataset():
@@ -189,8 +200,269 @@ def prepare_pred_dataset():
     #         break
 
 
+def run_live():
+    # 服务器信息
+    server_ip = "192.168.0.102"
+    username = "root"
+    password = "zhao1993"
+    docker_container_id = "d63f10ba76df"
+    live_dir = "/home/RobotMeQ/QuantData/live_to_ts/"  # Docker 内的 CSV 目录
+    local_backup_dir = "D:/github/RobotMeQ/QuantData/live_to_ts/"  # 本地备份目录
+
+    # 连接服务器
+    client = paramiko.SSHClient()
+    client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    client.connect(server_ip, username=username, password=password)
+
+    # 获取 `live` 目录下的所有 CSV 文件
+    command_list_csv = f"docker exec {docker_container_id} ls {live_dir} | grep '.csv'"
+    stdin, stdout, stderr = client.exec_command(command_list_csv)
+    csv_files = stdout.read().decode().splitlines()
+
+    if not csv_files:
+        print("没有找到任何 CSV 文件")
+    else:
+        for csv_file in csv_files:
+            csv_path = f"{live_dir}{csv_file}"
+            print(f"正在处理文件: {csv_path}")
+
+            # **Step 1: 备份 CSV 文件**
+            backup_path = f"/tmp/{csv_file}"  # 先拷贝到服务器宿主机
+            command_backup = f"docker cp {docker_container_id}:{csv_path} {backup_path}"
+            client.exec_command(command_backup)
+
+            # **Step 2: 下载文件到本地**
+            sftp = client.open_sftp()
+            local_file_path = os.path.join(local_backup_dir, csv_file)
+            sftp.get(backup_path, local_file_path)  # 下载文件到本地
+            sftp.close()
+            print(f"已备份到本地: {local_file_path}")
+
+            # 读取 CSV 文件的第一行（存储的是 Python 列表格式的字符串）
+            command_read_csv = f"docker exec {docker_container_id} head -n 1 {csv_path}"
+            stdin, stdout, stderr = client.exec_command(command_read_csv)
+            first_line = stdout.read().decode().strip()
+
+            if not first_line:
+                print(f"文件 {csv_file} 为空，跳过处理")
+                continue
+
+            data = first_line.split(",")
+            # **调用 asset_generator**
+            assetList = RMQAsset.asset_generator(data[3],
+                                                 data[4],
+                                                 [data[5]],
+                                                 'ETF' if data[3].startswith('1') or data[3].startswith(
+                                                     '5') else 'stock',
+                                                 1, 'A')
+            # **获取 live_bar 文件路径**
+            # live_bar = "/home/RobotMeQ/QuantData/live/live_bar_A_"+data[3]+"_"+data[5]+".csv"
+            live_bar = "/home/RobotMeQ/QuantData/live/live_bar_159611_15.csv"
+
+            # # **读取 live_bar 文件内容**
+            command_read_live_bar = f"docker exec {docker_container_id} cat {live_bar}"
+            stdin, stdout, stderr = client.exec_command(command_read_live_bar)
+            live_bar_content = stdout.read().decode()
+
+            # **用 Pandas 解析 live_bar 数据**
+            try:
+                data_0 = pd.read_csv(io.StringIO(live_bar_content), index_col="time", parse_dates=True)
+            except Exception as e:
+                print(f"无法解析 {live_bar}: {e}")
+
+            # 准备ts数据
+            data_0 = IMTHelper.calculate_indicators(data_0)
+            # 处理Nan
+            data_0.fillna(method='bfill', inplace=True)  # 用后一个非NaN值填充（后向填充）
+            data_0.fillna(method='ffill', inplace=True)  # 用前一个非NaN值填充（前向填充）
+
+            data_0_tmp = data_0.iloc[-160:].reset_index(drop=True)
+            ema10 = data_0_tmp["ema10"]
+            ema20 = data_0_tmp["ema20"]
+            ema60 = data_0_tmp["ema60"]
+            macd = data_0_tmp["macd"]
+            signal = data_0_tmp["signal"]
+            adx = data_0_tmp["adx"]
+            plus_di = data_0_tmp["plus_di"]
+            minus_di = data_0_tmp["minus_di"]
+            atr = data_0_tmp["atr"]
+            boll_mid = data_0_tmp["boll_mid"]
+            boll_upper = data_0_tmp["boll_upper"]
+            boll_lower = data_0_tmp["boll_lower"]
+            rsi = data_0_tmp["rsi"]
+            obv = data_0_tmp["obv"]
+            volume_ma5 = data_0_tmp["volume_ma5"]
+            close = data_0_tmp["close"]
+            volume = data_0_tmp["volume"]
+
+            temp_data_dict = {'ema10': [], 'ema20': [], 'ema60': [], 'macd': [], 'signal': [],
+                              'adx': [], 'plus_di': [], 'minus_di': [], 'atr': [], 'boll_mid': [], 'boll_upper': [],
+                              'boll_lower': [], 'rsi': [], 'obv': [], 'volume_ma5': [], 'close': [], 'volume': []
+                              }
+
+            temp_data_dict['ema10'].append(ema10)
+            temp_data_dict['ema20'].append(ema20)
+            temp_data_dict['ema60'].append(ema60)
+            temp_data_dict['macd'].append(macd)
+            temp_data_dict['signal'].append(signal)
+            temp_data_dict['adx'].append(adx)
+            temp_data_dict['plus_di'].append(plus_di)
+            temp_data_dict['minus_di'].append(minus_di)
+            temp_data_dict['atr'].append(atr)
+            temp_data_dict['boll_mid'].append(boll_mid)
+            temp_data_dict['boll_upper'].append(boll_upper)
+            temp_data_dict['boll_lower'].append(boll_lower)
+            temp_data_dict['rsi'].append(rsi)
+            temp_data_dict['obv'].append(obv)
+            temp_data_dict['volume_ma5'].append(volume_ma5)
+            temp_data_dict['volume'].append(volume)
+            temp_data_dict['close'].append(close)
+
+            temp_label_list = []
+            if data[2] == "buy":
+                temp_label_list.append("1")
+            else:
+                temp_label_list.append("3")
+
+            # 循环结束后，字典转为DataFrame
+            result_df = pd.DataFrame(temp_data_dict)
+            # 将列表转换成 Series
+            result_series = pd.Series(temp_label_list)
+
+            strategy_name = "tea_radical"  # tea_radical fuzzy
+            feature_plan_name = "feature_all"
+            problem_name_str = ("pred_live_" + assetList[0].assetsMarket + "_"
+                                + assetList[0].assetsCode + "_" + assetList[0].barEntity.timeLevel
+                                + "_" + str(strategy_name) + "_" + str(feature_plan_name) + "_160_step")
+            class_value_list_str = ["1", "2", "3", "4"]
+            # 写入 ts 文件
+            write_dataframe_to_tsfile(
+                data=result_df,
+                path="D:/github/RobotMeQ_Dataset/QuantData/trade_point_backTest_ts/prediction_live",  # 保存文件的路径
+                problem_name=problem_name_str,  # 问题名称
+                class_label=class_value_list_str,  # 是否有 class_label
+                class_value_list=result_series,  # 是否有 class_label
+                equal_length=True,
+                fold="_TEST"
+            )
+            # 写入 ts 文件
+            write_dataframe_to_tsfile(
+                data=result_df,
+                path="D:/github/RobotMeQ_Dataset/QuantData/trade_point_backTest_ts/prediction_live",  # 保存文件的路径
+                problem_name=problem_name_str,  # 问题名称
+                class_label=class_value_list_str,  # 是否有 class_label
+                class_value_list=result_series,  # 是否有 class_label
+                equal_length=True,
+                fold="_TRAIN"
+            )
+            break
+    # **Step 4: 删除 Docker 容器内的所有 CSV 文件**
+    command_delete_csv = f"docker exec {docker_container_id} rm -f {live_dir}*.csv"
+    client.exec_command(command_delete_csv)
+    print("所有 Docker 容器中的 CSV 文件已删除")
+
+    # **Step 5: 删除服务器 `/tmp` 目录下的备份 CSV 文件**
+    command_delete_tmp_csv = f"rm -f /tmp/*.csv"
+    client.exec_command(command_delete_tmp_csv)
+    print("所有服务器 `/tmp` 目录中的备份 CSV 文件已清空")
+    # **关闭 SSH 连接**
+    client.close()
+
+
+def run_live_get_pred():
+    local_backup_dir = "D:/github/RobotMeQ/QuantData/live_to_ts/"  # 本地备份目录
+
+    # 确保目录存在
+    if not os.path.exists(local_backup_dir):
+        print(f"本地备份目录 {local_backup_dir} 不存在")
+    else:
+        # 遍历目录下的所有 CSV 文件
+        for filename in os.listdir(local_backup_dir):
+            if filename.endswith(".csv"):
+                file_path = os.path.join(local_backup_dir, filename)
+                print(f"正在读取: {file_path}")
+
+                # 读取 CSV 文件的第一行
+                with open(file_path, 'r', encoding='utf-8') as f:
+                    reader = csv.reader(f)
+                    try:
+                        data = next(reader)  # 读取第一行
+
+                        df_prd_true_filePath = "D:/github/Time-Series-Library-Quant/results/" + data[3] + "_prd_result.csv"
+                        if not os.path.exists(df_prd_true_filePath):
+                            print(data[3] + "预测结果文件不存在")
+                            break
+                        df_prd_true = pd.read_csv(df_prd_true_filePath)
+                        if df_prd_true['trues'] == df_prd_true['predictions']:
+                            # 发消息
+                            post_msg = (data[4]
+                                        + "-"
+                                        + data[3]
+                                        + "-"
+                                        + data[5]
+                                        + "：" + data[2] + "："
+                                        + str(data[1])
+                                        + " 时间："
+                                        + data[0])
+                            mail_msg = Message.build_msg_text_no_entity("macd+kdj",post_msg)
+                            mail_list_qq = "mail_list_qq_d"
+                            res = Message.QQmail(mail_msg, mail_list_qq)
+                            if res:
+                                print('发送成功')
+                            else:
+                                print('发送失败')
+                    except StopIteration:
+                        print(f"文件 {filename} 为空，无法读取第一行")
+                    except IndexError:
+                        print(f"文件 {filename} 第一行列数不足，无法读取 data[3]")
+    print("所有文件读取完成")
+    # 获取所有文件
+    files1 = glob.glob(os.path.join(local_backup_dir, "*"))
+    # 遍历删除
+    for file in files1:
+        os.remove(file)  # 删除文件
+
+    files2 = glob.glob(os.path.join("D:/github/Time-Series-Library-Quant/results/", "*"))
+    # 遍历删除
+    for file in files2:
+        os.remove(file)  # 删除文件
+
+
+def run_live_run():
+    from time import sleep
+    from datetime import datetime, time
+    from RMQTool import Tools as RMTTools
+
+    while True:
+        # 只能交易日的0~9:30之间，或交易日15~0之间，手动启
+        workday_list = RMTTools.read_config("RMT", "workday_list") + "workday_list.csv"
+        result = RMTTools.isWorkDay(workday_list, datetime.now().strftime("%Y-%m-%d"))  # 判断今天是不是交易日  元旦更新
+        if result:  # 是交易日
+            print(datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "早上开启进程")
+
+            while (time(9, 30) < datetime.now().time() < time(11, 34)
+                   or time(13) < datetime.now().time() < time(15, 4)):
+                run_live()
+                run_live_get_pred()
+
+            print(datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "中午进程停止，等下午")
+            sleep(1800)  # 11:30休盘了，等半小时到12:30，开下午盘
+            print(datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "下午开启进程")
+
+            while (time(9, 30) < datetime.now().time() < time(11, 34)
+                   or time(13) < datetime.now().time() < time(15, 4)):
+                run_live()
+                run_live_get_pred()
+
+            print(datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "下午进程停止，等明天")
+            sleep(61200)  # 15点收盘，等17个小时，到第二天8点，重新判断是不是交易日
+        else:  # 不是交易日
+            sleep(86400)  # 直接等24小时，再重新判断
+
+
 if __name__ == '__main__':
-    pre_handle()  # 数据预处理
+    # pre_handle()  # 数据预处理
     # prepare_train_dataset()  # 所有股票组成训练集
     # prepare_pred_dataset()  # 单独推理一个股票
+    run_live()
     pass

@@ -57,7 +57,7 @@ def detect_waves(data_1, distance=5, prominence=1):
         wave_df = wave_df[wave_df['signal'] != wave_df['signal'].shift(-1)]
         wave_df = wave_df.reset_index(drop=True)
 
-        # # 可视化波浪
+        # 可视化波浪
         # wave_points = sorted(np.concatenate([peaks, valleys]))
         # wave_prices = prices[wave_points]
         # plot_waves(prices, wave_points, wave_prices)
@@ -101,7 +101,7 @@ def preprocess_stock_data(allStockCode):
 
 if __name__ == '__main__':
     # 运行处理函数 传统极值标注法回测数据
-    allStockCode = pd.read_csv("../QuantData/a800_stocks.csv", dtype={'code': str})
-    # df_dataset = allStockCode.iloc[500:]
+    allStockCode = pd.read_csv("../QuantData/asset_code/a800_stocks.csv", dtype={'code': str})
+    df_dataset = allStockCode.iloc[500:]
     # 执行完此函数，要执行process_fuzzy_trade_point_csv()，再用fuzzy_nature_label1标注，否则会导致模型训练时label分类中含有nan，模型训练报错
     # preprocess_stock_data(allStockCode)

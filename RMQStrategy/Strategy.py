@@ -126,8 +126,6 @@ def strategy(asset, strategy_result, IEMultiLevel, strategy_name):
                                         IEMultiLevel)
     elif strategy_name == "fuzzy":
         # ride-mood策略
-        # 2%移动止损
-        # 增强版趋势跟随策略，反指率高达90%，经常小亏，偶尔大赚
         RMQSFuzzy.strategy_fuzzy(positionEntity,
                                  indicatorEntity,
                                  windowDF_calIndic,

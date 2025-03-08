@@ -1,5 +1,6 @@
 import RMQData.Position as RMQPosition
 import RMQData.Indicator as RMQIndicator
+import RMQTool.Run_live_model as RMQRun_live_model
 
 
 def strategy_tea_conservative(positionEntity,
@@ -185,13 +186,15 @@ def strategy_tea_radical(positionEntity,
                                                    round(indicatorEntity.tick_close, 3),
                                                    "buy"]
                                     positionEntity.trade_point_list.append(trade_point)
-                                    # 推送消息
-                                    strategy_result.send_msg(indicatorEntity.IE_assetsName
-                                                             + "-"
-                                                             + indicatorEntity.IE_assetsCode,
-                                                             indicatorEntity,
-                                                             IEMultiLevel,
-                                                             None)
+                                    # # 推送消息
+                                    # strategy_result.send_msg(indicatorEntity.IE_assetsName
+                                    #                          + "-"
+                                    #                          + indicatorEntity.IE_assetsCode,
+                                    #                          indicatorEntity,
+                                    #                          IEMultiLevel,
+                                    #                          None)
+                                    RMQRun_live_model.run_live_call_model(indicatorEntity,
+                                                                          "buy")  # 2025 03 06 实盘调模型，不发消息
                                     # 买 RMQPosition.buy(positionEntity, indicatorEntity, indicatorEntity.tick_close,
                                     # int(positionEntity.money / indicatorEntity.tick_close / 100) * 100)
 
@@ -231,12 +234,14 @@ def strategy_tea_radical(positionEntity,
                                                    round(indicatorEntity.tick_close, 3),
                                                    "sell"]
                                     positionEntity.trade_point_list.append(trade_point)
-                                    # 设置推送消息
-                                    strategy_result.send_msg(indicatorEntity.IE_assetsName
-                                                             + "-"
-                                                             + indicatorEntity.IE_assetsCode,
-                                                             indicatorEntity,
-                                                             IEMultiLevel,
-                                                             None)
+                                    # # 设置推送消息
+                                    # strategy_result.send_msg(indicatorEntity.IE_assetsName
+                                    #                          + "-"
+                                    #                          + indicatorEntity.IE_assetsCode,
+                                    #                          indicatorEntity,
+                                    #                          IEMultiLevel,
+                                    #                          None)
+                                    RMQRun_live_model.run_live_call_model(indicatorEntity,
+                                                                          "sell")  # 2025 03 06 实盘调模型，不发消息
                                     # 卖
                                     # RMQPosition.sell(positionEntity, indicatorEntity)

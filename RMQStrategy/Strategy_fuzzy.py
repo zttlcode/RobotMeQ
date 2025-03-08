@@ -7,6 +7,7 @@ import pandas as pd
 
 from RMQTool import Tools as RMTTools
 import RMQData.Position as RMQPosition
+import RMQTool.Run_live_model as RMQRun_live_model
 
 
 def meb(x, w1, w2, w3):
@@ -133,8 +134,9 @@ def strategy_fuzzy(positionEntity,
                    windowDF_calIndic,
                    bar_num,
                    strategy_result):
-    if 0 != len(positionEntity.currentOrders):  # 满仓，判断止损
-        RMQPosition.stopLoss(positionEntity, indicatorEntity, strategy_result)
+    # 2025 03 06 A股就不用移动止损了
+    # if 0 != len(positionEntity.currentOrders):  # 满仓，判断止损
+    #     RMQPosition.stopLoss(positionEntity, indicatorEntity, strategy_result)
 
     current_min = int(indicatorEntity.tick_time.strftime('%M'))
     if current_min % 5 == 0:  # 判断时间被5整除，如果是，说明bar刚更新，计算指标，否则不算指标；'%Y-%m-%d %H:%M'
@@ -149,17 +151,18 @@ def strategy_fuzzy(positionEntity,
             # 空仓，且大买家占优则买
             if 0 == len(positionEntity.currentOrders) and avmood > 0:  # 空仓时买
                 # 记录策略所有买卖点  格式 [["2021-04-26", 47, "buy"], ["2021-06-15", 55.1, "sell"]]
-                trade_point = [indicatorEntity.tick_time.strftime('%Y-%m-%d %H'),
+                trade_point = [indicatorEntity.tick_time.strftime('%Y-%m-%d %H:%M:%S'),
                                round(indicatorEntity.tick_close, 3),
                                "buy"]
                 positionEntity.trade_point_list.append(trade_point)
-                # 推送消息
-                strategy_result.send_msg(indicatorEntity.IE_assetsName
-                                         + "-"
-                                         + indicatorEntity.IE_assetsCode,
-                                         indicatorEntity,
-                                         None,
-                                         "buy" + str(round(avmood, 3)))
+                # # 推送消息
+                # strategy_result.send_msg(indicatorEntity.IE_assetsName
+                #                          + "-"
+                #                          + indicatorEntity.IE_assetsCode,
+                #                          indicatorEntity,
+                #                          None,
+                #                          "buy" + str(round(avmood, 3)))
+                RMQRun_live_model.run_live_call_model(indicatorEntity, "buy")  # 2025 03 06 实盘调模型，不发消息
 
                 volume = int(positionEntity.money / indicatorEntity.tick_close / 100) * 100
                 # 全仓买,1万本金除以股价，算出能买多少股，# 再除以100算出能买多少手，再乘100算出要买多少股
@@ -167,17 +170,18 @@ def strategy_fuzzy(positionEntity,
             # 满仓
             if 0 != len(positionEntity.currentOrders) and avmood < 0:
                 # 记录策略所有买卖点  格式 [["2021-04-26", 47, "buy"], ["2021-06-15", 55.1, "sell"]]
-                trade_point = [indicatorEntity.tick_time.strftime('%Y-%m-%d %H'),
+                trade_point = [indicatorEntity.tick_time.strftime('%Y-%m-%d %H:%M:%S'),
                                round(indicatorEntity.tick_close, 3),
                                "sell"]
                 positionEntity.trade_point_list.append(trade_point)
-                # 设置推送消息
-                strategy_result.send_msg(indicatorEntity.IE_assetsName
-                                         + "-"
-                                         + indicatorEntity.IE_assetsCode,
-                                         indicatorEntity,
-                                         None,
-                                         "sell" + str(round(avmood, 3)))
+                # # 设置推送消息
+                # strategy_result.send_msg(indicatorEntity.IE_assetsName
+                #                          + "-"
+                #                          + indicatorEntity.IE_assetsCode,
+                #                          indicatorEntity,
+                #                          None,
+                #                          "sell" + str(round(avmood, 3)))
+                RMQRun_live_model.run_live_call_model(indicatorEntity, "sell")  # 2025 03 06 实盘调模型，不发消息
                 # 卖
                 RMQPosition.sell(positionEntity, indicatorEntity)
 

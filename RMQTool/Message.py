@@ -190,6 +190,14 @@ def build_text(strategyResultEntity):
     return message
 
 
+def build_msg_text_no_entity(title, post_msg):
+    msg = MIMEText(post_msg, 'plain', 'utf-8')
+    msg['From'] = formataddr(['robot', 'zhaot1993@qq.com'])
+    msg['to'] = formataddr(['me', 'anonymous'])
+    msg['Subject'] = title
+    return msg
+
+
 def build_msg_text(title, strategyResultEntity):
     # 发件人、收件人、标题、邮件内容
     # msg = build_msg_text(from_addr, to_addr, title, message)  # 发文字

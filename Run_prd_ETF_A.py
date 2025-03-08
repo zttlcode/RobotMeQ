@@ -437,6 +437,9 @@ if __name__ == '__main__':
     docker cp /root/RobotMeQ d63f10ba76df:/home/RobotMeQ
     docker cp d63f10ba76df:/home/log.out /root/RobotMeQ/QuantData/log.out
     
+    老台式机 192.168.0.103 06acc8ba6062
+    docker exec -it 06acc8ba6062 /bin/bash
+    
 --创建新项目    
     在conda的导航工具里新建环境，然后pycharm给项目选择需要的解释器，
     安装包时，conda的包不全，进入conda环境，conda activate robotme
