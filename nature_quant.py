@@ -42,9 +42,14 @@ def pre_handle():
     allStockCode = pd.read_csv("./QuantData/asset_code/a800_stocks.csv", dtype={'code': str})
     # Run.parallel_backTest(allStockCode)  # 回测，并行 需要手动改里面的策略名。
     for index, row in allStockCode.iterrows():
-        assetList = RMQAsset.asset_generator(row['code'][3:],
-                                             row['code_name'],
-                                             ['d'],
+        # assetList = RMQAsset.asset_generator(row['code'][3:],
+        #                                      row['code_name'],
+        #                                      ['5', '15', '30', '60', 'd'],
+        #                                      'stock',
+        #                                      1, 'A')
+        assetList = RMQAsset.asset_generator('601658',
+                                             '601658',
+                                             ['5', '15', '30', '60', 'd'],
                                              'stock',
                                              1, 'A')
         # 回测，保存交易点,加tick会细化价格导致操作提前，但实盘是bar结束了算指标，所以不影响
@@ -56,51 +61,48 @@ def pre_handle():
         # concat_trade_point(assetList, "tea_radical_nature")
         """
         过滤交易点
-            strategy_name: identify_Market_Types 
-                            tea_radical_nature  
-                            fuzzy_nature    回测后，标注前，一定要process_fuzzy_trade_point_csv()预处理
-                            c4_trend_nature
-                            c4_oscillation_boll_nature
-                            c4_oscillation_kdj_nature
-                            c4_breakout_nature
-                            c4_reversal_nature
-                            extremum
-            label_name: 
-                label1: 多级别交易点合并，校验交易后日线级别涨跌幅、40个bar内趋势 tea_radical_nature的是concat，其他都是单级别
-                    tea之外的策略都是label1
-                label2：单级别校验各自涨跌幅、40个bar内趋势
-                label3：单级别校验各自MACD、DIF是否维持趋势
-                label4：单级别校验各自MACD、DIF+40个bar内趋势
+        strategy_name: identify_Market_Types  label1挑出连续行情
+                        tea_radical_nature  
+                            label1：多级别交易点合并，校验交易后日线级别涨跌幅、40个bar内趋势
+                            label2：单级别校验各自涨跌幅、40个bar内趋势
+                            label3：单级别校验各自MACD、DIF是否维持趋势
+                            label4：单级别校验各自MACD、DIF+40个bar内趋势
+                        fuzzy_nature    
+                            回测后，标注前，一定要process_fuzzy_trade_point_csv()预处理
+                            label1 看交易对收益率
+                        extremum label1 看交易对收益率
+                        c4_oscillation_kdj_nature label1 看交易对收益率
+                        c4_oscillation_boll_nature label1未来价格
+                        c4_trend_nature label1未来价格
+                        c4_breakout_nature label1未来价格
+                        c4_reversal_nature label1未来价格                
         """
         # RMQLabel.label(assetList, "fuzzy_nature", "label1")
         """
         画K线买卖点图
             method_name:
                 mix: 自己在函数里自定义，用什么级别组合自己改，不需要flag
-                multi_concat：多级别点位合并图，此时flag只会是 _concat 或 _concat_label1
+                multi_concat：多级别点位合并图，日线价格，此时flag只会是 _concat 或 _concat_label1
                 single：单级别图，会用到不同过滤方式，因此flag有2种，
                         原始交易点："_" + asset.barEntity.timeLevel  此时flag是 None
                         各级别标注交易点："_" + asset.barEntity.timeLevel + "_label3"  此时flag是 _label2 _label3 _label4
-                fuzzy的各级别flag也有 _label1
-            strategy_name: tea_radical_nature  fuzzy_nature
         """
-        # Draw_Pyecharts.show(assetList, "multi_concat", "tea_radical_nature", "_concat_label1")
+        #  Draw_Pyecharts.show(assetList, "single", "c4_trend_nature", "_label1")
         """
         计算收益率
             is_concat: True 计算合并交易点的收益率  此时flag只会是 _concat 或 _concat_label1
                        False 计算各个级别，此时flag有2种，
                         原始交易点："_" + asset.barEntity.timeLevel  此时flag是 None
                         各级别标注交易点："_" + asset.barEntity.timeLevel + "_label3"  此时flag是 _label2 _label3 _label4
-                        fuzzy的各级别flag也有 _label1
-            strategy_name : tea_radical_nature  fuzzy_nature
-                            c4_trend_nature
-                            c4_oscillation_boll_nature
-                            c4_oscillation_kdj_nature
-                            c4_breakout_nature
-                            c4_reversal_nature
+            pred：True会读取模型预测结果，并以此计算收益
+            pred_tpp：True会读取模型二次过滤的结果
+            handled_uneven：True会用均样本之后的数据算收益。把均样本之后的数据存到本地，方便计算原始收益和模型预测收益
         """
-        # RMQEvaluate.return_rate(assetList, False, '_label3', "tea_radical_nature",
-        #                         False, False, False)
+        RMQEvaluate.return_rate(assetList, False, None, "fuzzy_nature",
+                                False, False, False)
+        RMQEvaluate.return_rate(assetList, False, "_label1", "fuzzy_nature",
+                                False, False, False)
+        break
 
 
 def prepare_train_dataset():
@@ -150,12 +152,12 @@ def prepare_train_dataset():
     """
     RMQDataset.prepare_dataset("_TRAIN", "A_15", 160,
                                20000, True,
-                               "c4_trend_nature", "feature_all",
-                               "point_to_ts_single", "_label1")
+                               "tea_radical_nature", "feature_all",
+                               "point_to_ts_single", "_label3")
     RMQDataset.prepare_dataset("_TEST", "A_15", 160,
                                10000, True,
                                "tea_radical_nature", "feature_all",
-                               "point_to_ts_single", "_label1")
+                               "point_to_ts_single", "_label3")
 
 
 def prepare_pred_dataset():
@@ -168,7 +170,6 @@ def prepare_pred_dataset():
         预测行情
             point_to_ts_up_time_level  用本级别交易点，找up_time_level对应级别的回测数据，
             特征只用feature_all
-            目前看判断当前级别行情没用，等老师点评过决定删不删
     """
     RMQDataset.prepare_dataset_single("_TEST", "A_15", 160,
                                       20000, True,
@@ -464,8 +465,8 @@ def run_live_run():
 
 
 if __name__ == '__main__':
-    # pre_handle()  # 数据预处理
+    pre_handle()  # 数据预处理
     # prepare_train_dataset()  # 所有股票组成训练集
     # prepare_pred_dataset()  # 单独推理一个股票
-    run_live()
+    # run_live()
     pass
