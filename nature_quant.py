@@ -442,8 +442,10 @@ def run_live_run():
 
             while (time(9, 30) < datetime.now().time() < time(11, 34)
                    or time(13) < datetime.now().time() < time(15, 4)):
+
                 run_live()
                 run_live_get_pred()
+                sleep(360)  # 每过5分钟+60秒，执行一次
 
             print(datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "中午进程停止，等下午")
             sleep(1800)  # 11:30休盘了，等半小时到12:30，开下午盘
@@ -453,6 +455,7 @@ def run_live_run():
                    or time(13) < datetime.now().time() < time(15, 4)):
                 run_live()
                 run_live_get_pred()
+                sleep(360)
 
             print(datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "下午进程停止，等明天")
             sleep(61200)  # 15点收盘，等17个小时，到第二天8点，重新判断是不是交易日

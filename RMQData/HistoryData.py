@@ -99,7 +99,7 @@ def query_hs300_stocks():
         hs300_stocks.append(rs.get_row_data())
     result = pd.DataFrame(hs300_stocks, columns=rs.fields)
     # 结果集输出到csv文件
-    result.to_csv("../QuantData/a_hs300_stocks.csv", encoding="utf-8", index=False)
+    result.to_csv("../QuantData/asset_code/a_hs300_stocks.csv", encoding="utf-8", index=False)
     print(result)
 
     # 登出系统
@@ -125,7 +125,7 @@ def query_zz500_stocks():
         zz500_stocks.append(rs.get_row_data())
     result = pd.DataFrame(zz500_stocks, columns=rs.fields)
     # 结果集输出到csv文件
-    result.to_csv("../QuantData/a_zz500_stocks.csv", encoding="utf-8", index=False)
+    result.to_csv("../QuantData/asset_code/a_zz500_stocks.csv", encoding="utf-8", index=False)
     print(result)
 
     # 登出系统
@@ -159,7 +159,7 @@ def query_ipo_date(stock_code):
 
 def get_ipo_date_for_stock():
     # 读取 CSV 文件，得到 DataFrame 对象
-    file_path = "../QuantData/a_zz500_stocks.csv"  # 文件路径
+    file_path = "../QuantData/asset_code/a_zz500_stocks.csv"  # 文件路径
     df = pd.read_csv(file_path)
     # 遍历每行数据，调用 query_ipo_date 并修改第一列的日期
     for index, row in df.iterrows():
@@ -172,7 +172,7 @@ def get_ipo_date_for_stock():
 
 
 def get_stock_from_code_csv():
-    allStockCode = pd.read_csv("../QuantData/a_zz500_stocks.csv")
+    allStockCode = pd.read_csv("../QuantData/asset_code/a_zz500_stocks.csv")
     for index, row in allStockCode.iterrows():
         assetList = RMQAsset.asset_generator(row['code'][3:], row['code_name'], ['5', '15', '30', '60', 'd'],
                                              'stock', 1, 'A')  # asset是code等信息
@@ -217,7 +217,7 @@ def get_stock_from_code_csv():
             bs.logout()
 
 
-def handle_TDX_data(asset):
+def handle_TDX_data(asset, is_live):
     """
     把通达信导出的xls数据，另存为xlsx后，此函数将其处理为csv文件
 
@@ -245,9 +245,12 @@ def handle_TDX_data(asset):
     data['time'] = pd.to_datetime(data['time'])
     data.set_index('time', inplace=True)
     # etf和指数分钟数据，够实盘用就行，回测用股票方便
-    # 如果是回测数据：不用截断，写入到backtest_bar
-    # windowDF = cut_by_bar_num(data, 250)
-    data.to_csv(asset.barEntity.backtest_bar, columns=['open', 'high', 'low', 'close', 'volume'])
+    if is_live:
+        windowDF = cut_by_bar_num(data, asset.barEntity.bar_num)
+        windowDF.to_csv(asset.barEntity.live_bar, columns=['open', 'high', 'low', 'close', 'volume'])
+    else:
+        # 如果是回测数据：不用截断，写入到backtest_bar
+        data.to_csv(asset.barEntity.backtest_bar, columns=['open', 'high', 'low', 'close', 'volume'])
 
 
 def cut_by_bar_num(df, bar_num):
@@ -272,14 +275,14 @@ def get_sp500_code():
     # 修改列名，将"date"改为"time"
     stock_codes.rename(columns={'Symbol': 'code'}, inplace=True)
     # 将股票代码保存到CSV文件
-    stock_codes.to_csv('../QuantData/sp500_stock_codes.csv', index=False)
+    stock_codes.to_csv('../QuantData/asset_code/sp500_stock_codes.csv', index=False)
 
     print("CSV文件已保存。")
 
 
 def get_sp500_data():
     # 读取s&p500_stock_codes.csv文件，获取股票代码
-    df = pd.read_csv('../QuantData/sp500_stock_codes.csv')
+    df = pd.read_csv('../QuantData/asset_code/sp500_stock_codes.csv')
     stock_codes = df['code'].tolist()
 
     # 循环遍历每个股票代码
@@ -310,8 +313,8 @@ def get_hk_stock_code():
     # stock_hk_spot_em_df_filtered = stock_hk_spot_em_df[['代码', '名称']]
     # stock_hk_spot_em_df_filtered.to_csv('../QuantData/hk_all_stocks.csv', index=False)
 
-    df1 = pd.read_csv('../QuantData/hk_all_stocks.csv', dtype={'代码': str})
-    df2 = pd.read_csv('../QuantData/hk_famous.csv', dtype={'代码': str})
+    df1 = pd.read_csv('../QuantData/asset_code/hk_all_stocks.csv', dtype={'代码': str})
+    df2 = pd.read_csv('../QuantData/asset_code/hk_famous.csv', dtype={'代码': str})
 
     # 获取df1的前1000行  这个不是按市值排的，我在网上找不到按市值排名的数据
     df1_top_1000 = df1.head(1000)
@@ -326,12 +329,12 @@ def get_hk_stock_code():
     df_combined_unique = df_combined.drop_duplicates(subset=['code'])
 
     # 保存为新的CSV文件
-    df_combined_unique.to_csv('../QuantData/hk_1000_stock_codes.csv', index=False)
+    df_combined_unique.to_csv('../QuantData/asset_code/hk_1000_stock_codes.csv', index=False)
 
 
 def get_hk_stock_data():
     # 读取s&p500_stock_codes.csv文件，获取股票代码
-    df = pd.read_csv('../QuantData/hk_1000_stock_codes.csv', dtype={'code': str})
+    df = pd.read_csv('../QuantData/asset_code/hk_1000_stock_codes.csv', dtype={'code': str})
 
     stock_codes = df['code'].tolist()
 
@@ -358,20 +361,14 @@ if __name__ == '__main__':
     ['5', '15', '30', '60', 'd']
     backtest_bar  live_bar
     """
-    # assetList = RMQAsset.asset_generator('600332', '', ['30'], 'stock', 1)
-    # for asset in assetList:
-    #     # 接口取数据只能股票，回测方便
-    #     # getData_BaoStock(asset, '2000-01-01', '2024-06-11', 'backtest_bar')
-    #     # 日线要拿前250天的数据，单独加载，不然太慢
-    #     # getData_BaoStock(asset, '2002-01-01', '2024-06-30', 'backtest_bar')
-
-    #     # 通达信拿到的数据，xlsx转为csv；主要实盘用，偶尔回测拿指数、ETF数据用
-    #     # 如果是回测数据，handle_TDX_data末尾要改
-    #     # handle_TDX_data(asset)
-
+    assetList = RMQAsset.asset_generator('600332', '', ['5', '15', '30', '60', 'd'],
+                                         'stock', 1, 'A')
+    for asset in assetList:
+        # 接口取数据只能股票，回测方便
+        # getData_BaoStock(asset, '2000-01-01', '2024-06-11', 'backtest_bar')
+        pass
     # 获取股票代码、获取股票发行日、获取股票各级别数据
     # get_stock_from_code_csv()  # 日线能从发行日开始，分钟级别最早是2019年元旦
-    # get_hk_stock_data()
     pass
 
 

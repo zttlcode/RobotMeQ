@@ -1,7 +1,6 @@
 import pandas as pd
 from datetime import datetime
 from RMQTool import Tools as RMTTools
-import RMQVisualized.Draw_Matplotlib as RMQDrawPlot
 import RMQStrategy.Strategy as RMQStrategy
 import RMQData.Indicator as RMQIndicator
 import RMQData.Asset as RMQAsset
@@ -88,8 +87,10 @@ def run_back_test_crypto(assetList, strategy_name):
         backtest_result = asset.positionEntity.historyOrders
         print(asset.indicatorEntity.IE_assetsCode + "_" + asset.indicatorEntity.IE_timeLevel, backtest_result)
         # 计算每单收益
-        RMQDrawPlot.draw_candle_orders(asset.barEntity.backtest_bar, backtest_result, False)
-
+        if len(backtest_result) != 0:
+            # 计算每单收益
+            orders_df = pd.DataFrame(backtest_result).T  # DataFrame之后是矩阵样式，列标题是字段名，行标题是每个订单，加T是转置，列成了每单，跟excel就一样了
+            print(orders_df.loc[:, 'pnl'].sum())  # 显示总收益
         # 保存买卖点信息
         if asset.positionEntity.trade_point_list:  # 不为空，则保存
             df_tpl = pd.DataFrame(asset.positionEntity.trade_point_list)

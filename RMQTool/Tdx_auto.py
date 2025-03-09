@@ -165,7 +165,7 @@ if __name__ == '__main__':
             # 循环拿出每一行指令
             mainWork(sheet1, asset)
             # 数据按bar_num截断
-            RMQBar_HistoryData.handle_TDX_data(asset)
+            RMQBar_HistoryData.handle_TDX_data(asset, True)
             path = RMTTools.read_config("RMQData_local", "tdx")
             # 删除export导出的表格，和另存为的表格
             for filename in os.listdir(path):
