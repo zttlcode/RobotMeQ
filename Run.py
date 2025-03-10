@@ -122,7 +122,7 @@ def run_back_test_no_tick(assetList, strategy_name, is_live, live_df):
         #     print(asset.indicatorEntity.IE_assetsCode + "_" + asset.indicatorEntity.IE_timeLevel, backtest_result)
         #     # 计算每单收益
         #     RMQDrawPlot.draw_candle_orders(asset.barEntity.backtest_bar, backtest_result, False)
-        print(asset.indicatorEntity.IE_assetsCode + "_" + asset.indicatorEntity.IE_timeLevel + "结束")
+        # print(asset.indicatorEntity.IE_assetsCode + "_" + asset.indicatorEntity.IE_timeLevel + "结束")
         # 保存买卖点信息
         if asset.positionEntity.trade_point_list:  # 不为空，则保存
             df_tpl = pd.DataFrame(asset.positionEntity.trade_point_list)
@@ -134,13 +134,8 @@ def run_back_test_no_tick(assetList, strategy_name, is_live, live_df):
             directory = RMTTools.read_config("RMQData", item)
             os.makedirs(directory, exist_ok=True)
             if is_live:
-                df_tpl.to_csv(directory
-                              + asset.assetsMarket
-                              + "_"
-                              + asset.indicatorEntity.IE_assetsCode
-                              + "_"
-                              + asset.indicatorEntity.IE_timeLevel
-                              + ".csv", index=False, mode='a', header=False)
+                print(asset.indicatorEntity.IE_assetsCode + "_" + asset.indicatorEntity.IE_timeLevel,
+                      strategy_name, asset.positionEntity.trade_point_list)
             else:
                 df_tpl.to_csv(directory
                               + asset.assetsMarket
@@ -210,7 +205,7 @@ def run_live_A39():
     else:
         for csv_file in csv_files:
             csv_path = f"{live_dir}{csv_file}"
-            print(f"正在处理文件: {csv_path}")
+            # print(f"正在处理文件: {csv_path}")
             filename = str(csv_file)
             assetList = RMQAsset.asset_generator(filename[11:17],
                                                  '',
@@ -228,21 +223,20 @@ def run_live_A39():
             try:
                 # data_0 = pd.read_csv(io.StringIO(live_bar_content), index_col="time", parse_dates=True)
                 data_0 = pd.read_csv(io.StringIO(live_bar_content))
-                live_df = data_0[-250:]
-                live_df['time'] = pd.to_datetime(live_df['time'])  # 将时间列转换为 datetime 类型
+                data_0['time'] = pd.to_datetime(data_0['time'])  # 将时间列转换为 datetime 类型
+                live_df = data_0[:]
                 live_df.set_index('time', inplace=True)  # 将时间列设置为索引
-                RMQM_Identify_Market_Types.run_live_label_market_condition(assetList, live_df)
+                # RMQM_Identify_Market_Types.run_live_label_market_condition(assetList, live_df)
                 run_back_test_no_tick(assetList, "fuzzy_nature", True, data_0)
                 run_back_test_no_tick(assetList, "c4_breakout_nature", True, data_0)
             except Exception as e:
                 print(f"无法解析 {csv_path}: {e}")
-            break
 
 
 def run_live_A800_TSLA(assetList, df):
     live_df = df[-250:]
     live_df.set_index('time', inplace=True)
-    RMQM_Identify_Market_Types.run_live_label_market_condition(assetList, live_df)
+    # RMQM_Identify_Market_Types.run_live_label_market_condition(assetList, live_df)
     live_df = df[-250:].reset_index(drop=True)
     run_back_test_no_tick(assetList, "fuzzy_nature", True, live_df)
     run_back_test_no_tick(assetList, "c4_breakout_nature", True, live_df)
@@ -269,12 +263,12 @@ if __name__ == '__main__':
     """
     调用时间：每日17:30后
     调用策略：模糊、突破、行情识别
-    涉及标的：A股39、A股800、特斯拉
+    涉及标的：A股39、A股300、特斯拉
     其他：日线数据、不调模型
     """
     # run_live_A39()
 
-    # allStockCode = pd.read_csv("./QuantData/asset_code/a800_stocks.csv", dtype={'code': str})
+    # allStockCode = pd.read_csv("./QuantData/asset_code/a_hs300_stocks.csv", dtype={'code': str})
     # for index, row in allStockCode.iterrows():
     #     assetList = RMQAsset.asset_generator(row['code'][3:],
     #                                          row['code_name'],
