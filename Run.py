@@ -7,9 +7,13 @@ import RMQData.Indicator as RMQIndicator
 import RMQData.Asset as RMQAsset
 from RMQTool import Tools as RMTTools
 from RMQStrategy import Identify_market_types as RMQM_Identify_Market_Types
+from RMQData import HistoryData
 import numpy as np
 import matplotlib.pyplot as plt
 import scipy.signal as signal
+import paramiko
+import io
+import akshare as ak
 
 # import sys
 # 在cmd窗口python xxx.py 运行脚本时，自己写的from quant找不到quant，必须这样自定义一下python的系统变量，让python能找到
@@ -83,7 +87,7 @@ def run_back_test(assetList, strategy_name):
                           + ".csv", index=False)
 
 
-def run_back_test_no_tick(assetList, strategy_name):
+def run_back_test_no_tick(assetList, strategy_name, is_live, live_df):
     """
     注意：我之前代码的回测是多级别，从5分钟级别转tick，各级别再跟着tick转bar，这是因为策略要判断当时日线指标，但现在不用
     加日线过滤出了子集，不加就是全集，交易点位变多了，影响不大。
@@ -92,8 +96,11 @@ def run_back_test_no_tick(assetList, strategy_name):
         然后在策略中，用barEntity算指标
     """
     for asset in assetList:
-        # 读取这个资产、这个级别的历史数据
-        backtest_bar_data = pd.read_csv(asset.barEntity.backtest_bar, parse_dates=['time'])
+        if is_live:
+            backtest_bar_data = live_df
+        else:
+            # 读取这个资产、这个级别的历史数据
+            backtest_bar_data = pd.read_csv(asset.barEntity.backtest_bar, parse_dates=['time'])
         # 遍历他
         window_size = 250
         for start in range(0, len(backtest_bar_data) - window_size + 1):  # 滑动窗口，从每一行开始
@@ -120,16 +127,28 @@ def run_back_test_no_tick(assetList, strategy_name):
         if asset.positionEntity.trade_point_list:  # 不为空，则保存
             df_tpl = pd.DataFrame(asset.positionEntity.trade_point_list)
             df_tpl.columns = ['time', 'price', 'signal']
-            item = 'trade_point_backtest_' + strategy_name
+            if is_live:
+                item = 'trade_point_live_' + strategy_name
+            else:
+                item = 'trade_point_backtest_' + strategy_name
             directory = RMTTools.read_config("RMQData", item)
             os.makedirs(directory, exist_ok=True)
-            df_tpl.to_csv(directory
-                          + asset.assetsMarket
-                          + "_"
-                          + asset.indicatorEntity.IE_assetsCode
-                          + "_"
-                          + asset.indicatorEntity.IE_timeLevel
-                          + ".csv", index=False)
+            if is_live:
+                df_tpl.to_csv(directory
+                              + asset.assetsMarket
+                              + "_"
+                              + asset.indicatorEntity.IE_assetsCode
+                              + "_"
+                              + asset.indicatorEntity.IE_timeLevel
+                              + ".csv", index=False, mode='a', header=False)
+            else:
+                df_tpl.to_csv(directory
+                              + asset.assetsMarket
+                              + "_"
+                              + asset.indicatorEntity.IE_assetsCode
+                              + "_"
+                              + asset.indicatorEntity.IE_timeLevel
+                              + ".csv", index=False)
 
 
 def chunk_dataframe(df, num_chunks):
@@ -168,6 +187,68 @@ def parallel_backTest(allStockCode):
         pool.map(run_backTest_multip, data_chunks)
 
 
+def run_live_A39():
+    # 服务器信息
+    server_ip = "192.168.0.102"
+    username = "root"
+    password = "zhao1993"
+    docker_container_id = "d63f10ba76df"
+    live_dir = "/home/RobotMeQ/QuantData/live/"  # Docker 内的 CSV 目录
+
+    # 连接服务器
+    client = paramiko.SSHClient()
+    client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    client.connect(server_ip, username=username, password=password)
+
+    # 获取 `live` 目录下的所有 CSV 文件
+    command_list_csv = f"docker exec {docker_container_id} ls {live_dir} | grep 'd.csv'"
+    stdin, stdout, stderr = client.exec_command(command_list_csv)
+    csv_files = stdout.read().decode().splitlines()
+
+    if not csv_files:
+        print("没有找到任何 CSV 文件")
+    else:
+        for csv_file in csv_files:
+            csv_path = f"{live_dir}{csv_file}"
+            print(f"正在处理文件: {csv_path}")
+            filename = str(csv_file)
+            assetList = RMQAsset.asset_generator(filename[11:17],
+                                                 '',
+                                                 ['d'],
+                                                 'ETF' if filename[11].startswith('1') or filename[11].startswith(
+                                                     '5') else 'stock',
+                                                 1, 'A')
+
+            # # **读取 live_bar 文件内容**
+            command_read_live_bar = f"docker exec {docker_container_id} cat {csv_path}"
+            stdin, stdout, stderr = client.exec_command(command_read_live_bar)
+            live_bar_content = stdout.read().decode()
+
+            # **用 Pandas 解析 live_bar 数据**
+            try:
+                # data_0 = pd.read_csv(io.StringIO(live_bar_content), index_col="time", parse_dates=True)
+                data_0 = pd.read_csv(io.StringIO(live_bar_content))
+                live_df = data_0[-250:]
+                live_df['time'] = pd.to_datetime(live_df['time'])  # 将时间列转换为 datetime 类型
+                live_df.set_index('time', inplace=True)  # 将时间列设置为索引
+                RMQM_Identify_Market_Types.run_live_label_market_condition(assetList, live_df)
+                run_back_test_no_tick(assetList, "fuzzy_nature", True, data_0)
+                run_back_test_no_tick(assetList, "c4_breakout_nature", True, data_0)
+            except Exception as e:
+                print(f"无法解析 {csv_path}: {e}")
+            break
+
+
+def run_live_A800_TSLA(assetList, df):
+    live_df = df[-250:]
+    live_df.set_index('time', inplace=True)
+    RMQM_Identify_Market_Types.run_live_label_market_condition(assetList, live_df)
+    live_df = df[-250:].reset_index(drop=True)
+    run_back_test_no_tick(assetList, "fuzzy_nature", True, live_df)
+    run_back_test_no_tick(assetList, "c4_breakout_nature", True, live_df)
+    run_back_test_no_tick(assetList, "tea_radical_nature", True, live_df)
+
+
 if __name__ == '__main__':
     """
     要想运行多级别，列表里加一个时间级别就行
@@ -185,4 +266,33 @@ if __name__ == '__main__':
     #                                        'index',
     #                                        1, 'A'), "tea_radical_nature")
 
+    """
+    调用时间：每日17:30后
+    调用策略：模糊、突破、行情识别
+    涉及标的：A股39、A股800、特斯拉
+    其他：日线数据、不调模型
+    """
+    # run_live_A39()
 
+    # allStockCode = pd.read_csv("./QuantData/asset_code/a800_stocks.csv", dtype={'code': str})
+    # for index, row in allStockCode.iterrows():
+    #     assetList = RMQAsset.asset_generator(row['code'][3:],
+    #                                          row['code_name'],
+    #                                          ['d'],
+    #                                          'stock',
+    #                                          1, 'A')
+    #     df = HistoryData.getData_BaoStock(assetList[0], '', '2025-03-10', '')
+    #     # 将指定列转换为 float 类型
+    #     df[['open', 'high', 'low', 'close']] = df[['open', 'high', 'low', 'close']].astype(float)
+    #     # 将 volume 列转换为 int 类型
+    #     df['volume'] = df['volume'].astype(int)
+    #     run_live_A800_TSLA(assetList, df)
+
+    # assetList = RMQAsset.asset_generator("TSLA",
+    #                                      "TSLA",
+    #                                      ['d'],
+    #                                      'stock',
+    #                                      0, 'USA')
+    # df = ak.stock_us_daily(symbol="TSLA", adjust="")  # 获取股票历史数据
+    # df.rename(columns={'date': 'time'}, inplace=True)
+    # run_live_A800_TSLA(assetList, df)

@@ -539,3 +539,45 @@ def run_backTest_label_market_condition(assetList):
                           + ".csv", index=False)
 
     print(assetList[0].assetsCode, "行情分类标注结束")
+
+
+def run_live_label_market_condition(assetList, live_df):
+    """
+    行情转换逻辑检验：
+        禁止出现「趋势→趋势」连续标注（需有中间状态）
+        突破后必须跟随趋势或反转
+    """
+    for asset in assetList:
+        df = live_df
+        # 计算所有指标
+        df = IMTHelper.calculate_indicators(df)
+        market_condition_list = []
+        for i in range(0, len(df) - 230 + 1, 1):
+            window_df = df.iloc[i:i + 230].copy()
+            label = label_market_condition(window_df)
+            max_key = max(label, key=label.get)
+            max_value = label[max_key]
+            # print(f"最大键: {max_key}, {max_value}, {window_df['close'].iloc[-1]}")
+
+            # 回测所有行情分类
+            market_condition = [window_df.index[-1].strftime('%Y-%m-%d') if asset.barEntity.timeLevel == 'd'
+                                else window_df.index[-1].strftime('%Y-%m-%d %H:%M:%S'),
+                                window_df['close'].iloc[-1],
+                                max_key, label[max_key]]
+            market_condition_list.append(market_condition)
+
+        if market_condition_list:  # 不为空，则保存
+            df_mcl = pd.DataFrame(market_condition_list)
+            df_mcl.columns = ['time', 'price', 'market_condition', 'probability']
+            item = 'market_condition_live'
+            directory = RMTTools.read_config("RMQData", item)
+            os.makedirs(directory, exist_ok=True)
+            df_mcl.iloc[-20:].to_csv(directory
+                                     + asset.assetsMarket
+                                     + "_"
+                                     + asset.indicatorEntity.IE_assetsCode
+                                     + "_"
+                                     + asset.indicatorEntity.IE_timeLevel
+                                     + ".csv", index=False)
+
+    print(assetList[0].assetsCode, "行情分类标注结束")

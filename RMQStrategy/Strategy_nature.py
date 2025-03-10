@@ -45,9 +45,8 @@ def strategy_tea_radical(positionEntity, indicatorEntity, windowDF_calIndic, DFL
                         windowDF_calIndic.iloc[DFLastRow - 1]['K']
                         < windowDF_calIndic.iloc[DFLastRow - 1]['D']):
                     # KDJ在超卖区
-                    tempK = 35  # 20
-                    if (windowDF_calIndic.iloc[DFLastRow]['K'] < tempK
-                            and windowDF_calIndic.iloc[DFLastRow]['D'] < tempK):
+                    if (windowDF_calIndic.iloc[DFLastRow]['K'] < 35  # 20
+                            and windowDF_calIndic.iloc[DFLastRow]['D'] < 35):  # 20
                         # 更新指标信号：底背离 第一个区域面积
                         isUpdated = indicatorEntity.updateSignal(0,
                                                                  round(divergeDF.iloc[2]['area'], 3),

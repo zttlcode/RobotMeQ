@@ -75,6 +75,11 @@ def getData_BaoStock(asset, start_date, end_date, bar_type):
         # 实盘不管什么级别，只要最近的250bar就行
         windowDF = cut_by_bar_num(result, asset.barEntity.bar_num)
         windowDF.to_csv(asset.barEntity.live_bar, index=False)
+    else:
+        windowDF = cut_by_bar_num(result, 270)
+        # 登出系统
+        bs.logout()
+        return windowDF
     print(result)
     # 登出系统
     bs.logout()

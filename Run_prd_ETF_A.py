@@ -5,6 +5,7 @@ from time import sleep
 from datetime import datetime, time
 from multiprocessing import Process
 import sys
+import os
 
 sys.path.append("/home/RobotMeQ")
 
@@ -108,7 +109,9 @@ def run_live(assetList, strategy_name):
         if asset.positionEntity.trade_point_list:  # 不为空，则保存
             df_tpl = pd.DataFrame(asset.positionEntity.trade_point_list)
             item = 'trade_point_live_' + strategy_name
-            df_tpl.to_csv(RMTTools.read_config("RMQData", item)
+            directory = RMTTools.read_config("RMQData", item)
+            os.makedirs(directory, exist_ok=True)
+            df_tpl.to_csv(directory
                           + asset.assetsMarket
                           + "_"
                           + asset.indicatorEntity.IE_assetsCode
@@ -119,6 +122,7 @@ def run_live(assetList, strategy_name):
 
 def start_process():
     strategy_name = 'tea_radical'
+    timeLevelList = ['5', '15', '30', '60', 'd']
     """
     只需要记住一点，要想实现多线程， target=方法名/函数名，后不能带括号（）。
     1、不带括号时，调用的是这个函数本身 ，是整个函数体，是一个函数对象，不需等该函数执行完成；
@@ -127,235 +131,235 @@ def start_process():
     processes = [Process(target=run_live,
                          args=(RMQAsset.asset_generator('510050',
                                                         '上证50',
-                                                        ['5', '15', '30', '60', 'd'],
+                                                        timeLevelList,
                                                         'ETF',
                                                         1, 'A'), strategy_name,)),
                  Process(target=run_live,
                          args=(RMQAsset.asset_generator('159915',
                                                         '创业板',
-                                                        ['5', '15', '30', '60', 'd'],
+                                                        timeLevelList,
                                                         'ETF',
                                                         1, 'A'), strategy_name,)),
                  Process(target=run_live,
                          args=(RMQAsset.asset_generator('510300',
                                                         '沪深300指数',
-                                                        ['5', '15', '30', '60', 'd'],
+                                                        timeLevelList,
                                                         'ETF',
                                                         1, 'A'), strategy_name,)),
                  Process(target=run_live,
                          args=(RMQAsset.asset_generator('563300',
                                                         '中证2000指数',
-                                                        ['5', '15', '30', '60', 'd'],
+                                                        timeLevelList,
                                                         'ETF',
                                                         1, 'A'), strategy_name,)),
                  Process(target=run_live,
                          args=(RMQAsset.asset_generator('588000',
                                                         '科创50',
-                                                        ['5', '15', '30', '60', 'd'],
+                                                        timeLevelList,
                                                         'ETF',
                                                         1, 'A'), strategy_name,)),
                  Process(target=run_live,
                          args=(RMQAsset.asset_generator('512690',
                                                         '酒',
-                                                        ['5', '15', '30', '60', 'd'],
+                                                        timeLevelList,
                                                         'ETF',
                                                         1, 'A'), strategy_name,)),
                  Process(target=run_live,
                          args=(RMQAsset.asset_generator('515030',
                                                         '新能源车',
-                                                        ['5', '15', '30', '60', 'd'],
+                                                        timeLevelList,
                                                         'ETF',
                                                         1, 'A'), strategy_name,)),
                  Process(target=run_live,
                          args=(RMQAsset.asset_generator('515790',
                                                         '光伏',
-                                                        ['5', '15', '30', '60', 'd'],
+                                                        timeLevelList,
                                                         'ETF',
                                                         1, 'A'), strategy_name,)),
                  Process(target=run_live,
                          args=(RMQAsset.asset_generator('516970',
                                                         '基建',
-                                                        ['5', '15', '30', '60', 'd'],
+                                                        timeLevelList,
                                                         'ETF',
                                                         1, 'A'), strategy_name,)),
                  Process(target=run_live,
                          args=(RMQAsset.asset_generator('512660',
                                                         '军工',
-                                                        ['5', '15', '30', '60', 'd'],
+                                                        timeLevelList,
                                                         'ETF',
                                                         1, 'A'), strategy_name,)),
                  Process(target=run_live,
                          args=(RMQAsset.asset_generator('159611',
                                                         '电力',
-                                                        ['5', '15', '30', '60', 'd'],
+                                                        timeLevelList,
                                                         'ETF',
                                                         1, 'A'), strategy_name,)),
                  Process(target=run_live,
                          args=(RMQAsset.asset_generator('512170',
                                                         '医疗',
-                                                        ['5', '15', '30', '60', 'd'],
+                                                        timeLevelList,
                                                         'ETF',
                                                         1, 'A'), strategy_name,)),
                  Process(target=run_live,
                          args=(RMQAsset.asset_generator('512800',
                                                         '银行',
-                                                        ['5', '15', '30', '60', 'd'],
+                                                        timeLevelList,
                                                         'ETF',
                                                         1, 'A'), strategy_name,)),
                  Process(target=run_live,
                          args=(RMQAsset.asset_generator('515220',
                                                         '煤炭',
-                                                        ['5', '15', '30', '60', 'd'],
+                                                        timeLevelList,
                                                         'ETF',
                                                         1, 'A'), strategy_name,)),
                  Process(target=run_live,
                          args=(RMQAsset.asset_generator('159766',
                                                         '旅游',
-                                                        ['5', '15', '30', '60', 'd'],
+                                                        timeLevelList,
                                                         'ETF',
                                                         1, 'A'), strategy_name,)),
                  Process(target=run_live,
                          args=(RMQAsset.asset_generator('159865',
                                                         '养殖',
-                                                        ['5', '15', '30', '60', 'd'],
+                                                        timeLevelList,
                                                         'ETF',
                                                         1, 'A'), strategy_name,)),
                  Process(target=run_live,
                          args=(RMQAsset.asset_generator('159996',
                                                         '家电',
-                                                        ['5', '15', '30', '60', 'd'],
+                                                        timeLevelList,
                                                         'ETF',
                                                         1, 'A'), strategy_name,)),
                  Process(target=run_live,
                          args=(RMQAsset.asset_generator('512480',
                                                         '半导体',
-                                                        ['5', '15', '30', '60', 'd'],
+                                                        timeLevelList,
                                                         'ETF',
                                                         1, 'A'), strategy_name,)),
                  Process(target=run_live,
                          args=(RMQAsset.asset_generator('159819',
                                                         '人工智能',
-                                                        ['5', '15', '30', '60', 'd'],
+                                                        timeLevelList,
                                                         'ETF',
                                                         1, 'A'), strategy_name,)),
                  Process(target=run_live,
                          args=(RMQAsset.asset_generator('562500',
                                                         '机器人',
-                                                        ['5', '15', '30', '60', 'd'],
+                                                        timeLevelList,
                                                         'ETF',
                                                         1, 'A'), strategy_name,)),
                  Process(target=run_live,
                          args=(RMQAsset.asset_generator('159869',
                                                         '游戏',
-                                                        ['5', '15', '30', '60', 'd'],
+                                                        timeLevelList,
                                                         'ETF',
                                                         1, 'A'), strategy_name,)),
                  Process(target=run_live,
                          args=(RMQAsset.asset_generator('515880',
                                                         '通信',
-                                                        ['5', '15', '30', '60', 'd'],
+                                                        timeLevelList,
                                                         'ETF',
                                                         1, 'A'), strategy_name,)),
                  Process(target=run_live,
                          args=(RMQAsset.asset_generator('159985',
                                                         '豆粕',
-                                                        ['5', '15', '30', '60', 'd'],
+                                                        timeLevelList,
                                                         'ETF',
                                                         0, 'A'), strategy_name,)),
                  Process(target=run_live,
                          args=(RMQAsset.asset_generator('159980',
                                                         '有色',
-                                                        ['5', '15', '30', '60', 'd'],
+                                                        timeLevelList,
                                                         'ETF',
                                                         0, 'A'), strategy_name,)),
                  Process(target=run_live,
                          args=(RMQAsset.asset_generator('159981',
                                                         '能源化工',
-                                                        ['5', '15', '30', '60', 'd'],
+                                                        timeLevelList,
                                                         'ETF',
                                                         0, 'A'), strategy_name,)),
                  Process(target=run_live,
                          args=(RMQAsset.asset_generator('513360',
                                                         '教育',
-                                                        ['5', '15', '30', '60', 'd'],
+                                                        timeLevelList,
                                                         'ETF',
                                                         0, 'A'), strategy_name,)),
                  Process(target=run_live,
                          args=(RMQAsset.asset_generator('518880',
                                                         '黄金',
-                                                        ['5', '15', '30', '60', 'd'],
+                                                        timeLevelList,
                                                         'ETF',
                                                         0, 'A'), strategy_name,)),
                  Process(target=run_live,
                          args=(RMQAsset.asset_generator('159920',
                                                         '恒生',
-                                                        ['5', '15', '30', '60', 'd'],
+                                                        timeLevelList,
                                                         'ETF',
                                                         0, 'A'), strategy_name,)),
                  Process(target=run_live,
                          args=(RMQAsset.asset_generator('513130',
                                                         '恒生科技',
-                                                        ['5', '15', '30', '60', 'd'],
+                                                        timeLevelList,
                                                         'ETF',
                                                         0, 'A'), strategy_name,)),
                  Process(target=run_live,
                          args=(RMQAsset.asset_generator('513060',
                                                         '恒生医疗',
-                                                        ['5', '15', '30', '60', 'd'],
+                                                        timeLevelList,
                                                         'ETF',
                                                         0, 'A'), strategy_name,)),
                  Process(target=run_live,
                          args=(RMQAsset.asset_generator('159941',
                                                         '纳指',
-                                                        ['5', '15', '30', '60', 'd'],
+                                                        timeLevelList,
                                                         'ETF',
                                                         0, 'A'), strategy_name,)),
                  Process(target=run_live,
                          args=(RMQAsset.asset_generator('159509',
                                                         '纳指科技',
-                                                        ['5', '15', '30', '60', 'd'],
+                                                        timeLevelList,
                                                         'ETF',
                                                         0, 'A'), strategy_name,)),
                  Process(target=run_live,
                          args=(RMQAsset.asset_generator('513030',
                                                         '德国',
-                                                        ['5', '15', '30', '60', 'd'],
+                                                        timeLevelList,
                                                         'ETF',
                                                         0, 'A'), strategy_name,)),
                  Process(target=run_live,
                          args=(RMQAsset.asset_generator('159866',
                                                         '日经',
-                                                        ['5', '15', '30', '60', 'd'],
+                                                        timeLevelList,
                                                         'ETF',
                                                         0, 'A'), strategy_name,)),
                  Process(target=run_live,
                          args=(RMQAsset.asset_generator('601658',
                                                         '邮储银行',
-                                                        ['5', '15', '30', '60', 'd'],
+                                                        timeLevelList,
                                                         'stock',
                                                         1, 'A'), strategy_name,)),
                  Process(target=run_live,
                          args=(RMQAsset.asset_generator('600905',
                                                         '三峡能源',
-                                                        ['5', '15', '30', '60', 'd'],
+                                                        timeLevelList,
                                                         'stock',
                                                         1, 'A'), strategy_name,)),
                  Process(target=run_live,
                          args=(RMQAsset.asset_generator('601598',
                                                         '中国外运',
-                                                        ['5', '15', '30', '60', 'd'],
+                                                        timeLevelList,
                                                         'stock',
                                                         1, 'A'), strategy_name,)),
                  Process(target=run_live,
                          args=(RMQAsset.asset_generator('601868',
                                                         '中国能建',
-                                                        ['5', '15', '30', '60', 'd'],
+                                                        timeLevelList,
                                                         'stock',
                                                         1, 'A'), strategy_name,)),
                  Process(target=run_live,
                          args=(RMQAsset.asset_generator('600690',
                                                         '海尔智家',
-                                                        ['5', '15', '30', '60', 'd'],
+                                                        timeLevelList,
                                                         'stock',
                                                         1, 'A'), strategy_name,))
                  ]
@@ -407,7 +411,12 @@ if __name__ == '__main__':
     docker run -it 2023c3642f33 /bin/bash
     以后就可以通过exec进入了
     
-    docker start 26dbf8178821  阿里云 2024-4月~2026-4月 保守策略  zhaot1993@qq.com
+    我的docker容器默认是Debian，要想装less和vim，需要运行
+    apt update
+    apt install -y less vim
+    
+    阿里云 2024-4月~2026-4月  zhaot1993@qq.com
+    docker start 26dbf8178821
     docker exec -it 26dbf8178821 /bin/bash
         nohup python -u /home/RobotMeQ/Run_prd_ETF_A.py >> /home/log.out 2>&1 &
     tail -f /home/log.out
@@ -421,7 +430,7 @@ if __name__ == '__main__':
     docker cp 26dbf8178821:/home/RobotMeQ/QuantData/position_currentOrders /root/RobotMeQ/QuantData/position_currentOrders
     docker cp 26dbf8178821:/home/log.out /root/RobotMeQ/QuantData/log.out
 
-    2024 04 06 腾讯云    激进策略  287151402@qq.com
+    腾讯云  287151402@qq.com
     docker start 5c239d668666
     docker exec -it 5c239d668666 /bin/bash
     docker cp /root/RobotMeQ 5c239d668666:/home/RobotMeQ
@@ -431,13 +440,16 @@ if __name__ == '__main__':
     docker cp /root/RobotMeQ/QuantData/live 5c239d668666:/home/RobotMeQ/QuantData/live
     docker cp 5c239d668666:/home/RobotMeQ/QuantData/trade_point_live /root/RobotMeQ/QuantData/trade_point_live
 
-    2024 05 06 老笔记本  模糊策略  1031017763@qq.com
+    老笔记本  激进策略  1031017763@qq.com
     docker start d63f10ba76df
     docker exec -it d63f10ba76df /bin/bash
     docker cp /root/RobotMeQ d63f10ba76df:/home/RobotMeQ
-    docker cp d63f10ba76df:/home/log.out /root/RobotMeQ/QuantData/log.out
+    docker cp /root/RobotMeQ/QuantData/live d63f10ba76df:/home/RobotMeQ/QuantData/live
+    docker cp /root/RobotMeQ/Configs/config_prd.ini d63f10ba76df:/home/RobotMeQ/Configs/config_prd.ini
+    docker cp /root/RobotMeQ/Run_prd_ETF_A.py d63f10ba76df:/home/RobotMeQ/Run_prd_ETF_A.py
     
-    老台式机 192.168.0.103 06acc8ba6062
+    老台式机
+    docker start 06acc8ba6062
     docker exec -it 06acc8ba6062 /bin/bash
     
 --创建新项目    

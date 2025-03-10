@@ -42,19 +42,15 @@ def pre_handle():
     allStockCode = pd.read_csv("./QuantData/asset_code/a800_stocks.csv", dtype={'code': str})
     # Run.parallel_backTest(allStockCode)  # 回测，并行 需要手动改里面的策略名。
     for index, row in allStockCode.iterrows():
-        # assetList = RMQAsset.asset_generator(row['code'][3:],
-        #                                      row['code_name'],
-        #                                      ['5', '15', '30', '60', 'd'],
-        #                                      'stock',
-        #                                      1, 'A')
-        assetList = RMQAsset.asset_generator('601658',
-                                             '601658',
+        assetList = RMQAsset.asset_generator(row['code'][3:],
+                                             row['code_name'],
                                              ['5', '15', '30', '60', 'd'],
                                              'stock',
                                              1, 'A')
+
         # 回测，保存交易点,加tick会细化价格导致操作提前，但实盘是bar结束了算指标，所以不影响
         # Run.run_back_test(assetList, "tea_radical_nature")  # 0:18:27.437876 旧回测，转tick，运行时长
-        # Run.run_back_test_no_tick(assetList, "fuzzy_nature")  # 0:02:29.502122 新回测，不转tick
+        # Run.run_back_test_no_tick(assetList, "fuzzy_nature", False, None)  # 0:02:29.502122 新回测，不转tick
         # RMQS_Identify_Market_Types.run_backTest_label_market_condition(assetList)  # 回测标注日线级别行情类型 该上面时间级别为d
 
         # 各级别交易点拼接在一起
@@ -98,10 +94,10 @@ def pre_handle():
             pred_tpp：True会读取模型二次过滤的结果
             handled_uneven：True会用均样本之后的数据算收益。把均样本之后的数据存到本地，方便计算原始收益和模型预测收益
         """
-        RMQEvaluate.return_rate(assetList, False, None, "fuzzy_nature",
-                                False, False, False)
-        RMQEvaluate.return_rate(assetList, False, "_label1", "fuzzy_nature",
-                                False, False, False)
+        # RMQEvaluate.return_rate(assetList, False, None, "fuzzy_nature",
+        #                         False, False, False)
+        # RMQEvaluate.return_rate(assetList, False, "_label1", "fuzzy_nature",
+        #                         False, False, False)
         break
 
 
@@ -258,10 +254,10 @@ def run_live():
                                                  1, 'A')
             # **获取 live_bar 文件路径**
             # live_bar = "/home/RobotMeQ/QuantData/live/live_bar_A_"+data[3]+"_"+data[5]+".csv"
-            live_bar = "/home/RobotMeQ/QuantData/live/live_bar_159611_15.csv"
+            # live_bar = "/home/RobotMeQ/QuantData/live/live_bar_159611_15.csv"
 
             # # **读取 live_bar 文件内容**
-            command_read_live_bar = f"docker exec {docker_container_id} cat {live_bar}"
+            command_read_live_bar = f"docker exec {docker_container_id} cat {csv_path}"
             stdin, stdout, stderr = client.exec_command(command_read_live_bar)
             live_bar_content = stdout.read().decode()
 
@@ -269,7 +265,7 @@ def run_live():
             try:
                 data_0 = pd.read_csv(io.StringIO(live_bar_content), index_col="time", parse_dates=True)
             except Exception as e:
-                print(f"无法解析 {live_bar}: {e}")
+                print(f"无法解析 {csv_path}: {e}")
 
             # 准备ts数据
             data_0 = IMTHelper.calculate_indicators(data_0)
