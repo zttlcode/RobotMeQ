@@ -163,14 +163,14 @@ def run_backTest_multip(data_chunk):
     process_id = os.getpid()  # 获取当前进程 ID
     for _, row in data_chunk.iterrows():
         print(f"Process {process_name} (PID {process_id}) is processing: {row['code']}")
-        assetList = RMQAsset.asset_generator(row['code'],
-                                             row['code'],
-                                             ['60', '240'],
-                                             'crypto',
-                                             1, 'crypto')
+        assetList = RMQAsset.asset_generator(row['code'][3:],
+                                             row['code_name'],
+                                             ['d'],
+                                             'stock',
+                                             1, 'A')
         # 不能多个同时跑，订单会导致数据混乱
-        # run_back_test_no_tick(assetList, "c4_reversal_nature")  # 0:02:29.502122 新回测，不转tick
-        RMQM_Identify_Market_Types.run_backTest_label_market_condition(assetList)  # 回测标注日线级别行情类型 该上面时间级别为d
+        run_back_test_no_tick(assetList, "tea_radical_nature", False, None)  # 0:02:29.502122 新回测，不转tick
+        # RMQM_Identify_Market_Types.run_backTest_label_market_condition(assetList)  # 回测标注日线级别行情类型 该上面时间级别为d
 
 
 def parallel_backTest(allStockCode):
@@ -239,8 +239,8 @@ def run_live_A800_TSLA(assetList, df):
     # RMQM_Identify_Market_Types.run_live_label_market_condition(assetList, live_df)
     live_df = df[-250:].reset_index(drop=True)
     # run_back_test_no_tick(assetList, "fuzzy_nature", True, live_df)
-    run_back_test_no_tick(assetList, "c4_breakout_nature", True, live_df)
-    # run_back_test_no_tick(assetList, "tea_radical_nature", True, live_df)
+    # run_back_test_no_tick(assetList, "c4_breakout_nature", True, live_df)
+    run_back_test_no_tick(assetList, "tea_radical_nature", True, live_df)
 
 
 if __name__ == '__main__':
@@ -269,7 +269,7 @@ if __name__ == '__main__':
     # 不要多个策略一起跑！当前订单会乱！！！
     # run_live_A39()
 
-    allStockCode = pd.read_csv("./QuantData/asset_code/a_hs300_stocks.csv", dtype={'code': str})
+    allStockCode = pd.read_csv("./QuantData/asset_code/a_zz500_stocks.csv", dtype={'code': str})
     import baostock as bs
     bs.login()
     for index, row in allStockCode.iterrows():
@@ -278,11 +278,11 @@ if __name__ == '__main__':
                                              ['d'],
                                              'stock',
                                              1, 'A')
-        df = HistoryData.getData_BaoStock_live(assetList[0], '', '2025-03-10', '')
+        today = pd.Timestamp.today().normalize()  # 去掉时间部分，只保留日期
+        df = HistoryData.getData_BaoStock_live(assetList[0], '', today.strftime('%Y-%m-%d'), '')
         df_tmp = df.copy()
         df_tmp['time'] = pd.to_datetime(df_tmp['time'])
         last_date = df_tmp['time'].iloc[-1]
-        today = pd.Timestamp.today().normalize()  # 去掉时间部分，只保留日期
         if last_date != today:
             print(row['code'][3:], last_date, "日期不是今天，跳过")
             continue
@@ -294,6 +294,7 @@ if __name__ == '__main__':
         df['volume'] = df['volume'].astype('int64')
         run_live_A800_TSLA(assetList, df)
     bs.logout()
+
     # assetList = RMQAsset.asset_generator("TSLA",
     #                                      "TSLA",
     #                                      ['d'],

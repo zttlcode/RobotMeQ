@@ -44,7 +44,7 @@ def pre_handle():
     for index, row in allStockCode.iterrows():
         assetList = RMQAsset.asset_generator(row['code'][3:],
                                              row['code_name'],
-                                             ['5', '15', '30', '60', 'd'],
+                                             ['d'],
                                              'stock',
                                              1, 'A')
 
@@ -73,7 +73,7 @@ def pre_handle():
                         c4_breakout_nature label1未来价格
                         c4_reversal_nature label1未来价格                
         """
-        # RMQLabel.label(assetList, "fuzzy_nature", "label1")
+        # RMQLabel.label(assetList, "tea_radical_nature", "label3")
         """
         画K线买卖点图
             method_name:
@@ -98,7 +98,6 @@ def pre_handle():
         #                         False, False, False)
         # RMQEvaluate.return_rate(assetList, False, "_label1", "fuzzy_nature",
         #                         False, False, False)
-        break
 
 
 def prepare_train_dataset():
@@ -146,14 +145,14 @@ def prepare_train_dataset():
         name: 标的_级别 ts文件命名，跟limit_length对应，这文件有多少条数据
                 跑单级别时，在Dataset里只填对应级别        
     """
-    RMQDataset.prepare_dataset("_TRAIN", "A_15", 160,
+    RMQDataset.prepare_dataset("_TRAIN", "A_d", 160,
                                20000, True,
                                "tea_radical_nature", "feature_all",
-                               "point_to_ts_single", "_label3")
-    RMQDataset.prepare_dataset("_TEST", "A_15", 160,
+                               "point_to_ts_single", "_label2")
+    RMQDataset.prepare_dataset("_TEST", "A_d", 160,
                                10000, True,
                                "tea_radical_nature", "feature_all",
-                               "point_to_ts_single", "_label3")
+                               "point_to_ts_single", "_label2")
 
 
 def prepare_pred_dataset():
@@ -461,7 +460,7 @@ def run_live_run():
 
 
 if __name__ == '__main__':
-    pre_handle()  # 数据预处理
+    # pre_handle()  # 数据预处理
     # prepare_train_dataset()  # 所有股票组成训练集
     # prepare_pred_dataset()  # 单独推理一个股票
     # run_live()

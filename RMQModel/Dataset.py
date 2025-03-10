@@ -1473,7 +1473,7 @@ def prepare_dataset(flag, name, time_point_step, limit_length, handle_uneven_sam
     for index, row in df_dataset.iterrows():
         assetList = RMQAsset.asset_generator(row['code'][3:],
                                              row['code'],
-                                             ['15'],
+                                             ['d'],
                                              'stock',
                                              1, 'A')
         # 准备训练数据
