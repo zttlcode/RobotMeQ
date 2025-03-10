@@ -6,7 +6,6 @@ import RMQTool.Run_live_model as RMQRun_live_model
 def strategy_tea_conservative(positionEntity,
                               indicatorEntity,
                               windowDF_calIndic,
-                              DFLastRow,
                               strategy_result,
                               IEMultiLevel):
     if 0 != len(positionEntity.currentOrders):  # 满仓，判断止损
@@ -27,7 +26,7 @@ def strategy_tea_conservative(positionEntity,
             if indicatorEntity.IE_timeLevel == 'd':
                 # 目前只用到day级别，所以加这个判断和下面 kdj判断不等于d，都是为了减少计算量，提升系统速度
                 windowDF_calIndic = RMQIndicator.calKDJ(windowDF_calIndic)  # 计算KDJ
-                IEMultiLevel.updateDayK(windowDF_calIndic, DFLastRow)  # 更新多级别指标对象
+                IEMultiLevel.updateDayK(windowDF_calIndic)  # 更新多级别指标对象
             # 3、执行策略
 
             # 空仓
@@ -37,22 +36,22 @@ def strategy_tea_conservative(positionEntity,
                     # macd绿柱面积过去 > 现在  因为是负数，所以要更小
                     if (divergeDF.iloc[2]['area'] < divergeDF.iloc[0]['area']
                             and divergeDF.iloc[2]['price'] > divergeDF.iloc[0]['price']
-                            and windowDF_calIndic.iloc[DFLastRow]['MACD'] >=
-                            windowDF_calIndic.iloc[DFLastRow - 1]['MACD']):  # 过去最低价 > 现在最低价
+                            and windowDF_calIndic.iloc[-1]['MACD'] >=
+                            windowDF_calIndic.iloc[-2]['MACD']):  # 过去最低价 > 现在最低价
                         # KDJ判断
                         if indicatorEntity.IE_timeLevel != 'd':
                             windowDF_calIndic = RMQIndicator.calKDJ(windowDF_calIndic)  # 计算KDJ
                         # 当前K上穿D，金叉
                         # df最后一条数据就是最新的，又因为时间窗口固定，最后一条下标是DFLastRow
-                        if (windowDF_calIndic.iloc[DFLastRow]['K']
-                                > windowDF_calIndic.iloc[DFLastRow]['D']
+                        if (windowDF_calIndic.iloc[-1]['K']
+                                > windowDF_calIndic.iloc[-1]['D']
                                 and
-                                windowDF_calIndic.iloc[DFLastRow - 1]['K']
-                                < windowDF_calIndic.iloc[DFLastRow - 1]['D']):
+                                windowDF_calIndic.iloc[-2]['K']
+                                < windowDF_calIndic.iloc[-2]['D']):
                             # KDJ在超卖区
-                            if (windowDF_calIndic.iloc[DFLastRow]['K'] < 20
+                            if (windowDF_calIndic.iloc[-1]['K'] < 20
                                     and
-                                    windowDF_calIndic.iloc[DFLastRow]['D'] < 20):
+                                    windowDF_calIndic.iloc[-1]['D'] < 20):
                                 # 日线指标已更新，对比后再决定买卖
                                 if (IEMultiLevel.level_day_K is not None
                                         and
@@ -84,21 +83,21 @@ def strategy_tea_conservative(positionEntity,
                 if divergeDF.iloc[2]['area'] > 0:
                     if (divergeDF.iloc[2]['area'] > divergeDF.iloc[0]['area']
                             and divergeDF.iloc[2]['price'] < divergeDF.iloc[0]['price']
-                            and windowDF_calIndic.iloc[DFLastRow]['MACD'] <=
-                            windowDF_calIndic.iloc[DFLastRow - 1]['MACD']):
+                            and windowDF_calIndic.iloc[-1]['MACD'] <=
+                            windowDF_calIndic.iloc[-21]['MACD']):
                         # KDJ判断
                         if indicatorEntity.IE_timeLevel != 'd':
                             windowDF_calIndic = RMQIndicator.calKDJ(windowDF_calIndic)  # 计算KDJ
                         # 当前K下穿D，死叉
-                        if (windowDF_calIndic.iloc[DFLastRow]['K']
-                                < windowDF_calIndic.iloc[DFLastRow]['D']
+                        if (windowDF_calIndic.iloc[-1]['K']
+                                < windowDF_calIndic.iloc[-1]['D']
                                 and
-                                windowDF_calIndic.iloc[DFLastRow - 1]['K']
-                                > windowDF_calIndic.iloc[DFLastRow - 1]['D']):
+                                windowDF_calIndic.iloc[-2]['K']
+                                > windowDF_calIndic.iloc[-2]['D']):
                             # KDJ在超买区
-                            if (windowDF_calIndic.iloc[DFLastRow]['K'] > 80
+                            if (windowDF_calIndic.iloc[-1]['K'] > 80
                                     and
-                                    windowDF_calIndic.iloc[DFLastRow]['D'] > 80):
+                                    windowDF_calIndic.iloc[-1]['D'] > 80):
                                 # 日线指标已更新，对比后再决定买卖
                                 if (IEMultiLevel.level_day_K is not None
                                         and IEMultiLevel.level_day_K > 50):  # 日线KDJ的K大于50再卖
@@ -129,7 +128,6 @@ def strategy_tea_conservative(positionEntity,
 def strategy_tea_radical(positionEntity,
                          indicatorEntity,
                          windowDF_calIndic,
-                         DFLastRow,
                          strategy_result,
                          IEMultiLevel):
     current_min = int(indicatorEntity.tick_time.strftime('%M'))
@@ -143,7 +141,7 @@ def strategy_tea_radical(positionEntity,
             if indicatorEntity.IE_timeLevel == 'd':
                 # 目前只用到day级别，所以加这个判断和下面 kdj判断不等于d，都是为了减少计算量，提升系统速度
                 windowDF_calIndic = RMQIndicator.calKDJ(windowDF_calIndic)  # 计算KDJ
-                IEMultiLevel.updateDayK(windowDF_calIndic, DFLastRow)  # 更新多级别指标对象
+                IEMultiLevel.updateDayK(windowDF_calIndic)  # 更新多级别指标对象
             # 3、执行策略
             if divergeDF.iloc[2]['area'] < 0:  # 底背离判断
                 # macd绿柱面积过去 > 现在  因为是负数，所以要更小
@@ -152,21 +150,21 @@ def strategy_tea_radical(positionEntity,
                         and
                         divergeDF.iloc[2]['price']
                         > divergeDF.iloc[0]['price']
-                        and windowDF_calIndic.iloc[DFLastRow]['MACD'] >=
-                        windowDF_calIndic.iloc[DFLastRow - 1]['MACD']):  # 过去最低价 > 现在最低价
+                        and windowDF_calIndic.iloc[-1]['MACD'] >=
+                        windowDF_calIndic.iloc[-2]['MACD']):  # 过去最低价 > 现在最低价
                     # KDJ判断
                     if indicatorEntity.IE_timeLevel != 'd':
                         windowDF_calIndic = RMQIndicator.calKDJ(windowDF_calIndic)  # 计算KDJ
                     # 当前K上穿D，金叉
                     # df最后一条数据就是最新的，又因为时间窗口固定，最后一条下标是DFLastRow
-                    if (windowDF_calIndic.iloc[DFLastRow]['K']
-                            > windowDF_calIndic.iloc[DFLastRow]['D']
+                    if (windowDF_calIndic.iloc[-1]['K']
+                            > windowDF_calIndic.iloc[-1]['D']
                             and
-                            windowDF_calIndic.iloc[DFLastRow - 1]['K']
-                            < windowDF_calIndic.iloc[DFLastRow - 1]['D']):
+                            windowDF_calIndic.iloc[-2]['K']
+                            < windowDF_calIndic.iloc[-2]['D']):
                         # KDJ在超卖区
-                        if (windowDF_calIndic.iloc[DFLastRow]['K'] < 35  # 20
-                                and windowDF_calIndic.iloc[DFLastRow]['D'] < 35):  # 20
+                        if (windowDF_calIndic.iloc[-1]['K'] < 35  # 20
+                                and windowDF_calIndic.iloc[-1]['D'] < 35):  # 20
                             tempK = 35  # 20
                             if indicatorEntity.IE_assetsCode == '510300':
                                 tempK = 50
@@ -206,20 +204,20 @@ def strategy_tea_radical(positionEntity,
                         > divergeDF.iloc[0]['area']
                         and divergeDF.iloc[2]['price']
                         < divergeDF.iloc[0]['price']
-                        and windowDF_calIndic.iloc[DFLastRow]['MACD']
-                        <= windowDF_calIndic.iloc[DFLastRow - 1]['MACD']):
+                        and windowDF_calIndic.iloc[-1]['MACD']
+                        <= windowDF_calIndic.iloc[-2]['MACD']):
                     # KDJ判断
                     if indicatorEntity.IE_timeLevel != 'd':
                         windowDF_calIndic = RMQIndicator.calKDJ(windowDF_calIndic)  # 计算KDJ
                     # 当前K下穿D，死叉
-                    if (windowDF_calIndic.iloc[DFLastRow]['K']
-                            < windowDF_calIndic.iloc[DFLastRow]['D']
+                    if (windowDF_calIndic.iloc[-1]['K']
+                            < windowDF_calIndic.iloc[-1]['D']
                             and
-                            windowDF_calIndic.iloc[DFLastRow - 1]['K']
-                            > windowDF_calIndic.iloc[DFLastRow - 1]['D']):
+                            windowDF_calIndic.iloc[-2]['K']
+                            > windowDF_calIndic.iloc[-2]['D']):
                         # KDJ在超买区
-                        if (windowDF_calIndic.iloc[DFLastRow]['K'] > 80
-                                and windowDF_calIndic.iloc[DFLastRow]['D'] > 80):
+                        if (windowDF_calIndic.iloc[-1]['K'] > 80
+                                and windowDF_calIndic.iloc[-1]['D'] > 80):
                             # 日线指标已更新，对比后再决定买卖
                             if (IEMultiLevel.level_day_K is not None
                                     and IEMultiLevel.level_day_K > 50):  # 日线KDJ的K大于50再卖

@@ -227,7 +227,7 @@ def run_live_A39():
                 live_df = data_0[:]
                 live_df.set_index('time', inplace=True)  # 将时间列设置为索引
                 # RMQM_Identify_Market_Types.run_live_label_market_condition(assetList, live_df)
-                run_back_test_no_tick(assetList, "fuzzy_nature", True, data_0)
+                # run_back_test_no_tick(assetList, "fuzzy_nature", True, data_0)
                 run_back_test_no_tick(assetList, "c4_breakout_nature", True, data_0)
             except Exception as e:
                 print(f"无法解析 {csv_path}: {e}")
@@ -238,9 +238,9 @@ def run_live_A800_TSLA(assetList, df):
     live_df.set_index('time', inplace=True)
     # RMQM_Identify_Market_Types.run_live_label_market_condition(assetList, live_df)
     live_df = df[-250:].reset_index(drop=True)
-    run_back_test_no_tick(assetList, "fuzzy_nature", True, live_df)
+    # run_back_test_no_tick(assetList, "fuzzy_nature", True, live_df)
     run_back_test_no_tick(assetList, "c4_breakout_nature", True, live_df)
-    run_back_test_no_tick(assetList, "tea_radical_nature", True, live_df)
+    # run_back_test_no_tick(assetList, "tea_radical_nature", True, live_df)
 
 
 if __name__ == '__main__':
@@ -266,22 +266,34 @@ if __name__ == '__main__':
     涉及标的：A股39、A股300、特斯拉
     其他：日线数据、不调模型
     """
+    # 不要多个策略一起跑！当前订单会乱！！！
     # run_live_A39()
 
-    # allStockCode = pd.read_csv("./QuantData/asset_code/a_hs300_stocks.csv", dtype={'code': str})
-    # for index, row in allStockCode.iterrows():
-    #     assetList = RMQAsset.asset_generator(row['code'][3:],
-    #                                          row['code_name'],
-    #                                          ['d'],
-    #                                          'stock',
-    #                                          1, 'A')
-    #     df = HistoryData.getData_BaoStock(assetList[0], '', '2025-03-10', '')
-    #     # 将指定列转换为 float 类型
-    #     df[['open', 'high', 'low', 'close']] = df[['open', 'high', 'low', 'close']].astype(float)
-    #     # 将 volume 列转换为 int 类型
-    #     df['volume'] = df['volume'].astype(int)
-    #     run_live_A800_TSLA(assetList, df)
-
+    allStockCode = pd.read_csv("./QuantData/asset_code/a_hs300_stocks.csv", dtype={'code': str})
+    import baostock as bs
+    bs.login()
+    for index, row in allStockCode.iterrows():
+        assetList = RMQAsset.asset_generator(row['code'][3:],
+                                             row['code_name'],
+                                             ['d'],
+                                             'stock',
+                                             1, 'A')
+        df = HistoryData.getData_BaoStock_live(assetList[0], '', '2025-03-10', '')
+        df_tmp = df.copy()
+        df_tmp['time'] = pd.to_datetime(df_tmp['time'])
+        last_date = df_tmp['time'].iloc[-1]
+        today = pd.Timestamp.today().normalize()  # 去掉时间部分，只保留日期
+        if last_date != today:
+            print(row['code'][3:], last_date, "日期不是今天，跳过")
+            continue
+        # 将指定列转换为 float 类型
+        df[['open', 'high', 'low', 'close']] = df[['open', 'high', 'low', 'close']].astype(float)
+        # 将 volume 列转换为 int 类型
+        df['volume'] = df['volume'].replace('', np.nan)
+        df['volume'] = df['volume'].fillna(0)  # 用 0 填充缺失值
+        df['volume'] = df['volume'].astype('int64')
+        run_live_A800_TSLA(assetList, df)
+    bs.logout()
     # assetList = RMQAsset.asset_generator("TSLA",
     #                                      "TSLA",
     #                                      ['d'],

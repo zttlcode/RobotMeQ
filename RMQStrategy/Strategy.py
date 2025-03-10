@@ -93,8 +93,11 @@ def strategy(asset, strategy_result, IEMultiLevel, strategy_name):
     当前这个bar，只有到收盘那一刻，才能确认指标，盘中就算到了预期点位但收盘没到，那就不算反转，虚晃一枪
     因此计算指标要去掉windowDF最新一条(索引最大的)。实时价格只用来对比是否到了止损位
     """
-    windowDF_calIndic = windowDF.iloc[:-1].copy()  # copy不改变原对象，不加copy会有改变临时对象的警告 tick每秒一次，去掉最新一行
-    windowDF_calIndic = windowDF_calIndic.reset_index(drop=True)  # 重置索引，这样df索引是0~58
+    if asset.barEntity.isLiveRunning:
+        windowDF_calIndic = windowDF.iloc[:-1].copy()  # copy不改变原对象，不加copy会有改变临时对象的警告 tick每秒一次，去掉最新一行
+        windowDF_calIndic = windowDF_calIndic.reset_index(drop=True)  # 重置索引，这样df索引是0~58
+    else:
+        windowDF_calIndic = windowDF.copy()  # copy不改变原对象，不加copy会有改变临时对象的警告 tick每秒一次，去掉最新一行
 
     if strategy_name == "tea_conservative":
         # 保守派背离策略
@@ -103,7 +106,6 @@ def strategy(asset, strategy_result, IEMultiLevel, strategy_name):
         RMQSTea.strategy_tea_conservative(positionEntity,
                                           indicatorEntity,
                                           windowDF_calIndic,
-                                          barEntity.bar_num - 2,  # 比如时间窗口60，最后一条数据下标是59，再去掉tick是58
                                           strategy_result,
                                           IEMultiLevel)
     elif strategy_name == "tea_radical":
@@ -113,7 +115,6 @@ def strategy(asset, strategy_result, IEMultiLevel, strategy_name):
         RMQSTea.strategy_tea_radical(positionEntity,
                                      indicatorEntity,
                                      windowDF_calIndic,
-                                     barEntity.bar_num - 2,  # 比如时间窗口60，最后一条数据下标是59，再去掉tick是58
                                      strategy_result,
                                      IEMultiLevel)
     elif strategy_name == "tea_radical_nature":
@@ -121,7 +122,6 @@ def strategy(asset, strategy_result, IEMultiLevel, strategy_name):
         RMQSNature.strategy_tea_radical(positionEntity,
                                         indicatorEntity,
                                         windowDF_calIndic,
-                                        barEntity.bar_num - 2,  # 比如时间窗口60，最后一条数据下标是59，再去掉tick是58
                                         strategy_result,
                                         IEMultiLevel)
     elif strategy_name == "fuzzy":
@@ -129,14 +129,12 @@ def strategy(asset, strategy_result, IEMultiLevel, strategy_name):
         RMQSFuzzy.strategy_fuzzy(positionEntity,
                                  indicatorEntity,
                                  windowDF_calIndic,
-                                 barEntity.bar_num - 1,  # 减了个实时价格，250变249，所以这里长度也跟着变成249
                                  strategy_result)
     elif strategy_name == "fuzzy_nature":
         # ride-mood策略，取消止损，回测专用，不看时间
         RMQSNature.strategy_fuzzy(positionEntity,
                                   indicatorEntity,
                                   windowDF_calIndic,
-                                  barEntity.bar_num - 1,  # 减了个实时价格，250变249，所以这里长度也跟着变成249
                                   strategy_result)
     elif strategy_name == "c4_trend_nature":
         windowDF_calIndic = IMTHelper.calculate_ema(windowDF_calIndic)

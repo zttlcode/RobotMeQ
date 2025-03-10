@@ -107,8 +107,8 @@ class IndicatorEntityMultiLevel:
         elif indicatorEntity.IE_timeLevel == "d":
             self.level_day_diverge = getDivergeMsg(indicatorEntity.signal)
 
-    def updateDayK(self, windowDF, DFLastRow):
-        self.level_day_K = windowDF.iloc[DFLastRow]['K']
+    def updateDayK(self, windowDF):
+        self.level_day_K = windowDF.iloc[-1]['K']
 
 
 def getDivergeMsg(signal):

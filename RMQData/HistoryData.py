@@ -20,8 +20,8 @@ def getData_BaoStock(asset, start_date, end_date, bar_type):
             code = 'sh.' + asset.assetsCode
 
     lg = bs.login()
-    print('login respond error_code:' + lg.error_code)
-    print('login respond  error_msg:' + lg.error_msg)
+    # print('login respond error_code:' + lg.error_code)
+    # print('login respond  error_msg:' + lg.error_msg)
 
     # 详细指标参数，参见“历史行情指标参数”章节；“分钟线”参数与“日线”参数不同。“分钟线”不包含指数。
     # 分钟线指标：date,time,code,open,high,low,close,volume,amount,adjustflag
@@ -50,8 +50,8 @@ def getData_BaoStock(asset, start_date, end_date, bar_type):
                                           start_date=start_date, end_date=end_date,
                                           frequency=asset.barEntity.timeLevel, adjustflag="3")
 
-    print('query_history_k_data_plus respond error_code:' + rs.error_code)
-    print('query_history_k_data_plus respond  error_msg:' + rs.error_msg)
+    # print('query_history_k_data_plus respond error_code:' + rs.error_code)
+    # print('query_history_k_data_plus respond  error_msg:' + rs.error_msg)
     # 打印结果集
     data_list = []
     while (rs.error_code == '0') & rs.next():
@@ -76,13 +76,47 @@ def getData_BaoStock(asset, start_date, end_date, bar_type):
         windowDF = cut_by_bar_num(result, asset.barEntity.bar_num)
         windowDF.to_csv(asset.barEntity.live_bar, index=False)
     else:
-        windowDF = cut_by_bar_num(result, 270)
+        windowDF = cut_by_bar_num(result, 250)
         # 登出系统
         bs.logout()
         return windowDF
     print(result)
     # 登出系统
     bs.logout()
+
+
+def getData_BaoStock_live(asset, start_date, end_date, bar_type):
+    # 股票所有数据都能拿到，指数只有日线
+    code = None
+    # 股票：6开头sh，0或3开头sz
+    # 指数：3开头是sz
+    if asset.assetsCode.startswith('6'):
+        code = 'sh.' + asset.assetsCode
+    elif asset.assetsCode.startswith('0') or asset.assetsCode.startswith('3'):
+        code = 'sz.' + asset.assetsCode
+        if asset.assetsType == 'index':
+            # 如果只根据名字判断，0,3以外全是sh，那指数0开头的代码只能加sh.前缀，才满足else，但文件名多了个sh.不好看，所以加这个assetsType
+            # 当然影响不只是csv文件名，如果用mysql存，存表名是000001是股票，还是指数，还得区分，因此这个变量得加
+            code = 'sh.' + asset.assetsCode
+    if asset.barEntity.timeLevel == 'd':
+        # 日线数据，股票和指数接口一样
+        rs = bs.query_history_k_data_plus(code,
+                                          "date,open,high,low,close,volume",
+                                          start_date=start_date, end_date=end_date,
+                                          frequency="d", adjustflag="3")
+    # 打印结果集
+    data_list = []
+    while (rs.error_code == '0') & rs.next():
+        # 获取一条记录，将记录合并在一起
+        data_list.append(rs.get_row_data())
+    result = pd.DataFrame(data_list, columns=rs.fields)
+    if 0 != len(data_list):
+        if 'd' == asset.barEntity.timeLevel:
+            result.loc[:, 'date'] = pd.to_datetime(result.loc[:, 'date'])
+            result.rename(columns={'date': 'time'}, inplace=True)  # 为了和分钟级bar保持一致，修改列名为time
+    windowDF = cut_by_bar_num(result, 250)
+    # 登出系统
+    return windowDF
 
 
 def query_hs300_stocks():
@@ -366,12 +400,12 @@ if __name__ == '__main__':
     ['5', '15', '30', '60', 'd']
     backtest_bar  live_bar
     """
-    assetList = RMQAsset.asset_generator('600332', '', ['5', '15', '30', '60', 'd'],
+    assetList = RMQAsset.asset_generator('000568', '', ['d'],
                                          'stock', 1, 'A')
     for asset in assetList:
         # 接口取数据只能股票，回测方便
-        # getData_BaoStock(asset, '2000-01-01', '2024-06-11', 'backtest_bar')
-        pass
+        res = getData_BaoStock(asset, '', '2025-03-10', '')
+        print(res)
     # 获取股票代码、获取股票发行日、获取股票各级别数据
     # get_stock_from_code_csv()  # 日线能从发行日开始，分钟级别最早是2019年元旦
     pass

@@ -14,7 +14,7 @@ import RMQStrategy.Strategy_fuzzy as RMQSFuzzy
 """
 
 
-def strategy_tea_radical(positionEntity, indicatorEntity, windowDF_calIndic, DFLastRow, strategy_result, IEMultiLevel):
+def strategy_tea_radical(positionEntity, indicatorEntity, windowDF_calIndic, strategy_result, IEMultiLevel):
     # 1、计算自己需要的指标
     divergeDF, windowDF_calIndic = RMQIndicator.calMACD_area(windowDF_calIndic)  # df第0条是当前区域，第1条是过去的区域
     try:
@@ -33,20 +33,20 @@ def strategy_tea_radical(positionEntity, indicatorEntity, windowDF_calIndic, DFL
                     divergeDF.iloc[2]['price']
                     > divergeDF.iloc[0]['price']
                     and
-                    windowDF_calIndic.iloc[DFLastRow]['MACD']
-                    >= windowDF_calIndic.iloc[DFLastRow - 1]['MACD']):  # 过去最低价 > 现在最低价
+                    windowDF_calIndic.iloc[-1]['MACD']
+                    >= windowDF_calIndic.iloc[-2]['MACD']):  # 过去最低价 > 现在最低价
                 # KDJ判断
                 windowDF_calIndic = RMQIndicator.calKDJ(windowDF_calIndic)  # 计算KDJ
                 # 当前K上穿D，金叉
                 # df最后一条数据就是最新的，又因为时间窗口固定，最后一条下标是DFLastRow
-                if (windowDF_calIndic.iloc[DFLastRow]['K']
-                        > windowDF_calIndic.iloc[DFLastRow]['D']
+                if (windowDF_calIndic.iloc[-1]['K']
+                        > windowDF_calIndic.iloc[-1]['D']
                         and
-                        windowDF_calIndic.iloc[DFLastRow - 1]['K']
-                        < windowDF_calIndic.iloc[DFLastRow - 1]['D']):
+                        windowDF_calIndic.iloc[-2]['K']
+                        < windowDF_calIndic.iloc[-2]['D']):
                     # KDJ在超卖区
-                    if (windowDF_calIndic.iloc[DFLastRow]['K'] < 35  # 20
-                            and windowDF_calIndic.iloc[DFLastRow]['D'] < 35):  # 20
+                    if (windowDF_calIndic.iloc[-1]['K'] < 35  # 20
+                            and windowDF_calIndic.iloc[-1]['D'] < 35):  # 20
                         # 更新指标信号：底背离 第一个区域面积
                         isUpdated = indicatorEntity.updateSignal(0,
                                                                  round(divergeDF.iloc[2]['area'], 3),
@@ -65,20 +65,20 @@ def strategy_tea_radical(positionEntity, indicatorEntity, windowDF_calIndic, DFL
                     divergeDF.iloc[2]['price']
                     < divergeDF.iloc[0]['price']
                     and
-                    windowDF_calIndic.iloc[DFLastRow]['MACD']
-                    <= windowDF_calIndic.iloc[DFLastRow - 1]['MACD']):
+                    windowDF_calIndic.iloc[-1]['MACD']
+                    <= windowDF_calIndic.iloc[-2]['MACD']):
                 # KDJ判断
                 # if indicatorEntity.IE_timeLevel != 'd':
                 windowDF_calIndic = RMQIndicator.calKDJ(windowDF_calIndic)  # 计算KDJ
                 # 当前K下穿D，死叉
-                if (windowDF_calIndic.iloc[DFLastRow]['K']
-                        < windowDF_calIndic.iloc[DFLastRow]['D']
+                if (windowDF_calIndic.iloc[-1]['K']
+                        < windowDF_calIndic.iloc[-1]['D']
                         and
-                        windowDF_calIndic.iloc[DFLastRow - 1]['K']
-                        > windowDF_calIndic.iloc[DFLastRow - 1]['D']):
+                        windowDF_calIndic.iloc[-2]['K']
+                        > windowDF_calIndic.iloc[-2]['D']):
                     # KDJ在超买区
-                    if (windowDF_calIndic.iloc[DFLastRow]['K'] > 80
-                            and windowDF_calIndic.iloc[DFLastRow]['D'] > 80):
+                    if (windowDF_calIndic.iloc[-1]['K'] > 80
+                            and windowDF_calIndic.iloc[-1]['D'] > 80):
                         # 更新指标信号：顶背离 第一个区域面积
                         isUpdated = indicatorEntity.updateSignal(1,
                                                                  round(divergeDF.iloc[2]['area'], 3),
@@ -93,7 +93,7 @@ def strategy_tea_radical(positionEntity, indicatorEntity, windowDF_calIndic, DFL
         print("Error happens ", indicatorEntity.IE_assetsCode, " ", indicatorEntity.IE_timeLevel, " ", e)
 
 
-def strategy_fuzzy(positionEntity, indicatorEntity, windowDF_calIndic, bar_num, strategy_result):
+def strategy_fuzzy(positionEntity, indicatorEntity, windowDF_calIndic, strategy_result):
     # if 0 != len(positionEntity.currentOrders):  # 满仓，判断止损
     #     RMQPosition.stopLoss(positionEntity, indicatorEntity, strategy_result)
 
@@ -102,7 +102,7 @@ def strategy_fuzzy(positionEntity, indicatorEntity, windowDF_calIndic, bar_num, 
     #     if current_min != indicatorEntity.last_cal_time:  # 说明bar刚更新，计算一次指标
     #         indicatorEntity.last_cal_time = current_min  # 更新锁
 
-    n1, n2, aa = RMQSFuzzy.fuzzy(windowDF_calIndic, bar_num)
+    n1, n2, aa = RMQSFuzzy.fuzzy(windowDF_calIndic)
     # bar_num为了算过去的指标，250-1，所以n2是249,最后一位下标248，没值，243~247有值，
     mood = aa[1, 0, n2 - 6:n2 - 1] - aa[0, 0, n2 - 6:n2 - 1]  # a7-a6的值，正：可以买
     avmood = np.mean(mood)
@@ -234,7 +234,6 @@ def strategy_c4_breakout(positionEntity, indicatorEntity, df):
     """
     last_row = df.iloc[-1]
     prev_row = df.iloc[-2]
-
     # 波动率放大条件
     volatility_cond = last_row['atr'] > df['atr'].rolling(20).mean().iloc[-1] * 1.2
 

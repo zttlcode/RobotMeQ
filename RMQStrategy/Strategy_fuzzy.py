@@ -72,11 +72,11 @@ def validMeb():
     plt.show()
 
 
-def fuzzy(windowDF, bar_num):
+def fuzzy(windowDF):
     # 1、计算自己需要的指标
     # windowDF = RMQIndicator.calMA(windowDF)
     p = windowDF['close'].tolist()
-    n = bar_num  # 250不一定够
+    n = len(windowDF)  # 250不一定够
     c = 0.01
     n1 = 1
     n2 = n
@@ -132,7 +132,6 @@ def fuzzy(windowDF, bar_num):
 def strategy_fuzzy(positionEntity,
                    indicatorEntity,
                    windowDF_calIndic,
-                   bar_num,
                    strategy_result):
     if 0 != len(positionEntity.currentOrders):  # 满仓，判断止损
         RMQPosition.stopLoss(positionEntity, indicatorEntity, strategy_result)
@@ -142,8 +141,8 @@ def strategy_fuzzy(positionEntity,
         if current_min != indicatorEntity.last_cal_time:  # 说明bar刚更新，计算一次指标
             indicatorEntity.last_cal_time = current_min  # 更新锁
 
-            n1, n2, aa = fuzzy(windowDF_calIndic, bar_num)
-            # bar_num为了算过去的指标，250-1，所以n2是249,最后一位下标248，没值，243~247有值，
+            n1, n2, aa = fuzzy(windowDF_calIndic)
+            # windowDF_calIndic减去tick，长度249，n2是长度,但最后一位没值，所以取最后5位有值的
             mood = aa[1, 0, n2 - 6:n2 - 1] - aa[0, 0, n2 - 6:n2 - 1]  # a7-a6的值，正：可以买
             avmood = np.mean(mood)
 
@@ -310,12 +309,11 @@ if __name__ == '__main__':
     filtered_files = find_files_with_char(directory_path, char_to_find)
     for filePath in filtered_files:
         windowDF = pd.read_csv(filePath, encoding='gbk')
-        bar_num = len(windowDF)
         # 回测
-        n1, n2, aa = fuzzy(windowDF, bar_num)
+        n1, n2, aa = fuzzy(windowDF)
         # n1 和 n2 是循环的起始和结束索引
         p = windowDF['close'].values
         print(filePath)
-        detach_coefficient_figure(p, bar_num, n1, n2, aa)  # 图表展示回测结果
+        detach_coefficient_figure(p, len(windowDF), n1, n2, aa)  # 图表展示回测结果
         time.sleep(1)
 
