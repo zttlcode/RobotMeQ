@@ -269,7 +269,7 @@ if __name__ == '__main__':
     # 不要多个策略一起跑！当前订单会乱！！！
     # run_live_A39()
 
-    allStockCode = pd.read_csv("./QuantData/asset_code/a_zz500_stocks.csv", dtype={'code': str})
+    allStockCode = pd.read_csv("./QuantData/asset_code/a800_stocks.csv", dtype={'code': str})
     import baostock as bs
     bs.login()
     for index, row in allStockCode.iterrows():
