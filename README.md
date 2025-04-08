@@ -24,7 +24,6 @@
     Tools_time_seris_forecast.py  当初时序模型回归的工具箱
 /RMQVisualized  可视化
     Deploy_Flask.py  本地部署前端页面，也是pythonanywhere的主页
-    Draw_Dash.py  Dash是在python代码里写前端代码，对我没啥用了
     Draw_Pyecharts.py  用来画交易点的
 
 Run.py是跑回测的

@@ -111,31 +111,47 @@ def cal_return_rate(asset, flag, strategy_name, pred, pred_tpp, handled_uneven):
         previous_total_cost = latest_total_cost
 
     # 遍历完成后，计算最终状态
-    holding_value = shares * df.iloc[-1]['price']  # 最后一个价格计算持股价值
-    if latest_total_cost != 0:
-        final_profit_or_loss = holding_value - latest_total_cost
-        final_return_rate = final_profit_or_loss / latest_total_cost
-    else:
-        final_return_rate = 0.0
+    try:
+        holding_value = shares * df.iloc[-1]['price']  # 最后一个价格计算持股价值
+        if latest_total_cost != 0:
+            final_profit_or_loss = holding_value - latest_total_cost
+            final_return_rate = final_profit_or_loss / latest_total_cost
+        else:
+            final_return_rate = 0.0
 
-    print(f"{asset.assetsCode}{flag} 最终结果 持股数: {shares}, 市值: {holding_value:.2f}, "
-          f"总投资额: {latest_total_cost:.2f}, 持股收益率: {final_return_rate:.2%}, "
-          f"总收益: {(holding_value-latest_total_cost):.2f}")
 
-    # return round(final_return_rate, 4)
+        # print(f"{asset.assetsCode}{flag} 最终结果 持股数: {shares}, 市值: {holding_value:.2f}, "
+        #       f"总投资额: {latest_total_cost:.2f}, 持股收益率: {final_return_rate:.2%}, "
+        #       f"总收益: {(holding_value-latest_total_cost):.2f}")
+        """
+        返回收益率，会导致空仓后，赚钱赔钱的收益都是-100%，原因如下
+        假如赚钱了，总投资额是-1000，仓位是0空仓，收益是 仓位-总投资额是 0-（-1000）是1000
+        收益率= 1000 / （-1000）是-100%
+        假如赔钱了，总投资额是 1000，仓位是0空仓，收益是 仓位-总投资额是 0-（ 1000）是-1000
+        收益率= -1000 / （1000）是-100%
+        赚钱的改成正100%可以，但有可能人家上限不是100%，得拿个参照物，用股价参照？没法界定翻了多少倍，这取决于持仓多少股，
+        所以，都是一样的参照不如都不参照，直接按收益金额来，只要不同策略对比最终收益金额就好
+        不同策略的股票是一样的，因此可以对比
+        """
+        # return round(final_return_rate, 4)
+        return round(holding_value-latest_total_cost, 4)
+    except Exception as e:
+        print(e, asset.assetsCode)
 
 
 def return_rate(assetList, is_concat, flag, strategy_name, pred, pred_tpp, handled_uneven):
+    res = None
     if is_concat:
-        cal_return_rate(assetList[0], flag, strategy_name, pred, handled_uneven)
+        res = cal_return_rate(assetList[0], flag, strategy_name, pred, pred_tpp, handled_uneven)
     else:
         for asset in assetList:
             if flag:  # flag不是None
-                cal_return_rate(asset, "_" + asset.barEntity.timeLevel + str(flag), strategy_name, pred, pred_tpp, handled_uneven)
+                res = cal_return_rate(asset, "_" + asset.barEntity.timeLevel + str(flag), strategy_name, pred, pred_tpp, handled_uneven)
             else:
-                cal_return_rate(asset, "_" + asset.barEntity.timeLevel, strategy_name, pred, pred_tpp, handled_uneven)
+                res = cal_return_rate(asset, "_" + asset.barEntity.timeLevel, strategy_name, pred, pred_tpp, handled_uneven)
 
-    print(assetList[0].assetsCode + "收益率计算完成")
+    # print(assetList[0].assetsCode + "收益率计算完成")
+    return res
 
 
 def compare_return_rate():

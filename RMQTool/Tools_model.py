@@ -161,7 +161,7 @@ def process_fuzzy_trade_point_csv():
             process_csv(file)
 
     # 使用示例
-    folder_path = 'D:/github/RobotMeQ_Dataset/QuantData/trade_point_backtest_c4_oscillation_kdj_nature/'  # 替换为你的文件夹路径
+    folder_path = 'D:/github/RobotMeQ_Dataset/QuantData/trade_point_backtest_extremum/'  # 替换为你的文件夹路径
     process_folder(folder_path)
 
 
@@ -510,5 +510,5 @@ def check_time_sort():
 
 
 if __name__ == '__main__':
-    count_label_distribution()
+    process_fuzzy_trade_point_csv()
 

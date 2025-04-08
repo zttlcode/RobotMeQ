@@ -72,7 +72,7 @@ def preprocess_stock_data(allStockCode):
     """处理所有股票数据并保存最终结果
     """
     for index, row in allStockCode.iterrows():
-        assetList = RMQAsset.asset_generator(row['code'][3:], row['code_name'], ['d'], 'stock', 1, 'A')
+        assetList = RMQAsset.asset_generator(row['code'], row['code'], ['15', '60', '240', 'd'], 'crypto', 1, 'crypto')
 
         for asset in assetList:
             data_1_filePath = (RMTTools.read_config("RMQData", "backtest_bar") +
@@ -101,7 +101,6 @@ def preprocess_stock_data(allStockCode):
 
 if __name__ == '__main__':
     # 运行处理函数 传统极值标注法回测数据
-    allStockCode = pd.read_csv("../QuantData/asset_code/a800_stocks.csv", dtype={'code': str})
-    df_dataset = allStockCode.iloc[500:]
+    allStockCode = pd.read_csv("../QuantData/asset_code/crypto_code.csv", dtype={'code': str})
     # 执行完此函数，要执行process_fuzzy_trade_point_csv()，再用fuzzy_nature_label1标注，否则会导致模型训练时label分类中含有nan，模型训练报错
     # preprocess_stock_data(allStockCode)

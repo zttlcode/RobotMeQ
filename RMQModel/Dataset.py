@@ -891,7 +891,9 @@ def single_time_level_point_to_ts(assetList, temp_data_dict, temp_label_list, ti
                     high = data_0_tmp["high"]
                     low = data_0_tmp["low"]
                     close = data_0_tmp["close"]
-                    if open.isna().any() or high.isna().any() or low.isna().any() or close.isna().any():
+                    volume = data_0_tmp["volume"]
+                    if (open.isna().any() or high.isna().any() or low.isna().any() or close.isna().any()
+                            or volume.isna().any()):
                         continue  # 数据NaN，跳过
             else:
                 continue  # backtest_bar 越界，跳过
@@ -946,6 +948,7 @@ def single_time_level_point_to_ts(assetList, temp_data_dict, temp_label_list, ti
             temp_data_dict['volume_ma5'].append(volume_ma5)
             temp_data_dict['volume'].append(volume)
         elif feature_plan_name == 'feature_extremum':
+            temp_data_dict['volume'].append(volume)
             temp_data_dict['open'].append(open)
             temp_data_dict['high'].append(high)
             temp_data_dict['low'].append(low)
@@ -1317,7 +1320,7 @@ def get_feature(feature_plan_name):
                           'boll_lower': [], 'rsi': [], 'obv': [], 'volume_ma5': [], 'close': [], 'volume': []
                           }
     elif feature_plan_name == 'feature_extremum':
-        temp_data_dict = {'open': [], 'high': [], 'low': [], 'close': []}
+        temp_data_dict = {'open': [], 'high': [], 'low': [], 'close': [], 'volume': []}
     elif feature_plan_name == 'feature_tea_concat':
         temp_data_dict = {'index_d_close': [], 'index_d_volume': [], 'd_close': [], 'd_volume': [], 'close_60': [],
                           'volume_60': []}
@@ -1473,7 +1476,7 @@ def prepare_dataset(flag, name, time_point_step, limit_length, handle_uneven_sam
     for index, row in df_dataset.iterrows():
         assetList = RMQAsset.asset_generator(row['code'][3:],
                                              row['code'],
-                                             ['d'],
+                                             ['15'],
                                              'stock',
                                              1, 'A')
         # 准备训练数据

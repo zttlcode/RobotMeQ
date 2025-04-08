@@ -163,19 +163,19 @@ def run_backTest_multip(data_chunk):
     process_id = os.getpid()  # 获取当前进程 ID
     for _, row in data_chunk.iterrows():
         print(f"Process {process_name} (PID {process_id}) is processing: {row['code']}")
-        assetList = RMQAsset.asset_generator(row['code'][3:],
-                                             row['code_name'],
-                                             ['d'],
-                                             'stock',
-                                             1, 'A')
+        assetList = RMQAsset.asset_generator(row['code'],
+                                             row['code'],
+                                             ['15', '60', '240', 'd'],
+                                             'crypto',
+                                             1, 'crypto')
         # 不能多个同时跑，订单会导致数据混乱
-        run_back_test_no_tick(assetList, "tea_radical_nature", False, None)  # 0:02:29.502122 新回测，不转tick
+        run_back_test_no_tick(assetList, "c4_trend_nature", False, None)  # 0:02:29.502122 新回测，不转tick
         # RMQM_Identify_Market_Types.run_backTest_label_market_condition(assetList)  # 回测标注日线级别行情类型 该上面时间级别为d
 
 
 def parallel_backTest(allStockCode):
     # 多个并行
-    num_processes = 20  # 确定进程数量和数据块
+    num_processes = 9  # 确定进程数量和数据块
     data_chunks = chunk_dataframe(allStockCode, num_processes)  # 把300个股票分给20个进程并行处理
     # 使用 multiprocessing 开启进程池
     with Pool(num_processes) as pool:
