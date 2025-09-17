@@ -29,6 +29,7 @@ def cal_return_rate(asset, flag, strategy_name, pred, pred_tpp, handled_uneven):
 
     # 读取CSV文件
     df = pd.read_csv(df_filePath)
+    df = df[df['time'] > '2019-01-01']
     if pred:
         if pred_tpp:
             df_prd_true_filePath = "D:/github/Time-Series-Library-Quant/results/" + asset.assetsCode + "_prd_result_tpp.csv"
@@ -95,7 +96,6 @@ def cal_return_rate(asset, flag, strategy_name, pred, pred_tpp, handled_uneven):
             cost_per_share = latest_total_cost / shares if shares != 0 else 0  # 每股成本
         else:
             latest_return_rate = 0.0  # 防止除以零
-
         # 打印当前状态
         # print(f"时间: {row['time']}, 价格: {price}, 总成本: {previous_total_cost:.2f}, 收益率: {previous_return_rate:.2%}")
         # print(f"{signal} 100股, 目前持股数: {shares}, 持股金额: {holding_value:.2f}")
@@ -115,7 +115,22 @@ def cal_return_rate(asset, flag, strategy_name, pred, pred_tpp, handled_uneven):
         holding_value = shares * df.iloc[-1]['price']  # 最后一个价格计算持股价值
         if latest_total_cost != 0:
             final_profit_or_loss = holding_value - latest_total_cost
-            final_return_rate = final_profit_or_loss / latest_total_cost
+            #
+            #
+            """
+             2025 05 06 做个修改，判断金额会让交易频繁的占优势，但我的过滤本就对交易次数做了减少
+             因此还是改为交易率吧，只是收益上限变成了100%，下限变成了-100%，当然很多股票的上下限不止这点，但没有
+             投入金额做参照，东方财富也是这么统计收益率的。
+             我知道我的交易点如果按照收益率止盈，一定比传统赚的多，但止盈标准不好确定，移动止盈？固定金额？趋势策略是会让
+             利润奔跑的，又要做很多实验，算了。
+             就用收益率吧，有没有效果也就这样了。
+            """
+            if latest_total_cost < 0:
+                final_return_rate = final_profit_or_loss / (-latest_total_cost)
+            else:
+                final_return_rate = final_profit_or_loss / latest_total_cost
+
+            # final_return_rate = final_profit_or_loss / latest_total_cost
         else:
             final_return_rate = 0.0
 
@@ -133,8 +148,8 @@ def cal_return_rate(asset, flag, strategy_name, pred, pred_tpp, handled_uneven):
         所以，都是一样的参照不如都不参照，直接按收益金额来，只要不同策略对比最终收益金额就好
         不同策略的股票是一样的，因此可以对比
         """
-        # return round(final_return_rate, 4)
-        return round(holding_value-latest_total_cost, 4)
+        return round(final_return_rate, 4)  # 2025 05 06 改回收益率，改了赚钱收益率-100%的bug
+        # return round(holding_value-latest_total_cost, 4)
     except Exception as e:
         print(e, asset.assetsCode)
 

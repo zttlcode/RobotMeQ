@@ -234,13 +234,15 @@ def run_live_A39():
 
 
 def run_live_A800_TSLA(assetList, df):
-    live_df = df[-250:]
+    live_df = df[-250:].copy()
     live_df.set_index('time', inplace=True)
+    live_df.index = pd.to_datetime(live_df.index)  # 确保索引是时间类型
     # RMQM_Identify_Market_Types.run_live_label_market_condition(assetList, live_df)
     live_df = df[-250:].reset_index(drop=True)
+    run_back_test_no_tick(assetList, "c4_oscillation_boll_nature", True, live_df)
+    # run_back_test_no_tick(assetList, "c4_trend_nature", True, live_df)
+    # run_back_test_no_tick(assetList, "tea_radical_nature", True, live_df)
     # run_back_test_no_tick(assetList, "fuzzy_nature", True, live_df)
-    # run_back_test_no_tick(assetList, "c4_breakout_nature", True, live_df)
-    run_back_test_no_tick(assetList, "tea_radical_nature", True, live_df)
 
 
 if __name__ == '__main__':
@@ -278,14 +280,24 @@ if __name__ == '__main__':
                                              ['d'],
                                              'stock',
                                              1, 'A')
+        single = False
+        # 单独运行一条时放开注释
+        # assetList = RMQAsset.asset_generator('000001',  # 000001
+        #                                      '000001',
+        #                                      ['d'],
+        #                                      'index',
+        #                                      1, 'A')
+        # single = True
+
         today = pd.Timestamp.today().normalize()  # 去掉时间部分，只保留日期
         df = HistoryData.getData_BaoStock_live(assetList[0], '', today.strftime('%Y-%m-%d'), '')
         df_tmp = df.copy()
         df_tmp['time'] = pd.to_datetime(df_tmp['time'])
         last_date = df_tmp['time'].iloc[-1]
-        if last_date != today:
-            print(row['code'][3:], last_date, "日期不是今天，跳过")
-            continue
+        if not single:
+            if last_date != today:
+                print(row['code'][3:], last_date, "日期不是今天，跳过")
+                continue
         # 将指定列转换为 float 类型
         df[['open', 'high', 'low', 'close']] = df[['open', 'high', 'low', 'close']].astype(float)
         # 将 volume 列转换为 int 类型
@@ -293,13 +305,19 @@ if __name__ == '__main__':
         df['volume'] = df['volume'].fillna(0)  # 用 0 填充缺失值
         df['volume'] = df['volume'].astype('int64')
         run_live_A800_TSLA(assetList, df)
+        if single:
+            break  # 单独运行一条时
     bs.logout()
 
-    # assetList = RMQAsset.asset_generator("TSLA",
-    #                                      "TSLA",
+    # assetsCode = 'NVDA'  # NVDA TSLA 01810
+    # assetList = RMQAsset.asset_generator(assetsCode,
+    #                                      assetsCode,
     #                                      ['d'],
     #                                      'stock',
-    #                                      0, 'USA')
-    # df = ak.stock_us_daily(symbol="TSLA", adjust="")  # 获取股票历史数据
+    #                                      0, 'USA')  # USA HK
+    # df = ak.stock_us_daily(symbol=assetsCode, adjust="")  # 获取股票历史数据
+    # # df = ak.stock_hk_daily(symbol=assetsCode, adjust="")  # 获取股票历史数据
+    # # 20250909为了stock_hk_daily给run_live_A800_TSLA加了live_df.index = pd.to_datetime(live_df.index)代码
+    #
     # df.rename(columns={'date': 'time'}, inplace=True)
     # run_live_A800_TSLA(assetList, df)

@@ -39,14 +39,14 @@ def pre_handle():
     数字币 crypto_code  crypto_code_wait_handle_stocks
     row['code']  row['code']  '15', '60', '240', 'd'  crypto  1  crypto
     """
-    allStockCode = pd.read_csv("./QuantData/asset_code/crypto_code.csv", dtype={'code': str})
+    allStockCode = pd.read_csv("./QuantData/asset_code/a800_stocks.csv", dtype={'code': str})
     # Run.parallel_backTest(allStockCode)  # 回测，并行 需要手动改里面的策略名。
     for index, row in allStockCode.iterrows():
-        assetList = RMQAsset.asset_generator(row['code'],
-                                             row['code'],
-                                             ['15', '60', '240', 'd'],
-                                             'crypto',
-                                             1, 'crypto')
+        assetList = RMQAsset.asset_generator(row['code'][3:],
+                                             row['code_name'],
+                                             ['15', '30', '60', 'd'],
+                                             'stock',
+                                             1, 'A')
 
         # 回测，保存交易点,加tick会细化价格导致操作提前，但实盘是bar结束了算指标，所以不影响
         # Run.run_back_test(assetList, "tea_radical_nature")  # 0:18:27.437876 旧回测，转tick，运行时长
@@ -83,7 +83,8 @@ def pre_handle():
                         原始交易点："_" + asset.barEntity.timeLevel  此时flag是 None
                         各级别标注交易点："_" + asset.barEntity.timeLevel + "_label3"  此时flag是 _label2 _label3 _label4
         """
-        # Draw_Pyecharts.show(assetList, "single", "tea_radical_nature", "_label3")
+        # Draw_Pyecharts.show(assetList, "single", "c4_reversal_nature", "_label1")
+
         """
         计算收益率
             is_concat: True 计算合并交易点的收益率  此时flag只会是 _concat 或 _concat_label1
@@ -117,17 +118,17 @@ def pre_handle_compare_label_profit(strategy):
     数字币 crypto_code  crypto_code_wait_handle_stocks
     row['code']  row['code']  '15', '60', '240', 'd'  crypto  1  crypto
     """
-    allStockCode = pd.read_csv("./QuantData/asset_code/crypto_code.csv", dtype={'code': str})
+    allStockCode = pd.read_csv("./QuantData/asset_code/a800_stocks.csv", dtype={'code': str})
     count = 0
     count_win = 0
     # 存储差值的列表
     differences = []
     for index, row in allStockCode.iterrows():
-        assetList = RMQAsset.asset_generator(row['code'],
+        assetList = RMQAsset.asset_generator(row['code'][3:],
                                              row['code'],
-                                             ['15'],
-                                             'crypto',
-                                             1, 'crypto')
+                                             ['d'],
+                                             'stock',
+                                             1, 'A')
         """
         过滤交易点
         strategy_name: identify_Market_Types  label1挑出连续行情
@@ -158,7 +159,7 @@ def pre_handle_compare_label_profit(strategy):
         res1 = RMQEvaluate.return_rate(assetList, False, None, strategy,
                                        False, False, False)
         if strategy == 'tea_radical_nature':
-            flag = "_label3"
+            flag = "_label2"
         else:
             flag = "_label1"
         res2 = RMQEvaluate.return_rate(assetList, False, flag, strategy,
@@ -269,15 +270,16 @@ def pre_handle_compare_strategy():
     数字币 crypto_code  crypto_code_wait_handle_stocks
     row['code']  row['code']  '15', '60', '240', 'd'  crypto  1  crypto
     """
-    allStockCode = pd.read_csv("./QuantData/asset_code/crypto_code.csv", dtype={'code': str})
+    allStockCode = pd.read_csv("./QuantData/asset_code/sp500_stock_codes.csv", dtype={'code': str})
     # 初始化各策略总得分数组（7个策略）
-    total_profit = np.zeros(7)
+    total_profit = np.zeros(8)
+    count = 0
     for index, row in allStockCode.iterrows():
         assetList = RMQAsset.asset_generator(row['code'],
                                              row['code'],
-                                             ['15'],
-                                             'crypto',
-                                             1, 'crypto')
+                                             ['d'],
+                                             'stock',
+                                             1, 'USA')
         res1 = RMQEvaluate.return_rate(assetList, False, "_label2", "tea_radical_nature",
                                        False, False, False)
         res2 = RMQEvaluate.return_rate(assetList, False, "_label1", "fuzzy_nature",
@@ -292,10 +294,10 @@ def pre_handle_compare_strategy():
                                        False, False, False)
         res7 = RMQEvaluate.return_rate(assetList, False, "_label1", "c4_reversal_nature",
                                        False, False, False)
-        # res8 = RMQEvaluate.return_rate(assetList, False, "_label1", "extremum",
-        #                                False, False, False)
+        res8 = RMQEvaluate.return_rate(assetList, False, "_label1", "extremum",
+                                       False, False, False)
         # 将结果存入数组
-        profits = np.array([res1, res2, res3, res4, res5, res6, res7], dtype=float)
+        profits = np.array([res1, res2, res3, res4, res5, res6, res7, res8], dtype=float)
 
         # 检查数据有效性
         if not np.all(np.isfinite(profits)):
@@ -304,16 +306,19 @@ def pre_handle_compare_strategy():
 
         # 直接累加收益金额
         total_profit += profits
-
+        count += 1
+    total_profit = total_profit/count
     # 按总收益排序
     strategies = ["tea_radical_nature", "fuzzy_nature", "c4_oscillation_kdj_nature",
                   "c4_oscillation_boll_nature", "c4_trend_nature", "c4_breakout_nature",
-                  "c4_reversal_nature"]
+                  "c4_reversal_nature", "extremum"]
     sorted_indices = np.argsort(-total_profit)
 
     print("策略总收益排名：")
     for rank, idx in enumerate(sorted_indices, 1):
-        print(f"第{rank}名: {strategies[idx]}，总收益：{total_profit[idx]:.2f}元")
+        # print(f"第{rank}名: {strategies[idx]}，总收益：{total_profit[idx]:.2f}元")
+        # 2025 05 06 收益金额改收益率
+        print(f"第{rank}名: {strategies[idx]}，总收益率：{total_profit[idx]:.2f}%")
 
 
 def prepare_train_dataset():
@@ -453,34 +458,48 @@ def prepare_pred_dataset():
             point_to_ts_up_time_level  用本级别交易点，找up_time_level对应级别的回测数据，
             特征只用feature_all
     """
-    RMQDataset.prepare_dataset_single("_TEST", "A_15", 160,
-                                      20000, True,
-                                      "tea_radical_nature", "feature_all",
-                                      "point_to_ts_up_time_level", "_label3", 20,
-                                      True, 'd')
+    # RMQDataset.prepare_dataset_single("_TEST", "A_15", 160,
+    #                                   20000, True,
+    #                                   "tea_radical_nature", "feature_all",
+    #                                   "point_to_ts_single", "_label2", 20,
+    #                                   False, 'd')
 
     # 预测收益
-    # allStockCode = pd.read_csv("D:/github/RobotMeQ/QuantData/asset_code/a800_stocks.csv", dtype={'code': str})
-    # df_dataset = allStockCode.iloc[500:]
-    # n = 1
-    # for index, row in df_dataset.iterrows():
-    #     assetList = RMQAsset.asset_generator(row['code'][3:],
-    #                                          '',
-    #                                          ['15'],
-    #                                          'stock',
-    #                                          1, 'A')
-    #     # 标注收益，这是最完美结果
-    #     RMQEvaluate.return_rate(assetList, False, "_label3", "tea_radical_nature",
-    #                             False, False, True)
-    #     # 模型预测
-    #     RMQEvaluate.return_rate(assetList, False, "_label3", "tea_radical_nature",
-    #                             True, False, True)
-    #     # 多模型过滤，比模型预测收益高就好。
-    #     RMQEvaluate.return_rate(assetList, False, "_label3", "tea_radical_nature",
-    #                             True, True, True)
-    #     n += 1
-    #     if n > 20:
-    #         break
+    allStockCode = pd.read_csv("D:/github/RobotMeQ/QuantData/asset_code/a800_stocks.csv", dtype={'code': str})
+    df_dataset = allStockCode.iloc[500:]
+    n = 1
+    count = 0
+    count_win = 0
+    for index, row in df_dataset.iterrows():
+        assetList = RMQAsset.asset_generator(row['code'][3:],
+                                             '',
+                                             ['15'],
+                                             'stock',
+                                             1, 'A')
+        # 标注收益，这是最完美结果
+        res1 = RMQEvaluate.return_rate(assetList, False, "_label2", "tea_radical_nature",
+                                False, False, True)
+        # 模型预测
+        res2 = RMQEvaluate.return_rate(assetList, False, "_label2", "tea_radical_nature",
+                                True, False, True)
+        # 多模型过滤，比模型预测收益高就好。
+        # RMQEvaluate.return_rate(assetList, False, "_label2", "tea_radical_nature",
+        #                         True, True, True)
+        if res1 is None or res2 is None:
+            continue
+        if res1 < res2:
+            count_win += 1
+        count += 1
+        # print(f"{asset.assetsCode}{flag} 最终结果 持股数: {shares}, 市值: {holding_value:.2f}, "
+        #       f"总投资额: {latest_total_cost:.2f}, 持股收益率: {final_return_rate:.2%}, "
+        #       f"总收益: {(holding_value-latest_total_cost):.2f}")
+        print(f"{assetList[0].assetsCode} 原始策略收益率: {res1:.2%}, "
+              f"标注策略收益率: {res2:.2%}", f"收益率提升: {res2-res1:.2%}")
+        # n += 1
+        # if n > 20:
+        #     break
+    print(f"{count_win/count:.2%}")
+    print(count_win, count)
 
 
 def run_live():
@@ -760,14 +779,14 @@ if __name__ == '__main__':
         point_to_ts_up_time_level 对分钟级来说，是找上级，因此本级别找的行数不同，原来有问题的行可能被跳过。因此导致预测行数与行情预测时的行数对不上
         解决办法只能在计算完指标后，填充Nan
     """
-    # pre_handle()  # 数据预处理
+    pre_handle()  # 数据预处理
     # pre_handle_compare_strategy()  # 预处理中统计各原始策略的收益排名
     # strategies = ["c4_breakout_nature", "c4_oscillation_boll_nature", "c4_trend_nature", "tea_radical_nature",
     #               "c4_reversal_nature", "fuzzy_nature", "c4_oscillation_kdj_nature"]
     # for strategy in strategies:
     #     pre_handle_compare_label_profit(strategy)  # 预处理中统计各策略标注后收益是否提升
     # pre_handle_compare_label_profit("extremum")  # 预处理中统计各策略标注后收益是否提升
-    prepare_train_dataset()  # 所有股票组成训练集
+    # prepare_train_dataset()  # 所有股票组成训练集
     # prepare_pred_dataset()  # 单独推理一个股票
     # run_live()
     pass
