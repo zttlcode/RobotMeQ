@@ -27,10 +27,12 @@ def run_back_test(assetList, strategy_name):
     strategy_result.live = False
     IEMultiLevel = RMQIndicator.IndicatorEntityMultiLevel(assetList)  # 多级别的指标要互相交流，所以通过这个公共指标对象交流
 
-    # 日线数据用5分钟的太慢，所以先加载回测开始日的，前250天日线数据，让日线指标更新上，方便其他级别使用日线指标
-    # 2023 2 3 改进：除了5分钟级别，其他级别都先加载好250bar
+    """
+    在进入策略前，要攒够至少250条数据以支撑指标计算，对于多级别同时运行的情况，由于回测是输入5分钟级别的历史数据，
+    而5分钟级别攒够高级别的250bar耗时太久，因此各时间级别预加载各自250bar的数据。
+    若是单级别运行，则后面代码会加载对应级别数据，则不需要走这段代码
+    """
     if len(assetList) > 1:
-        # 如果是单级别，不走此函数；
         for asset in assetList:
             if asset.barEntity.timeLevel == '5':  # 5分钟的跳过，其他级别都要加载250个bar
                 continue
@@ -97,7 +99,7 @@ def run_back_test_no_tick(assetList, strategy_name, is_live, live_df):
     """
     for asset in assetList:
         if is_live:
-            backtest_bar_data = live_df
+            backtest_bar_data = live_df  # 每日收盘时跑日线策略用
         else:
             # 读取这个资产、这个级别的历史数据
             backtest_bar_data = pd.read_csv(asset.barEntity.backtest_bar, parse_dates=['time'])
@@ -239,8 +241,8 @@ def run_live_A800_TSLA(assetList, df):
     live_df.index = pd.to_datetime(live_df.index)  # 确保索引是时间类型
     # RMQM_Identify_Market_Types.run_live_label_market_condition(assetList, live_df)
     live_df = df[-250:].reset_index(drop=True)
-    run_back_test_no_tick(assetList, "c4_oscillation_boll_nature", True, live_df)
-    # run_back_test_no_tick(assetList, "c4_trend_nature", True, live_df)
+    # run_back_test_no_tick(assetList, "c4_oscillation_boll_nature", True, live_df)
+    run_back_test_no_tick(assetList, "c4_trend_nature", True, live_df)
     # run_back_test_no_tick(assetList, "tea_radical_nature", True, live_df)
     # run_back_test_no_tick(assetList, "fuzzy_nature", True, live_df)
 
@@ -282,7 +284,7 @@ if __name__ == '__main__':
                                              1, 'A')
         single = False
         # 单独运行一条时放开注释
-        # assetList = RMQAsset.asset_generator('000001',  # 000001
+        # assetList = RMQAsset.asset_generator('000001',  # 000001 399006 震荡行情不操作建议不操作
         #                                      '000001',
         #                                      ['d'],
         #                                      'index',

@@ -19,11 +19,30 @@ import numpy as np
 from RMQStrategy import Strategy_indicator as RMQStrategyIndicator, Identify_market_types_helper as IMTHelper
 from RMQTool import Message
 
+"""
+strategy_name: identify_Market_Types  label1挑出连续行情
+                tea_radical_nature  
+                    label1：多级别交易点合并，校验交易后日线级别涨跌幅、40个bar内趋势
+                    label2：单级别校验各自涨跌幅、40个bar内趋势
+                    label3：单级别校验各自MACD、DIF是否维持趋势
+                    label4：单级别校验各自MACD、DIF+40个bar内趋势
+                fuzzy_nature    
+                    回测后，标注前，一定要process_fuzzy_trade_point_csv()预处理
+                    label1 看交易对收益率
+                extremum label1 看交易对收益率
+                c4_oscillation_kdj_nature label1 看交易对收益率
+                c4_oscillation_boll_nature label1未来价格
+                c4_trend_nature label1未来价格
+                c4_breakout_nature label1未来价格
+                c4_reversal_nature label1未来价格                
+"""
+
 
 def pre_handle():
     """ """"""
     A股数据，沪深300+中证500=A股前800家上市公司，港股、美股标普500、数字币市值前9
-    数据来自证券宝，每个股票5种数据：日线、60m、30m、15m、5m。日线从该股发行日到2025年1月9日，分钟级最早为2019年1月2日。前复权，数据已压缩备份
+    数据来自证券宝，每个股票5种数据：日线、60m、30m、15m、5m。日线从该股发行日到2025年1月9日，分钟级最早为2019年1月2日。
+    前复权，数据已压缩备份
     
     数据回测前，先判断下载的数据有没有非法值，find_zero_close_files
     
@@ -44,7 +63,7 @@ def pre_handle():
     for index, row in allStockCode.iterrows():
         assetList = RMQAsset.asset_generator(row['code'][3:],
                                              row['code_name'],
-                                             ['15', '30', '60', 'd'],
+                                             ['30', '60', 'd'],
                                              'stock',
                                              1, 'A')
 
@@ -55,24 +74,7 @@ def pre_handle():
 
         # 各级别交易点拼接在一起
         # concat_trade_point(assetList, "tea_radical_nature")
-        """
-        过滤交易点
-        strategy_name: identify_Market_Types  label1挑出连续行情
-                        tea_radical_nature  
-                            label1：多级别交易点合并，校验交易后日线级别涨跌幅、40个bar内趋势
-                            label2：单级别校验各自涨跌幅、40个bar内趋势
-                            label3：单级别校验各自MACD、DIF是否维持趋势
-                            label4：单级别校验各自MACD、DIF+40个bar内趋势
-                        fuzzy_nature    
-                            回测后，标注前，一定要process_fuzzy_trade_point_csv()预处理
-                            label1 看交易对收益率
-                        extremum label1 看交易对收益率
-                        c4_oscillation_kdj_nature label1 看交易对收益率
-                        c4_oscillation_boll_nature label1未来价格
-                        c4_trend_nature label1未来价格
-                        c4_breakout_nature label1未来价格
-                        c4_reversal_nature label1未来价格                
-        """
+        # 过滤交易点
         # RMQLabel.label(assetList, "extremum", "label1")
         """
         画K线买卖点图
@@ -83,7 +85,8 @@ def pre_handle():
                         原始交易点："_" + asset.barEntity.timeLevel  此时flag是 None
                         各级别标注交易点："_" + asset.barEntity.timeLevel + "_label3"  此时flag是 _label2 _label3 _label4
         """
-        # Draw_Pyecharts.show(assetList, "single", "c4_reversal_nature", "_label1")
+        # Draw_Pyecharts.show(assetList, "single", "tea_radical_nature", None)
+        # Draw_Pyecharts.show(assetList, "single", "tea_radical_nature", "_label2")
 
         """
         计算收益率
@@ -97,228 +100,6 @@ def pre_handle():
         """
         # res1 = RMQEvaluate.return_rate(assetList, False, None, "tea_radical_nature",
         #                                False, False, False)
-
-
-def pre_handle_compare_label_profit(strategy):
-    """ """"""
-    A股数据，沪深300+中证500=A股前800家上市公司，港股、美股标普500、数字币市值前9
-    数据来自证券宝，每个股票5种数据：日线、60m、30m、15m、5m。日线从该股发行日到2025年1月9日，分钟级最早为2019年1月2日。前复权，数据已压缩备份
-
-    数据回测前，先判断下载的数据有没有非法值，find_zero_close_files
-
-    A股 a800_stocks  a800_stocks_wait_handle_stocks
-    row['code'][3:]  row['code_name']  '5', '15', '30', '60', 'd'  stock  1  A
-
-    港股 hk_1000_stock_codes  hk_1000_stock_codes_wait_handle_stocks
-    row['code']  row['name']  'd'  stock  1  HK
-
-    美股 sp500_stock_codes  sp500_stock_codes_wait_handle_stocks
-    row['code']  row['code']  'd'  stock  1  USA
-
-    数字币 crypto_code  crypto_code_wait_handle_stocks
-    row['code']  row['code']  '15', '60', '240', 'd'  crypto  1  crypto
-    """
-    allStockCode = pd.read_csv("./QuantData/asset_code/a800_stocks.csv", dtype={'code': str})
-    count = 0
-    count_win = 0
-    # 存储差值的列表
-    differences = []
-    for index, row in allStockCode.iterrows():
-        assetList = RMQAsset.asset_generator(row['code'][3:],
-                                             row['code'],
-                                             ['d'],
-                                             'stock',
-                                             1, 'A')
-        """
-        过滤交易点
-        strategy_name: identify_Market_Types  label1挑出连续行情
-                        tea_radical_nature  
-                            label1：多级别交易点合并，校验交易后日线级别涨跌幅、40个bar内趋势
-                            label2：单级别校验各自涨跌幅、40个bar内趋势
-                            label3：单级别校验各自MACD、DIF是否维持趋势
-                            label4：单级别校验各自MACD、DIF+40个bar内趋势
-                        fuzzy_nature    
-                            回测后，标注前，一定要process_fuzzy_trade_point_csv()预处理
-                            label1 看交易对收益率
-                        extremum label1 看交易对收益率
-                        c4_oscillation_kdj_nature label1 看交易对收益率
-                        c4_oscillation_boll_nature label1未来价格
-                        c4_trend_nature label1未来价格
-                        c4_breakout_nature label1未来价格
-                        c4_reversal_nature label1未来价格                
-
-        计算收益率
-            is_concat: True 计算合并交易点的收益率  此时flag只会是 _concat 或 _concat_label1
-                       False 计算各个级别，此时flag有2种，
-                        原始交易点："_" + asset.barEntity.timeLevel  此时flag是 None
-                        各级别标注交易点："_" + asset.barEntity.timeLevel + "_label3"  此时flag是 _label2 _label3 _label4
-            pred：True会读取模型预测结果，并以此计算收益
-            pred_tpp：True会读取模型二次过滤的结果
-            handled_uneven：True会用均样本之后的数据算收益。把均样本之后的数据存到本地，方便计算原始收益和模型预测收益
-        """
-        res1 = RMQEvaluate.return_rate(assetList, False, None, strategy,
-                                       False, False, False)
-        if strategy == 'tea_radical_nature':
-            flag = "_label2"
-        else:
-            flag = "_label1"
-        res2 = RMQEvaluate.return_rate(assetList, False, flag, strategy,
-                                       False, False, False)
-        if res1 is None or res2 is None:
-            continue
-        if res1 < res2:
-            count_win += 1
-        count += 1
-        """
-        res1 < res2时，如果两个都是正数，diff是收益率提升了百分之多少，这没问题。
-        如果res1是负数，res2是正数，差是正数，但被除数是负数
-        如果res1是负数，res2是负数，差是正数，但被除数是负数
-        """
-        if res2 == res1:
-            diff = 0
-        elif 0 <= res1 < res2:
-            if res1 == 0:
-                diff = res2
-            else:
-                diff = (res2 - res1) / res1  # 计算差值
-        elif res1 < 0 <= res2:
-            diff = (res2 - res1) / abs(res1)
-        elif res1 < res2 < 0:
-            diff = (res2 - res1) / abs(res1)
-
-        if 0 <= res2 < res1:
-            diff = (res2 - res1) / res1
-        elif res2 < 0 <= res1:
-            if res1 == 0:
-                diff = res2
-            else:
-                diff = (res2 - res1) / res1
-        elif res2 < res1 < 0:
-            diff = (res2 - res1) / abs(res1)
-
-        differences.append(diff)
-    print("-----------" + strategy + "开始---------")
-    print(f"{count_win/count:.2%}")
-    print(count_win, count)
-
-    def exclude_extremes(differences):
-        # 计算要排除的极值数量（总数的1%，即0.5%最小和0.5%最大）
-        n = len(differences)
-        k = int(n * 0.05)  # 5% 的数量
-
-        if k == 0:
-            print("数据太少")
-            return differences.copy()  # 如果数据量太少，直接返回副本
-
-        # 排序列表以便找到极值
-        sorted_diff = sorted(differences)
-
-        # 最小的k个和最大的k个值
-        min_extremes = set(sorted_diff[:k])
-        max_extremes = set(sorted_diff[-k:])
-
-        # 排除这些极值后的列表
-        filtered = [x for x in differences if x not in min_extremes and x not in max_extremes]
-
-        return filtered
-    # 计算平均差值
-    average_diff_raw = np.mean(differences)
-    # 计算差值的中位数
-    median_diff_raw = np.median(differences)
-    print(f"原始平均差值: {average_diff_raw:.2%}，正数表示标注有提升")
-    print(f"原始差值中位数: {median_diff_raw:.2%}，正数表示标注有提升")
-
-    filtered_differences = exclude_extremes(differences)
-    # 计算平均差值
-    average_diff = np.mean(filtered_differences)
-    # 计算差值的中位数
-    median_diff = np.median(filtered_differences)
-    print(f"95%平均差值: {average_diff:.2%}，正数表示标注有提升")
-    print(f"95%差值中位数: {median_diff:.2%}，正数表示标注有提升")
-
-    print(len(differences), len(filtered_differences))
-    # 确保 differences 是一维NumPy数组
-    filtered_differences = np.array(filtered_differences)
-    positive_values = filtered_differences[filtered_differences > 0]
-    print(len(positive_values), len(filtered_differences))
-    if len(positive_values) > 0:
-        mean_neg = np.mean(positive_values)
-        median_neg = np.median(positive_values)
-        print(f"提升的均值: {mean_neg:.2%}")
-        print(f"提升的中位数: {median_neg:.2%}")
-    else:
-        print("数组中没有正数！")
-    print("-----------"+strategy+"结束---------")
-
-
-def pre_handle_compare_strategy():
-    """ """"""
-    A股数据，沪深300+中证500=A股前800家上市公司，港股、美股标普500、数字币市值前9
-    数据来自证券宝，每个股票5种数据：日线、60m、30m、15m、5m。日线从该股发行日到2025年1月9日，分钟级最早为2019年1月2日。前复权，数据已压缩备份
-
-    数据回测前，先判断下载的数据有没有非法值，find_zero_close_files
-
-    A股 a800_stocks  a800_stocks_wait_handle_stocks
-    row['code'][3:]  row['code_name']  '5', '15', '30', '60', 'd'  stock  1  A
-
-    港股 hk_1000_stock_codes  hk_1000_stock_codes_wait_handle_stocks
-    row['code']  row['name']  'd'  stock  1  HK
-
-    美股 sp500_stock_codes  sp500_stock_codes_wait_handle_stocks
-    row['code']  row['code']  'd'  stock  1  USA
-
-    数字币 crypto_code  crypto_code_wait_handle_stocks
-    row['code']  row['code']  '15', '60', '240', 'd'  crypto  1  crypto
-    """
-    allStockCode = pd.read_csv("./QuantData/asset_code/sp500_stock_codes.csv", dtype={'code': str})
-    # 初始化各策略总得分数组（7个策略）
-    total_profit = np.zeros(8)
-    count = 0
-    for index, row in allStockCode.iterrows():
-        assetList = RMQAsset.asset_generator(row['code'],
-                                             row['code'],
-                                             ['d'],
-                                             'stock',
-                                             1, 'USA')
-        res1 = RMQEvaluate.return_rate(assetList, False, "_label2", "tea_radical_nature",
-                                       False, False, False)
-        res2 = RMQEvaluate.return_rate(assetList, False, "_label1", "fuzzy_nature",
-                                       False, False, False)
-        res3 = RMQEvaluate.return_rate(assetList, False, "_label1", "c4_oscillation_kdj_nature",
-                                       False, False, False)
-        res4 = RMQEvaluate.return_rate(assetList, False, "_label1", "c4_oscillation_boll_nature",
-                                       False, False, False)
-        res5 = RMQEvaluate.return_rate(assetList, False, "_label1", "c4_trend_nature",
-                                       False, False, False)
-        res6 = RMQEvaluate.return_rate(assetList, False, "_label1", "c4_breakout_nature",
-                                       False, False, False)
-        res7 = RMQEvaluate.return_rate(assetList, False, "_label1", "c4_reversal_nature",
-                                       False, False, False)
-        res8 = RMQEvaluate.return_rate(assetList, False, "_label1", "extremum",
-                                       False, False, False)
-        # 将结果存入数组
-        profits = np.array([res1, res2, res3, res4, res5, res6, res7, res8], dtype=float)
-
-        # 检查数据有效性
-        if not np.all(np.isfinite(profits)):
-            print(f"跳过无效数据: {profits}", row['code'])
-            continue
-
-        # 直接累加收益金额
-        total_profit += profits
-        count += 1
-    total_profit = total_profit/count
-    # 按总收益排序
-    strategies = ["tea_radical_nature", "fuzzy_nature", "c4_oscillation_kdj_nature",
-                  "c4_oscillation_boll_nature", "c4_trend_nature", "c4_breakout_nature",
-                  "c4_reversal_nature", "extremum"]
-    sorted_indices = np.argsort(-total_profit)
-
-    print("策略总收益排名：")
-    for rank, idx in enumerate(sorted_indices, 1):
-        # print(f"第{rank}名: {strategies[idx]}，总收益：{total_profit[idx]:.2f}元")
-        # 2025 05 06 收益金额改收益率
-        print(f"第{rank}名: {strategies[idx]}，总收益率：{total_profit[idx]:.2f}%")
 
 
 def prepare_train_dataset():
@@ -368,83 +149,48 @@ def prepare_train_dataset():
     """
     # RMQDataset.prepare_dataset("_TRAIN", "A_15", 160,
     #                            50000, True,
-    #                            "extremum", "feature_extremum",
-    #                            "point_to_ts_single", "_label1")
+    #                            "extremum", "feature_all",
+    #                            "point_to_ts_single", "_label1", 2, "buy")
     # RMQDataset.prepare_dataset("_TEST", "A_15", 160,
-    #                            30000, True,
-    #                            "extremum", "feature_extremum",
-    #                            "point_to_ts_single", "_label1")
-    RMQDataset.prepare_dataset("_TRAIN", "A_15", 480,
-                               100000, True,
-                               "extremum", "feature_all",
-                               "point_to_ts_single", "_label1")
-    RMQDataset.prepare_dataset("_TEST", "A_15", 480,
-                               50000, True,
-                               "extremum", "feature_all",
-                               "point_to_ts_single", "_label1")
+    #                            10000, True,
+    #                            "extremum", "feature_all",
+    #                            "point_to_ts_single", "_label1", 2, "buy")
 
-    RMQDataset.prepare_dataset("_TRAIN", "A_15", 480,
-                               100000, True,
-                               "c4_trend_nature", "feature_all",
-                               "point_to_ts_single", "_label1")
-    RMQDataset.prepare_dataset("_TEST", "A_15", 480,
-                               50000, True,
-                               "c4_trend_nature", "feature_all",
-                               "point_to_ts_single", "_label1")
+    # RMQDataset.prepare_dataset("_TRAIN", "A_15", 160,
+    #                            50000, True,
+    #                            "c4_oscillation_boll_nature", "feature_all",
+    #                            "point_to_ts_single", "_label1", 2, "buy")
+    # RMQDataset.prepare_dataset("_TEST", "A_15", 160,
+    #                            10000, True,
+    #                            "c4_oscillation_boll_nature", "feature_all",
+    #                            "point_to_ts_single", "_label1", 2, "buy")
 
-    RMQDataset.prepare_dataset("_TRAIN", "A_15", 480,
-                               100000, True,
-                               "tea_radical_nature", "feature_all",
-                               "point_to_ts_single", "_label2")
-    RMQDataset.prepare_dataset("_TEST", "A_15", 480,
+    RMQDataset.prepare_dataset("_TRAIN", "A_15", 160,
                                50000, True,
                                "tea_radical_nature", "feature_all",
-                               "point_to_ts_single", "_label2")
+                               "point_to_ts_single", "_label2", 2, "buy")
+    RMQDataset.prepare_dataset("_TEST", "A_15", 160,
+                               10000, True,
+                               "tea_radical_nature", "feature_all",
+                               "point_to_ts_single", "_label2", 2, "buy")
 
-    RMQDataset.prepare_dataset("_TRAIN", "A_15", 480,
-                               100000, True,
-                               "c4_reversal_nature", "feature_all",
-                               "point_to_ts_single", "_label1")
-    RMQDataset.prepare_dataset("_TEST", "A_15", 480,
-                               50000, True,
-                               "c4_reversal_nature", "feature_all",
-                               "point_to_ts_single", "_label1")
-
-    RMQDataset.prepare_dataset("_TRAIN", "A_15", 480,
-                               100000, True,
-                               "fuzzy_nature", "feature_all",
-                               "point_to_ts_single", "_label1")
-    RMQDataset.prepare_dataset("_TEST", "A_15", 480,
-                               50000, True,
-                               "fuzzy_nature", "feature_all",
-                               "point_to_ts_single", "_label1")
-
-    RMQDataset.prepare_dataset("_TRAIN", "A_15", 480,
-                               100000, True,
-                               "c4_oscillation_kdj_nature", "feature_all",
-                               "point_to_ts_single", "_label1")
-    RMQDataset.prepare_dataset("_TEST", "A_15", 480,
-                               50000, True,
-                               "c4_oscillation_kdj_nature", "feature_all",
-                               "point_to_ts_single", "_label1")
-
-    RMQDataset.prepare_dataset("_TRAIN", "A_15", 480,
-                               100000, True,
-                               "c4_breakout_nature", "feature_all",
-                               "point_to_ts_single", "_label1")
-    RMQDataset.prepare_dataset("_TEST", "A_15", 480,
-                               50000, True,
-                               "c4_breakout_nature", "feature_all",
-                               "point_to_ts_single", "_label1")
-
-    RMQDataset.prepare_dataset("_TRAIN", "A_15", 480,
-                               100000, True,
-                               "c4_oscillation_boll_nature", "feature_all",
-                               "point_to_ts_single", "_label1")
-    RMQDataset.prepare_dataset("_TEST", "A_15", 480,
-                               50000, True,
-                               "c4_oscillation_boll_nature", "feature_all",
-                               "point_to_ts_single", "_label1")
+    # RMQDataset.prepare_dataset("_TRAIN", "A_15", 160,
+    #                            50000, True,
+    #                            "fuzzy_nature", "feature_all",
+    #                            "point_to_ts_single", "_label1", 2, "buy")
+    # RMQDataset.prepare_dataset("_TEST", "A_15", 160,
+    #                            10000, True,
+    #                            "fuzzy_nature", "feature_all",
+    #                            "point_to_ts_single", "_label1", 2, "buy")
+    #
+    # RMQDataset.prepare_dataset("_TRAIN", "A_15", 160,
+    #                            50000, True,
+    #                            "c4_oscillation_kdj_nature", "feature_all",
+    #                            "point_to_ts_single", "_label1", 2, "buy")
+    # RMQDataset.prepare_dataset("_TEST", "A_15", 160,
+    #                            10000, True,
+    #                            "c4_oscillation_kdj_nature", "feature_all",
+    #                            "point_to_ts_single", "_label1", 2, "buy")
 
 
 def prepare_pred_dataset():
@@ -457,11 +203,14 @@ def prepare_pred_dataset():
         预测行情
             point_to_ts_up_time_level  用本级别交易点，找up_time_level对应级别的回测数据，
             特征只用feature_all
+    
+    20251003 处理c4_oscillation_boll_nature 和 c4_oscillation_kdj_nature时报文件不存在，原因是文件夹名字太长了，在Dataset.py
+    里把策略名改短即可
     """
     # RMQDataset.prepare_dataset_single("_TEST", "A_15", 160,
     #                                   20000, True,
-    #                                   "tea_radical_nature", "feature_all",
-    #                                   "point_to_ts_single", "_label2", 20,
+    #                                   "fuzzy_nature", "feature_all",
+    #                                   "point_to_ts_single", "_label1", None,
     #                                   False, 'd')
 
     # 预测收益
@@ -477,10 +226,10 @@ def prepare_pred_dataset():
                                              'stock',
                                              1, 'A')
         # 标注收益，这是最完美结果
-        res1 = RMQEvaluate.return_rate(assetList, False, "_label2", "tea_radical_nature",
+        res1 = RMQEvaluate.return_rate(assetList, False, "_label1", "c4_oscillation_boll_nature",
                                 False, False, True)
         # 模型预测
-        res2 = RMQEvaluate.return_rate(assetList, False, "_label2", "tea_radical_nature",
+        res2 = RMQEvaluate.return_rate(assetList, False, "_label1", "c4_oscillation_boll_nature",
                                 True, False, True)
         # 多模型过滤，比模型预测收益高就好。
         # RMQEvaluate.return_rate(assetList, False, "_label2", "tea_radical_nature",
@@ -495,9 +244,9 @@ def prepare_pred_dataset():
         #       f"总收益: {(holding_value-latest_total_cost):.2f}")
         print(f"{assetList[0].assetsCode} 原始策略收益率: {res1:.2%}, "
               f"标注策略收益率: {res2:.2%}", f"收益率提升: {res2-res1:.2%}")
-        # n += 1
-        # if n > 20:
-        #     break
+        n += 1
+        if n > 20:
+            break
     print(f"{count_win/count:.2%}")
     print(count_win, count)
 
@@ -765,6 +514,166 @@ def run_live_run():
             sleep(86400)  # 直接等24小时，再重新判断
 
 
+def pre_handle_compare_label_profit(strategy):
+    allStockCode = pd.read_csv("./QuantData/asset_code/a800_stocks.csv", dtype={'code': str})
+    count = 0
+    count_win = 0
+    # 存储差值的列表
+    differences = []
+    for index, row in allStockCode.iterrows():
+        assetList = RMQAsset.asset_generator(row['code'][3:],
+                                             row['code'],
+                                             ['d'],
+                                             'stock',
+                                             1, 'A')
+        res1 = RMQEvaluate.return_rate(assetList, False, None, strategy,
+                                       False, False, False)
+        if strategy == 'tea_radical_nature':
+            flag = "_label2"
+        else:
+            flag = "_label1"
+        res2 = RMQEvaluate.return_rate(assetList, False, flag, strategy,
+                                       False, False, False)
+        if res1 is None or res2 is None:
+            continue
+        if res1 < res2:
+            count_win += 1
+        count += 1
+        """
+        res1 < res2时，如果两个都是正数，diff是收益率提升了百分之多少，这没问题。
+        如果res1是负数，res2是正数，差是正数，但被除数是负数
+        如果res1是负数，res2是负数，差是正数，但被除数是负数
+        """
+        if res2 == res1:
+            diff = 0
+        elif 0 <= res1 < res2:
+            if res1 == 0:
+                diff = res2
+            else:
+                diff = (res2 - res1) / res1  # 计算差值
+        elif res1 < 0 <= res2:
+            diff = (res2 - res1) / abs(res1)
+        elif res1 < res2 < 0:
+            diff = (res2 - res1) / abs(res1)
+
+        if 0 <= res2 < res1:
+            diff = (res2 - res1) / res1
+        elif res2 < 0 <= res1:
+            if res1 == 0:
+                diff = res2
+            else:
+                diff = (res2 - res1) / res1
+        elif res2 < res1 < 0:
+            diff = (res2 - res1) / abs(res1)
+
+        differences.append(diff)
+        break
+    print("-----------" + strategy + "开始---------")
+    print(f"{count_win/count:.2%}")
+    print(count_win, count)
+
+    def exclude_extremes(differences):
+        # 计算要排除的极值数量（总数的1%，即0.5%最小和0.5%最大）
+        n = len(differences)
+        k = int(n * 0.05)  # 5% 的数量
+
+        if k == 0:
+            print("数据太少")
+            return differences.copy()  # 如果数据量太少，直接返回副本
+
+        # 排序列表以便找到极值
+        sorted_diff = sorted(differences)
+
+        # 最小的k个和最大的k个值
+        min_extremes = set(sorted_diff[:k])
+        max_extremes = set(sorted_diff[-k:])
+
+        # 排除这些极值后的列表
+        filtered = [x for x in differences if x not in min_extremes and x not in max_extremes]
+
+        return filtered
+    # 计算平均差值
+    average_diff_raw = np.mean(differences)
+    # 计算差值的中位数
+    median_diff_raw = np.median(differences)
+    print(f"原始平均差值: {average_diff_raw:.2%}，正数表示标注有提升")
+    print(f"原始差值中位数: {median_diff_raw:.2%}，正数表示标注有提升")
+
+    filtered_differences = exclude_extremes(differences)
+    # 计算平均差值
+    average_diff = np.mean(filtered_differences)
+    # 计算差值的中位数
+    median_diff = np.median(filtered_differences)
+    print(f"95%平均差值: {average_diff:.2%}，正数表示标注有提升")
+    print(f"95%差值中位数: {median_diff:.2%}，正数表示标注有提升")
+
+    print(len(differences), len(filtered_differences))
+    # 确保 differences 是一维NumPy数组
+    filtered_differences = np.array(filtered_differences)
+    positive_values = filtered_differences[filtered_differences > 0]
+    print(len(positive_values), len(filtered_differences))
+    if len(positive_values) > 0:
+        mean_neg = np.mean(positive_values)
+        median_neg = np.median(positive_values)
+        print(f"提升的均值: {mean_neg:.2%}")
+        print(f"提升的中位数: {median_neg:.2%}")
+    else:
+        print("数组中没有正数！")
+    print("-----------"+strategy+"结束---------")
+
+
+def pre_handle_compare_strategy():
+    allStockCode = pd.read_csv("./QuantData/asset_code/sp500_stock_codes.csv", dtype={'code': str})
+    # 初始化各策略总得分数组（7个策略）
+    total_profit = np.zeros(8)
+    count = 0
+    for index, row in allStockCode.iterrows():
+        assetList = RMQAsset.asset_generator(row['code'],
+                                             row['code'],
+                                             ['d'],
+                                             'stock',
+                                             1, 'USA')
+        res1 = RMQEvaluate.return_rate(assetList, False, "_label2", "tea_radical_nature",
+                                       False, False, False)
+        res2 = RMQEvaluate.return_rate(assetList, False, "_label1", "fuzzy_nature",
+                                       False, False, False)
+        res3 = RMQEvaluate.return_rate(assetList, False, "_label1", "c4_oscillation_kdj_nature",
+                                       False, False, False)
+        res4 = RMQEvaluate.return_rate(assetList, False, "_label1", "c4_oscillation_boll_nature",
+                                       False, False, False)
+        res5 = RMQEvaluate.return_rate(assetList, False, "_label1", "c4_trend_nature",
+                                       False, False, False)
+        res6 = RMQEvaluate.return_rate(assetList, False, "_label1", "c4_breakout_nature",
+                                       False, False, False)
+        res7 = RMQEvaluate.return_rate(assetList, False, "_label1", "c4_reversal_nature",
+                                       False, False, False)
+        res8 = RMQEvaluate.return_rate(assetList, False, "_label1", "extremum",
+                                       False, False, False)
+        # 将结果存入数组
+        profits = np.array([res1, res2, res3, res4, res5, res6, res7, res8], dtype=float)
+
+        # 检查数据有效性
+        if not np.all(np.isfinite(profits)):
+            print(f"跳过无效数据: {profits}", row['code'])
+            continue
+
+        # 直接累加收益金额
+        total_profit += profits
+        count += 1
+    total_profit = total_profit/count
+    # 按总收益排序
+    strategies = ["tea_radical_nature", "fuzzy_nature", "c4_oscillation_kdj_nature",
+                  "c4_oscillation_boll_nature", "c4_trend_nature", "c4_breakout_nature",
+                  "c4_reversal_nature", "extremum"]
+    sorted_indices = np.argsort(-total_profit)
+
+    print("策略总收益排名：")
+    for rank, idx in enumerate(sorted_indices, 1):
+        # print(f"第{rank}名: {strategies[idx]}，总收益：{total_profit[idx]:.2f}元")
+        # 2025 05 06 收益金额改收益率
+        print(f"第{rank}名: {strategies[idx]}，总收益率：{total_profit[idx]:.2f}%")
+
+
 if __name__ == '__main__':
     """
     报错：
@@ -779,14 +688,14 @@ if __name__ == '__main__':
         point_to_ts_up_time_level 对分钟级来说，是找上级，因此本级别找的行数不同，原来有问题的行可能被跳过。因此导致预测行数与行情预测时的行数对不上
         解决办法只能在计算完指标后，填充Nan
     """
-    pre_handle()  # 数据预处理
+    # pre_handle()  # 数据预处理
     # pre_handle_compare_strategy()  # 预处理中统计各原始策略的收益排名
     # strategies = ["c4_breakout_nature", "c4_oscillation_boll_nature", "c4_trend_nature", "tea_radical_nature",
     #               "c4_reversal_nature", "fuzzy_nature", "c4_oscillation_kdj_nature"]
     # for strategy in strategies:
     #     pre_handle_compare_label_profit(strategy)  # 预处理中统计各策略标注后收益是否提升
-    # pre_handle_compare_label_profit("extremum")  # 预处理中统计各策略标注后收益是否提升
-    # prepare_train_dataset()  # 所有股票组成训练集
+    # pre_handle_compare_label_profit("c4_oscillation_kdj_nature")  # 预处理中统计各策略标注后收益是否提升
+    prepare_train_dataset()  # 所有股票组成训练集
     # prepare_pred_dataset()  # 单独推理一个股票
     # run_live()
     pass

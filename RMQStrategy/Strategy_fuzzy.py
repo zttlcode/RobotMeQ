@@ -154,15 +154,12 @@ def strategy_fuzzy(positionEntity,
                                "buy"]
                 positionEntity.trade_point_list.append(trade_point)
                 # 推送消息
-                if indicatorEntity.IE_timeLevel == "5" or indicatorEntity.IE_timeLevel == "15":
-                    pass
-                else:
-                    strategy_result.send_msg(indicatorEntity.IE_assetsName
-                                             + "-"
-                                             + indicatorEntity.IE_assetsCode,
-                                             indicatorEntity,
-                                             None,
-                                             "buy" + str(round(avmood, 3)))
+                strategy_result.send_msg(indicatorEntity.IE_assetsName
+                                         + "-"
+                                         + indicatorEntity.IE_assetsCode,
+                                         indicatorEntity,
+                                         None,
+                                         "buy" + str(round(avmood, 3)))
                 # 2025 03 06 实盘调模型，不发消息
                 RMQRun_live_model.run_live_call_model(indicatorEntity, "buy")
 
@@ -177,15 +174,12 @@ def strategy_fuzzy(positionEntity,
                                "sell"]
                 positionEntity.trade_point_list.append(trade_point)
                 # 设置推送消息
-                if indicatorEntity.IE_timeLevel == "5" or indicatorEntity.IE_timeLevel == "15":
-                    pass
-                else:
-                    strategy_result.send_msg(indicatorEntity.IE_assetsName
-                                             + "-"
-                                             + indicatorEntity.IE_assetsCode,
-                                             indicatorEntity,
-                                             None,
-                                             "sell" + str(round(avmood, 3)))
+                strategy_result.send_msg(indicatorEntity.IE_assetsName
+                                         + "-"
+                                         + indicatorEntity.IE_assetsCode,
+                                         indicatorEntity,
+                                         None,
+                                         "sell" + str(round(avmood, 3)))
                 # 2025 03 06 实盘调模型，不发消息
                 RMQRun_live_model.run_live_call_model(indicatorEntity, "sell")
                 # 卖

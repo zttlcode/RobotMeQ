@@ -143,6 +143,144 @@ def fuzzy_nature_handling_uneven_samples1(labeled):
     return balanced_df
 
 
+def fuzzy_nature_handling_uneven_samples_v2(labeled, classification_direction):
+    """
+    平衡 label 使其各类别数量相等，并均匀删除。
+    新版规则：
+        - classification_direction == 'buy' 时处理 label 1、2；
+        - 否则处理 label 3、4。
+    """
+
+    df = labeled.copy()
+
+    # 根据分类方向确定要处理的类别
+    if classification_direction == 'buy':
+        active_labels = [1, 2]
+    else:
+        active_labels = [3, 4]
+
+    # 仅保留目标类别
+    df = df[df['label'].isin(active_labels)]
+    if len(df) == 0:
+        print("警告：没有匹配的标签数据。")
+        return pd.DataFrame()
+
+    # 统计各类别数量
+    label_counts = df['label'].value_counts()
+    min_count = label_counts.min()
+
+    # 拆分为两个子类
+    group_a = df[df['label'] == active_labels[0]]
+    group_b = df[df['label'] == active_labels[1]]
+
+    # 计算需要删除的行数（保证两类平衡）
+    excess_a = len(group_a) - min_count
+    excess_b = len(group_b) - min_count
+
+    def remove_evenly(group, excess_count):
+        """在整个 group 中均匀删除样本"""
+        if excess_count <= 0:
+            return group
+        step = len(group) / excess_count
+        remove_indices = np.round(np.arange(0, len(group), step)).astype(int)
+        remove_indices = remove_indices[remove_indices < len(group)]
+        mask = np.ones(len(group), dtype=bool)
+        mask[remove_indices] = False
+        return group[mask]
+
+    # 均匀删除多余样本
+    balanced_a = remove_evenly(group_a, excess_a)
+    balanced_b = remove_evenly(group_b, excess_b)
+
+    # 合并数据并按时间排序
+    balanced_df = pd.concat([balanced_a, balanced_b]).sort_values(by="time")
+
+    return balanced_df
+
+
+def tea_radical_nature_handling_uneven_samples_v2(labeled, classification_direction):
+    """
+    按连续相同 label 分组后，对 2 类数据（1-2 或 3-4）进行平衡处理，
+    每类保留的样本量不超过该组中样本最少的类别。
+
+    参数:
+        labeled: pd.DataFrame，必须包含 'label' 列
+        classification_direction: str，可选值为 'buy' 或 'sell'
+            - 'buy'：处理 label ∈ [1, 2]
+            - 其他：处理 label ∈ [3, 4]
+    返回:
+        经过平衡处理的 DataFrame
+    """
+
+    # === 1️⃣ 按分类方向选择目标标签 ===
+    if classification_direction == 'buy':
+        target_labels = [1, 2]
+    else:
+        target_labels = [3, 4]
+
+    df = labeled[labeled['label'].isin(target_labels)].copy()
+    if df.empty:
+        print("⚠️ 未找到对应标签的数据")
+        return pd.DataFrame()
+
+    # === 2️⃣ 按 label 统计数量 ===
+    label_counts = df['label'].value_counts()
+    min_label_count = label_counts.min()
+
+    # === 3️⃣ 按连续相同 label 生成分组标识 ===
+    df['group'] = (df['label'] != df['label'].shift()).cumsum()
+
+    # === 4️⃣ 逐个 label 进行平衡裁剪 ===
+    final_data = []
+
+    for label in label_counts.index:
+        label_data = df[df['label'] == label].copy()
+        group_count = label_data['group'].nunique()
+
+        # 每组要保留的行数，至少保留1行
+        rows_per_group = max(min_label_count // group_count, 1)
+
+        cropped_data = []
+        accumulated = 0
+
+        groups = list(label_data.groupby('group'))
+
+        for idx, (grp_id, grp_data) in enumerate(groups):
+            group_size = len(grp_data)
+            remaining_groups = len(groups) - idx - 1
+
+            # 若剩余组不足以满足最小数量，全部保留
+            if group_count < min_label_count and accumulated + remaining_groups <= min_label_count:
+                cropped_data.append(grp_data)
+                accumulated += len(grp_data)
+                continue
+
+            # 超出 rows_per_group 时，只保留末尾部分（保证时序靠后）
+            if group_size > rows_per_group:
+                grp_data = grp_data.tail(rows_per_group)
+
+            cropped_data.append(grp_data)
+            accumulated += len(grp_data)
+
+        # 合并该 label 下所有组数据
+        label_cropped = pd.concat(cropped_data)
+
+        # 若仍超过 min_label_count，则裁掉前面的多余行
+        if len(label_cropped) > min_label_count:
+            label_cropped = label_cropped.tail(min_label_count)
+
+        final_data.append(label_cropped)
+
+    # === 5️⃣ 合并所有 label 并恢复顺序 ===
+    if not final_data:
+        return pd.DataFrame()
+
+    final_df = pd.concat(final_data).sort_index()
+    final_df = final_df.drop(columns=['group'], errors='ignore')
+
+    return final_df
+
+
 def tea_radical_nature_point_to_ts3(assetList, temp_data_dict, temp_label_list, time_point_step, handle_uneven_samples,
                                     strategy_name, label_name, feature_plan_name):
     # 加载数据
@@ -719,7 +857,8 @@ def fuzzy_nature_point_to_ts2(assetList, temp_data_dict, temp_label_list, time_p
 
 
 def single_time_level_point_to_ts(assetList, temp_data_dict, temp_label_list, time_point_step, handle_uneven_samples,
-                                  strategy_name, label_name, feature_plan_name):
+                                  strategy_name, label_name, feature_plan_name,
+                                  classification, classification_direction):
     # 加载数据
     if strategy_name == 'identify_Market_Types':
         item = 'market_condition_backtest'
@@ -769,22 +908,45 @@ def single_time_level_point_to_ts(assetList, temp_data_dict, temp_label_list, ti
     data_0.fillna(method='bfill', inplace=True)  # 用后一个非NaN值填充（后向填充）
     data_0.fillna(method='ffill', inplace=True)  # 用前一个非NaN值填充（前向填充）
 
+    # 20251005 增加2分类代码
+    if classification == 2:
+        if classification_direction == "buy":
+            labeled = labeled[labeled['label'].isin([1, 2])]
+        else:
+            labeled = labeled[labeled['label'].isin([3, 4])]
+
     # 是否处理样本不均
     if handle_uneven_samples:
-        handled_uneven_filepath = (RMTTools.read_config("RMQData", item)
-                                   + assetList[0].assetsMarket
-                                   + "_"
-                                   + assetList[0].assetsCode
-                                   + "_"
-                                   + assetList[0].barEntity.timeLevel
-                                   + str(label_name)
-                                   + "_handled_uneven" + ".csv")
+        if classification == 2:
+            handled_uneven_filepath = (RMTTools.read_config("RMQData", item)
+                                       + assetList[0].assetsMarket
+                                       + "_"
+                                       + assetList[0].assetsCode
+                                       + "_"
+                                       + assetList[0].barEntity.timeLevel
+                                       + str(label_name)
+                                       + "_2class_handled_uneven" + ".csv")
+        else:
+            handled_uneven_filepath = (RMTTools.read_config("RMQData", item)
+                                       + assetList[0].assetsMarket
+                                       + "_"
+                                       + assetList[0].assetsCode
+                                       + "_"
+                                       + assetList[0].barEntity.timeLevel
+                                       + str(label_name)
+                                       + "_handled_uneven" + ".csv")
         if not os.path.exists(handled_uneven_filepath):
             if strategy_name == 'c4_oscillation_kdj_nature' or strategy_name == 'fuzzy_nature' \
                     or strategy_name == 'extremum':
-                labeled = fuzzy_nature_handling_uneven_samples1(labeled)
+                if classification == 2:
+                    labeled = fuzzy_nature_handling_uneven_samples_v2(labeled, classification_direction)
+                else:
+                    labeled = fuzzy_nature_handling_uneven_samples1(labeled)
             else:
-                labeled = tea_radical_nature_handling_uneven_samples1(labeled)
+                if classification == 2:
+                    labeled = tea_radical_nature_handling_uneven_samples_v2(labeled, classification_direction)
+                else:
+                    labeled = tea_radical_nature_handling_uneven_samples1(labeled)
             if labeled.empty:
                 print(assetList[0].assetsCode, "处理样本不均终止")
                 return None
@@ -957,6 +1119,8 @@ def single_time_level_point_to_ts(assetList, temp_data_dict, temp_label_list, ti
         temp_label_list.append(labeled_row['label'])
 
     print(assetList[0].assetsCode, "结束", len(temp_label_list))
+    print(labeled['label'].value_counts())
+
     return "success"
 
 
@@ -1341,7 +1505,8 @@ def get_feature(feature_plan_name):
 
 
 def get_point_to_ts(time_point_step, handle_uneven_samples, strategy_name,
-                    feature_plan_name, p2t_name, label_name, temp_data_dict, temp_label_list, assetList, up_time_level):
+                    feature_plan_name, p2t_name, label_name, temp_data_dict, temp_label_list, assetList, up_time_level,
+                    classification, classification_direction):
     res = None
     if (strategy_name == 'c4_trend_nature'
             or strategy_name == 'c4_oscillation_boll_nature'
@@ -1355,7 +1520,8 @@ def get_point_to_ts(time_point_step, handle_uneven_samples, strategy_name,
         if p2t_name == "point_to_ts_single":  # 单级别
             res = single_time_level_point_to_ts(assetList, temp_data_dict, temp_label_list, time_point_step,
                                                 handle_uneven_samples,
-                                                strategy_name, label_name, feature_plan_name)
+                                                strategy_name, label_name, feature_plan_name,
+                                                classification, classification_direction)
         elif p2t_name == "point_to_ts_up_time_level":  # 找上级行情
             res = up_time_level_point_to_ts(assetList, temp_data_dict, temp_label_list, time_point_step,
                                             handle_uneven_samples,
@@ -1382,7 +1548,7 @@ def get_point_to_ts(time_point_step, handle_uneven_samples, strategy_name,
 
 
 def prepare_dataset(flag, name, time_point_step, limit_length, handle_uneven_samples, strategy_name,
-                    feature_plan_name, p2t_name, label_name):
+                    feature_plan_name, p2t_name, label_name, classification, classification_direction):
     """
     A股 a800_stocks
     row['code'][3:]  row['code']  '5', '15', '30', '60', 'd'  stock  1  A
@@ -1482,7 +1648,8 @@ def prepare_dataset(flag, name, time_point_step, limit_length, handle_uneven_sam
         # 准备训练数据
         res, temp_data_dict, temp_label_list = get_point_to_ts(time_point_step, handle_uneven_samples, strategy_name,
                                                                feature_plan_name, p2t_name, label_name, temp_data_dict,
-                                                               temp_label_list, assetList, None)
+                                                               temp_label_list, assetList, None,
+                                                               classification, classification_direction)
         if not res:
             continue
         if limit_length == 0:  # 全数据
@@ -1500,12 +1667,24 @@ def prepare_dataset(flag, name, time_point_step, limit_length, handle_uneven_sam
         "feature2": [pd.Series([4, 5, 6, 7]), pd.Series([1, 2, 3, 4])]
     }
     """
-    problem_name_str = ("dataset_" + name + "_" + str(strategy_name) + "_" + str(feature_plan_name) + "_" +
-                        str(handle_uneven_samples) + "_uneven" + str(label_name) + "_" + str(time_point_step) + "step")
-    if strategy_name == "identify_Market_Types":
-        class_value_list_str = ["1", "2", "3"]
-    else:
-        class_value_list_str = ["1", "2", "3", "4"]
+    if classification == 4:
+        problem_name_str = ("dataset_" + name + "_" + str(strategy_name) + "_" + str(feature_plan_name) + "_" +
+                            str(handle_uneven_samples) + "_uneven" + str(label_name) + "_" + str(time_point_step) +
+                            "step")
+        if strategy_name == "identify_Market_Types":
+            class_value_list_str = ["1", "2", "3"]
+        else:
+            class_value_list_str = ["1", "2", "3", "4"]
+
+    elif classification == 2:
+        problem_name_str = ("dataset_" + name + "_" + str(strategy_name) + "_" + str(feature_plan_name) + "_" +
+                            str(handle_uneven_samples) + "_uneven" + str(label_name) + "_" + str(time_point_step) +
+                            "step" +
+                            "_" + str(classification) + "_class_" + str(classification_direction))
+        if classification_direction == 'buy':
+            class_value_list_str = ["1", "2"]
+        else:
+            class_value_list_str = ["3", "4"]
     # 写入 ts 文件
     write_dataframe_to_tsfile(
         data=result_df,

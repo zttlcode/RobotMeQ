@@ -185,15 +185,12 @@ def strategy_tea_radical(positionEntity,
                                                    "buy"]
                                     positionEntity.trade_point_list.append(trade_point)
                                     # 推送消息
-                                    if indicatorEntity.IE_timeLevel == "5" or indicatorEntity.IE_timeLevel == "15":
-                                        pass
-                                    else:
-                                        strategy_result.send_msg(indicatorEntity.IE_assetsName
-                                                                 + "-"
-                                                                 + indicatorEntity.IE_assetsCode,
-                                                                 indicatorEntity,
-                                                                 IEMultiLevel,
-                                                                 None)
+                                    strategy_result.send_msg(indicatorEntity.IE_assetsName
+                                                             + "-"
+                                                             + indicatorEntity.IE_assetsCode,
+                                                             indicatorEntity,
+                                                             IEMultiLevel,
+                                                             None)
                                     # 2025 03 06 实盘调模型，不发消息
                                     RMQRun_live_model.run_live_call_model(indicatorEntity, "buy")
                                     # 买 RMQPosition.buy(positionEntity, indicatorEntity, indicatorEntity.tick_close,
@@ -236,15 +233,12 @@ def strategy_tea_radical(positionEntity,
                                                    "sell"]
                                     positionEntity.trade_point_list.append(trade_point)
                                     # 设置推送消息
-                                    if indicatorEntity.IE_timeLevel == "5" or indicatorEntity.IE_timeLevel == "15":
-                                        pass
-                                    else:
-                                        strategy_result.send_msg(indicatorEntity.IE_assetsName
-                                                                 + "-"
-                                                                 + indicatorEntity.IE_assetsCode,
-                                                                 indicatorEntity,
-                                                                 IEMultiLevel,
-                                                                 None)
+                                    strategy_result.send_msg(indicatorEntity.IE_assetsName
+                                                             + "-"
+                                                             + indicatorEntity.IE_assetsCode,
+                                                             indicatorEntity,
+                                                             IEMultiLevel,
+                                                             None)
                                     # 2025 03 06 实盘调模型，不发消息
                                     RMQRun_live_model.run_live_call_model(indicatorEntity, "sell")
                                     # 卖
