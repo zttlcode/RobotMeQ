@@ -13,7 +13,6 @@ import matplotlib.pyplot as plt
 import scipy.signal as signal
 import paramiko
 import io
-import akshare as ak
 
 # import sys
 # 在cmd窗口python xxx.py 运行脚本时，自己写的from quant找不到quant，必须这样自定义一下python的系统变量，让python能找到
@@ -311,15 +310,4 @@ if __name__ == '__main__':
             break  # 单独运行一条时
     bs.logout()
 
-    # assetsCode = 'NVDA'  # NVDA TSLA 01810
-    # assetList = RMQAsset.asset_generator(assetsCode,
-    #                                      assetsCode,
-    #                                      ['d'],
-    #                                      'stock',
-    #                                      0, 'USA')  # USA HK
-    # df = ak.stock_us_daily(symbol=assetsCode, adjust="")  # 获取股票历史数据
-    # # df = ak.stock_hk_daily(symbol=assetsCode, adjust="")  # 获取股票历史数据
-    # # 20250909为了stock_hk_daily给run_live_A800_TSLA加了live_df.index = pd.to_datetime(live_df.index)代码
-    #
-    # df.rename(columns={'date': 'time'}, inplace=True)
-    # run_live_A800_TSLA(assetList, df)
+

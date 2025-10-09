@@ -121,7 +121,7 @@ def run_live(assetList, strategy_name):
 
 
 def start_process():
-    strategy_name = 'tea_radical'
+    strategy_name = 'tea_conservative'
     timeLevelList = ['30', '60', 'd']
     timeLevelList_f = ['5', '15', '30', '60', 'd']
     """
@@ -418,6 +418,7 @@ if __name__ == '__main__':
     docker cp /root/RobotMeQ/QuantData/live d63f10ba76df:/home/RobotMeQ/QuantData/live
     docker cp /root/RobotMeQ/Configs/config_prd.ini d63f10ba76df:/home/RobotMeQ/Configs/config_prd.ini
     docker cp /root/RobotMeQ/Run_prd_ETF_A.py d63f10ba76df:/home/RobotMeQ/Run_prd_ETF_A.py
+    docker cp d63f10ba76df:/home/RobotMeQ/QuantData/live /root/RobotMeQ/QuantData/live
     
     老台式机
     docker start 06acc8ba6062
