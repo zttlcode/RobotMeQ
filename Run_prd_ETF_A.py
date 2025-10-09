@@ -122,7 +122,8 @@ def run_live(assetList, strategy_name):
 
 def start_process():
     strategy_name = 'tea_radical'
-    timeLevelList = ['5', '15', '30', '60', 'd']
+    timeLevelList = ['30', '60', 'd']
+    timeLevelList_f = ['5', '15', '30', '60', 'd']
     """
     只需要记住一点，要想实现多线程， target=方法名/函数名，后不能带括号（）。
     1、不带括号时，调用的是这个函数本身 ，是整个函数体，是一个函数对象，不需等该函数执行完成；
@@ -137,13 +138,13 @@ def start_process():
                  Process(target=run_live,
                          args=(RMQAsset.asset_generator('159915',
                                                         '创业板',
-                                                        timeLevelList,
+                                                        timeLevelList_f,
                                                         'ETF',
                                                         1, 'A'), strategy_name,)),
                  Process(target=run_live,
                          args=(RMQAsset.asset_generator('510300',
                                                         '沪深300指数',
-                                                        timeLevelList,
+                                                        timeLevelList_f,
                                                         'ETF',
                                                         1, 'A'), strategy_name,)),
                  Process(target=run_live,
@@ -293,7 +294,7 @@ def start_process():
                  Process(target=run_live,
                          args=(RMQAsset.asset_generator('159920',
                                                         '恒生',
-                                                        timeLevelList,
+                                                        timeLevelList_f,
                                                         'ETF',
                                                         0, 'A'), strategy_name,)),
                  Process(target=run_live,
@@ -331,37 +332,7 @@ def start_process():
                                                         '日经',
                                                         timeLevelList,
                                                         'ETF',
-                                                        0, 'A'), strategy_name,)),
-                 Process(target=run_live,
-                         args=(RMQAsset.asset_generator('601658',
-                                                        '邮储银行',
-                                                        timeLevelList,
-                                                        'stock',
-                                                        1, 'A'), strategy_name,)),
-                 Process(target=run_live,
-                         args=(RMQAsset.asset_generator('600905',
-                                                        '三峡能源',
-                                                        timeLevelList,
-                                                        'stock',
-                                                        1, 'A'), strategy_name,)),
-                 Process(target=run_live,
-                         args=(RMQAsset.asset_generator('601598',
-                                                        '中国外运',
-                                                        timeLevelList,
-                                                        'stock',
-                                                        1, 'A'), strategy_name,)),
-                 Process(target=run_live,
-                         args=(RMQAsset.asset_generator('601868',
-                                                        '中国能建',
-                                                        timeLevelList,
-                                                        'stock',
-                                                        1, 'A'), strategy_name,)),
-                 Process(target=run_live,
-                         args=(RMQAsset.asset_generator('600690',
-                                                        '海尔智家',
-                                                        timeLevelList,
-                                                        'stock',
-                                                        1, 'A'), strategy_name,))
+                                                        0, 'A'), strategy_name,))
                  ]
 
     for p in processes:
@@ -476,7 +447,6 @@ if __name__ == '__main__':
     再到github创建项目，添加gitignore,拿到clone链接（别人的得拿，自己的项目不拿）
     本地用pycharm打开git点clone，放链接（自己地项目在github目录里直接选），选本地路径，导入后，改成conda的环境
     导入后放入自己的代码，点add，再commit，最后push
-    
     """
 
     while True:
