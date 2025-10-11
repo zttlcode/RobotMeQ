@@ -410,6 +410,7 @@ if __name__ == '__main__':
     docker cp /root/RobotMeQ/Configs/config_prd.ini 5c239d668666:/home/RobotMeQ/Configs/config_prd.ini
     docker cp /root/RobotMeQ/QuantData/live 5c239d668666:/home/RobotMeQ/QuantData/live
     docker cp 5c239d668666:/home/RobotMeQ/QuantData/trade_point_live /root/RobotMeQ/QuantData/trade_point_live
+    docker cp 5c239d668666:/home/RobotMeQ/QuantData/live /root/RobotMeQ/QuantData/live
 
     老笔记本  激进策略  1031017763@qq.com
     docker start d63f10ba76df
@@ -423,6 +424,10 @@ if __name__ == '__main__':
     老台式机
     docker start 06acc8ba6062
     docker exec -it 06acc8ba6062 /bin/bash
+    docker cp /root/RobotMeQ 06acc8ba6062:/home/RobotMeQ
+    
+    由于akshare包需要python3.9版本，因此以后再弄环境，docker要改3.9，requirements.txt加上一行akshare==1.16.9
+    对于docker3.8的，则requirements.txt删除akshare==1.16.9，另外把for_akshare.py全部内容注释即可
     
 --创建新项目    
     在conda的导航工具里新建环境，然后pycharm给项目选择需要的解释器，
