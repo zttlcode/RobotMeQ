@@ -5,6 +5,7 @@
     HistoryData.py  从证券宝获取A股股票全级别数据、A股指数日线级别数据
                     从通达信获取A股指数分钟级别数据
                     从akshare获取美股标普500成分股日线数据、港股前100及任意900股票的日线级别数据
+                    http://baostock.com/
     HistoryData_crypto.py 记录了使用币安官方库下载历史数据，再处理为我需要的格式
     Indicator.py  这是Asset.py中asset对象的指标计算，主要用于在策略中计算指标。
                     还为tea策略增加了 多级别交流指标值、我发明的背离计算、记录本级别背离了几次。为这个策略付出太多了，白费
@@ -28,6 +29,19 @@
 
 Run.py是跑回测的
 使用Run类的py运行策略，有新增策略时，在RMQStrategy/Strategy.py中新增， 同时在config.ini和config_prd.ini中增加新策略 的回测点保存路径
+for_akshare.py 获取股票信息，比证券宝数据更全，但是需要python3.9，而我的环境是3.8，所以单拎出来，实盘部署可以注释掉
+    https://akshare.akfamily.xyz/
 
+论文有用的网站：
+    https://orcid.org/  作者全网唯一ID
+    https://dl.acm.org/ccs  ACM的论文分类
 
+模型有用的网站：
+    https://www.aeon-toolkit.org/en/stable/examples/classification/classification.html  多变量时序分类工具类
+
+量化有用的网站：
+    https://8marketcap.com/ 全球资产市值排行
+    https://taoli.tools/  套利监控
+    https://arxiv.org/list/q-fin/recent  最新量化论文
+    
 
