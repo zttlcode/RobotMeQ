@@ -324,12 +324,24 @@ if __name__ == '__main__':
     ['5', '15', '30', '60', 'd']
     backtest_bar  live_bar
     """
-    assetList = RMQAsset.asset_generator('000568', '', ['d'],
-                                         'stock', 1, 'A')
-    for asset in assetList:
-        # 接口取数据只能股票，回测方便
-        res = getData_BaoStock(asset, '', '2025-03-10', '')
-        print(res)
-    pass
+    # assetList = RMQAsset.asset_generator('000568', '', ['d'],
+    #                                      'stock', 1, 'A')
+    #
+    # for asset in assetList:
+    #     # 接口取数据只能股票，回测方便
+    #     res = getData_BaoStock(asset, '', '2025-03-10', '')
+    #     print(res)
+    # pass
+    tdxList = ['515220', '159766', '159865', '159996', '512480', '159819', '562500',
+               '159869', '515880', '159985', '159980', '159981', '513360', '518880', '159920', '513130', '513060',
+               '159941', '159509', '513030', '159866']
+
+    for tdx in tdxList:
+        # 这里名称和资产类型无所谓
+        assetList = RMQAsset.asset_generator(tdx, '', ['30', '60', 'd'], 'ETF', 1, 'A')
+        for asset in assetList:
+            handle_TDX_data(asset, True)
+            print(tdx, asset.barEntity.timeLevel)
+
 
 
