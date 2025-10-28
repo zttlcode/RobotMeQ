@@ -454,6 +454,16 @@ if __name__ == '__main__':
     再到github创建项目，添加gitignore,拿到clone链接（别人的得拿，自己的项目不拿）
     本地用pycharm打开git点clone，放链接（自己地项目在github目录里直接选），选本地路径，导入后，改成conda的环境
     导入后放入自己的代码，点add，再commit，最后push
+    
+    复制镜像，运行第二个策略，注意要把新镜像的RobotMeQ整体更新
+    docker tag 2023c3642f33 tea_conservative
+    docker run -d --name tea_conservative_container tea_conservative tail -f /dev/null
+    docker exec -it 5c239d668666 /bin/bash
+    docker exec -it 29f4c9c658af /bin/bash
+    docker cp /root/live 29f4c9c658af:/home/RobotMeQ/QuantData/live
+    
+    docker cp 5c239d668666:/home/RobotMeQ /root/RobotMeQ
+    docker cp /root/RobotMeQ 29f4c9c658af:/home/RobotMeQ
     """
 
     while True:
